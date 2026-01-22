@@ -11,24 +11,39 @@
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
+        .transition-all { transition: all 0.3s ease; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col p-4">
 
-    <div id="app" class="max-w-md mx-auto w-full text-center py-10">
+    <div id="app" class="max-w-md mx-auto w-full text-center py-6">
         <h1 class="text-4xl font-bold mb-8 text-teal-400">ألعاب العائلة</h1>
         
         <div id="setup-screen" class="space-y-6">
-            <button onclick="startSession('host')" class="w-full btn-teal text-white p-6 rounded-2xl text-2xl font-bold shadow-lg">
+            <button onclick="startSession('host')" class="w-full btn-teal text-white p-6 rounded-2xl text-2xl font-bold shadow-lg transition-all active:scale-95">
                 أنا شاشة العرض (TV / Host)
             </button>
-            <button onclick="startSession('player')" class="w-full bg-slate-card text-white p-6 rounded-2xl text-2xl font-bold shadow-md border border-slate-700">
+            <button onclick="startSession('player')" class="w-full bg-slate-card text-white p-6 rounded-2xl text-2xl font-bold shadow-md border border-slate-700 transition-all active:scale-95">
                 أنا لاعب (الجوال)
             </button>
         </div>
 
         <div id="game-content" class="hidden">
-            <p id="status-msg" class="text-slate-400 mt-4"></p>
+            <div id="host-view" class="hidden space-y-6">
+                <div class="bg-slate-card p-6 rounded-2xl border border-slate-700">
+                    <h2 id="question-text" class="text-2xl font-bold mb-4">بانتظار بدء اللعبة...</h2>
+                    <div id="options-list" class="grid grid-cols-1 gap-3"></div>
+                </div>
+                <button id="start-btn" onclick="nextQuestion()" class="w-full btn-purple p-4 rounded-xl font-bold">ابدأ السؤال الأول</button>
+            </div>
+
+            <div id="player-view" class="hidden space-y-4">
+                <p class="text-slate-400">اختر الإجابة الصحيحة:</p>
+                <div id="player-buttons" class="grid grid-cols-1 gap-4">
+                    </div>
+            </div>
+            
+            <p id="status-msg" class="text-slate-500 mt-8 text-sm italic"></p>
         </div>
     </div>
 
@@ -36,7 +51,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Your Config
         const firebaseConfig = {
             apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
             authDomain: "family-games-app.firebaseapp.com",
@@ -49,35 +63,63 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const gameRef = ref(db, 'live_game');
 
-        window.startSession = function(role) {
+        const questions = [
+            { q: "ما هي عاصمة المملكة العربية السعودية؟", options: ["جدة", "الرياض", "الدمام", "مكة"], correct: 1 },
+            { q: "كم عدد قارات العالم؟", options: ["5", "6", "7", "8"], correct: 2 }
+        ];
+
+        let currentQIndex = -1;
+
+        window.startSession = (role) => {
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('game-content').classList.remove('hidden');
             
             if (role === 'host') {
-                setupHost();
+                document.getElementById('host-view').classList.remove('hidden');
+                document.getElementById('status-msg').innerText = "وضع شاشة العرض";
             } else {
-                setupPlayer();
+                document.getElementById('player-view').classList.remove('hidden');
+                document.getElementById('status-msg').innerText = "وضع اللاعب";
+                listenForQuestions();
             }
         };
 
-        function setupHost() {
-            document.getElementById('status-msg').innerText = "في انتظار اللاعبين...";
-            // Logic to listen for player answers and show questions
-            const gameRef = ref(db, 'current_game');
+        // HOST LOGIC
+        window.nextQuestion = () => {
+            currentQIndex++;
+            if(currentQIndex < questions.length) {
+                set(gameRef, {
+                    index: currentQIndex,
+                    question: questions[currentQIndex].q,
+                    options: questions[currentQIndex].options
+                });
+                renderHostQuestion(questions[currentQIndex]);
+                document.getElementById('start-btn').innerText = "السؤال التالي";
+            } else {
+                set(gameRef, { status: "finished" });
+                document.getElementById('question-text').innerText = "انتهت اللعبة!";
+            }
+        };
+
+        function renderHostQuestion(data) {
+            document.getElementById('question-text').innerText = data.q;
+            const list = document.getElementById('options-list');
+            list.innerHTML = data.options.map(opt => `<div class="p-3 bg-slate-800 rounded-lg border border-slate-600">${opt}</div>`).join('');
+        }
+
+        // PLAYER LOGIC
+        function listenForQuestions() {
             onValue(gameRef, (snapshot) => {
                 const data = snapshot.val();
-                if (data) renderHostUI(data);
+                if (data && data.options) {
+                    const btnContainer = document.getElementById('player-buttons');
+                    btnContainer.innerHTML = data.options.map((opt, i) => 
+                        `<button onclick="alert('تم إرسال الإجابة!')" class="p-5 btn-teal rounded-xl text-xl font-bold shadow-md active:bg-teal-700">${opt}</button>`
+                    ).join('');
+                }
             });
-        }
-
-        function setupPlayer() {
-            document.getElementById('status-msg').innerText = "تم الاتصال. بانتظار السؤال...";
-            // Logic to send answers to Firebase
-        }
-
-        function renderHostUI(data) {
-            // Update the screen with question data
         }
     </script>
 </body>
