@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ألعاب العائلة - النسخة المتطورة</title>
+    <title>ألعاب العائلة - النسخة الشاملة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -22,56 +22,62 @@
         <h1 class="text-4xl font-bold mb-8 text-teal-400">ألعاب العائلة</h1>
         
         <div id="setup-screen" class="space-y-6">
-            <button onclick="setRole('host')" class="w-full btn-teal text-white p-6 rounded-2xl text-2xl font-bold shadow-lg">أنا شاشة العرض (Host)</button>
-            <div class="space-y-2">
-                <input id="player-name-input" type="text" placeholder="أدخل اسمك..." class="w-full p-4 rounded-xl bg-slate-800 border border-slate-600 text-center text-white">
-                <button onclick="setRole('player')" class="w-full bg-slate-card text-white p-6 rounded-2xl text-2xl font-bold border border-slate-700">أنا لاعب (جوال)</button>
+            <div class="bg-slate-card p-6 rounded-3xl shadow-xl border border-slate-700">
+                <h2 class="text-xl mb-4 text-slate-300">سجل دخولك كلاعب</h2>
+                <input id="player-name-input" type="text" placeholder="أدخل اسمك..." class="w-full p-4 rounded-xl bg-slate-800 border border-slate-600 text-center text-white mb-4 focus:border-teal-500 outline-none">
+                <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-all">دخول اللعبة</button>
+            </div>
+            
+            <div class="pt-10">
+                <button onclick="showHostAuth()" class="text-slate-500 text-sm underline hover:text-slate-300 transition-colors">إعدادات شاشة العرض (Host)</button>
+            </div>
+        </div>
+
+        <div id="host-auth" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50">
+            <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs">
+                <h3 class="text-lg mb-4">رمز الدخول للمشرف</h3>
+                <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 border border-slate-600 text-center text-2xl tracking-widest text-white mb-4">
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('host-auth').classList.add('hidden')" class="flex-1 p-3 bg-slate-700 rounded-xl">إلغاء</button>
+                    <button onclick="verifyHost()" class="flex-1 p-3 btn-purple rounded-xl font-bold">تأكيد</button>
+                </div>
             </div>
         </div>
 
         <div id="section-select" class="hidden space-y-4">
             <h2 class="text-2xl font-bold mb-6 text-slate-400">اختر الفئة</h2>
-            <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-xl text-xl font-bold">قسم الكبار</button>
-            <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-xl text-xl font-bold">قسم الأطفال</button>
+            <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-xl text-xl font-bold border-b-4 border-slate-900">قسم الكبار</button>
+            <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-xl text-xl font-bold border-b-4 border-pink-950">قسم الأطفال</button>
         </div>
 
         <div id="type-select" class="hidden space-y-4 text-right">
             <h2 class="text-2xl font-bold mb-6 text-center text-slate-400">اختر اللعبة</h2>
-            
-            <div class="text-teal-400 font-bold mb-2">ألعاب ذهنية:</div>
-            <button onclick="chooseType('brain')" class="w-full p-4 btn-purple rounded-xl font-bold mb-2">اللعبة الثقافية (متوفرة)</button>
-            <button class="w-full p-4 bg-slate-800 text-slate-500 rounded-xl font-bold mb-4 cursor-not-allowed border border-dashed border-slate-600" disabled>لعبة لغز الكلمات (قريباً)</button>
-
-            <div class="text-purple-400 font-bold mb-2">ألعاب حركية:</div>
-            <button onclick="chooseType('movement')" class="w-full p-4 btn-teal rounded-xl font-bold mb-2">تحدي الحركة (متوفرة)</button>
-            <button class="w-full p-4 bg-slate-800 text-slate-500 rounded-xl font-bold cursor-not-allowed border border-dashed border-slate-600" disabled>تحدي التقليد (قريباً)</button>
+            <div id="brain-sub-menu" class="space-y-3"></div>
+            <div id="movement-sub-menu" class="mt-8 space-y-3">
+                <div class="text-purple-400 font-bold mb-1">ألعاب حركية:</div>
+                <button onclick="chooseType('movement')" class="w-full p-4 btn-teal rounded-xl font-bold">تحدي الحركة</button>
+                <button class="w-full p-4 bg-slate-800 text-slate-600 rounded-xl border border-dashed border-slate-700" disabled>قريباً: تحدي التقليد</button>
+            </div>
         </div>
 
         <div id="game-play" class="hidden">
             <div id="host-view" class="hidden space-y-4 text-right">
                 <div class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
-                    <span id="answer-counter" class="text-teal-400 font-bold">الإجابات المستلمة: 0</span>
+                    <span id="answer-counter" class="text-teal-400 font-bold">الإجابات: 0</span>
                 </div>
-
-                <div id="host-display" class="bg-slate-card p-6 rounded-2xl border border-slate-700">
+                <div id="host-display" class="bg-slate-card p-6 rounded-2xl border border-slate-700 min-h-[150px] flex flex-col justify-center">
                     <h2 id="display-title" class="text-2xl font-bold mb-4 text-teal-300 text-center">...</h2>
                     <div id="display-content" class="text-lg space-y-2"></div>
                 </div>
-                
                 <div id="leaderboard-ui" class="hidden bg-slate-900 p-4 rounded-xl border border-teal-500">
-                    <h3 class="text-lg font-bold text-teal-400 mb-2 border-b border-slate-800 pb-1 text-center font-bold">النتائج النهائية</h3>
                     <div id="leaderboard-list" class="space-y-1"></div>
                 </div>
-
-                <div class="flex flex-col gap-3">
-                    <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-4 rounded-xl font-bold">ابدأ</button>
-                    <button onclick="location.reload()" class="text-xs text-slate-600 text-center">إنهاء والعودة للرئيسية</button>
-                </div>
+                <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-2xl font-bold text-xl shadow-lg">ابدأ الجولة</button>
             </div>
 
             <div id="player-view" class="hidden space-y-4">
                 <div id="player-header" class="bg-slate-800 p-4 rounded-xl border border-teal-900">
-                    <h2 id="player-q-text" class="font-bold text-lg text-teal-200 italic">انتظر المضيف...</h2>
+                    <h2 id="player-q-text" class="font-bold text-lg text-teal-200 italic">بانتظار السؤال...</h2>
                 </div>
                 <div id="player-input-area" class="grid grid-cols-1 gap-4"></div>
             </div>
@@ -100,29 +106,140 @@
 
         const gameData = {
             adults: {
-                brain: [
+                culture: [
+                    { q: "ما هي عاصمة أذربيجان؟", options: ["باكو", "تبليسي", "يريفان"], correct: 0 },
+                    { q: "من هو مؤلف كتاب 'مقدمة ابن خلدون'؟", options: ["ابن بطوطة", "ابن خلدون", "ابن رشد"], correct: 1 },
+                    { q: "ما هو أسرع كائن حي؟", options: ["الفهد", "صقر الشاهين", "السمكة الشراعية"], correct: 1 },
+                    { q: "كم عدد القلوب لدى الأخطبوط؟", options: ["واحد", "اثنان", "ثلاثة"], correct: 2 },
+                    { q: "ما هو المعدن السائل في درجة حرارة الغرفة؟", options: ["الحديد", "الزئبق", "النحاس"], correct: 1 },
+                    { q: "أين تقع جبال الألب؟", options: ["أوروبا", "آسيا", "أفريقيا"], correct: 0 },
+                    { q: "ما هي العملة المستخدمة في اليابان؟", options: ["اليوان", "الين", "الوون"], correct: 1 },
+                    { q: "ما هو الكوكب الأحمر؟", options: ["المريخ", "المشتري", "زحل"], correct: 0 },
+                    { q: "ما هي عاصمة فرنسا؟", options: ["مدريد", "باريس", "روما"], correct: 1 },
                     { q: "ما هو أطول نهر في العالم؟", options: ["الأمازون", "النيل", "الميسيسيبي"], correct: 1 },
-                    { q: "في أي مدينة يقع برج إيفل؟", options: ["لندن", "باريس", "برلين"], correct: 1 }
+                    { q: "ما هو أسرع حيوان بري؟", options: ["النمر", "الفهد", "الحصان"], correct: 1 },
+                    { q: "ما هو أكبر محيط في العالم؟", options: ["الأطلسي", "الهندي", "الهادئ"], correct: 2 },
+                    { q: "مخترع المصباح الكهربائي؟", options: ["أينشتاين", "تسلا", "أديسون"], correct: 2 },
+                    { q: "كم عدد أسنان الإنسان البالغ؟", options: ["28", "32", "30"], correct: 1 },
+                    { q: "ما هو الغاز الذي نتنفسه؟", options: ["النيتروجين", "الأكسجين", "الهيدروجين"], correct: 1 },
+                    { q: "أين تقع الأهرامات؟", options: ["السودان", "المكسيك", "مصر"], correct: 2 },
+                    { q: "ما هي أكبر قارة في العالم؟", options: ["أفريقيا", "آسيا", "أوروبا"], correct: 1 },
+                    { q: "ما هو أصغر كوكب في المجموعة الشمسية؟", options: ["عطارد", "المريخ", "الأرض"], correct: 0 },
+                    { q: "كم عدد ألوان قوس قزح؟", options: ["5", "7", "9"], correct: 1 },
+                    { q: "العضو المسؤول عن تصفية الدم؟", options: ["القلب", "الكبد", "الكلى"], correct: 2 },
+                    { q: "مكتشف الجاذبية الأرضية؟", options: ["نيوتن", "جاليليو", "كوبرنيكوس"], correct: 0 },
+                    { q: "ما هو أقسى عنصر طبيعي؟", options: ["الحديد", "الألماس", "الصخر"], correct: 1 },
+                    { q: "كم عدد أضلاع المثلث؟", options: ["2", "3", "4"], correct: 1 },
+                    { q: "في أي قارة تقع البرازيل؟", options: ["أفريقيا", "أمريكا الجنوبية", "آسيا"], correct: 1 },
+                    { q: "ما هو اسم صغير الأسد؟", options: ["جرو", "شبل", "حمل"], correct: 1 },
+                    { q: "ما هي لغة البرازيل الرسمية؟", options: ["الإسبانية", "البرتغالية", "الإنجليزية"], correct: 1 },
+                    { q: "كم عدد لاعبي فريق كرة القدم؟", options: ["9", "10", "11"], correct: 2 },
+                    { q: "ما هو الطائر الذي لا يطير؟", options: ["النسر", "النعامة", "الصقر"], correct: 1 },
+                    { q: "أين يوجد تمثال الحرية؟", options: ["واشنطن", "نيويورك", "لندن"], correct: 1 },
+                    { q: "ما هو الفيتامين الذي نحصل عليه من الشمس؟", options: ["فيتامين C", "فيتامين D", "فيتامين A"], correct: 1 },
+                    { q: "ما هو أكبر حيوان في العالم؟", options: ["الفيل", "الحوت الأزرق", "الزرافة"], correct: 1 },
+                    { q: "كم ثانية في الدقيقة؟", options: ["30", "60", "100"], correct: 1 },
+                    { q: "ما هي عاصمة إيطاليا؟", options: ["باريس", "مدريد", "روما"], correct: 2 },
+                    { q: "ما هي المادة التي يصنع منها الزجاج؟", options: ["الرمل", "الحديد", "الخشب"], correct: 0 },
+                    { q: "ما هو لون الزمرد؟", options: ["أحمر", "أزرق", "أخضر"], correct: 2 },
+                    { q: "كم عدد شهور السنة؟", options: ["10", "12", "14"], correct: 1 },
+                    { q: "ما هي عاصمة السعودية؟", options: ["جدة", "مكة", "الرياض"], correct: 2 },
+                    { q: "من هو الرسام صاحب لوحة الموناليزا؟", options: ["بيكاسو", "دا فينشي", "فان جوخ"], correct: 1 },
+                    { q: "ما هو الحيوان الذي يسمى سفينة الصحراء؟", options: ["الحصان", "الجمل", "الفيل"], correct: 1 },
+                    { q: "ما هي عاصمة مصر؟", options: ["الإسكندرية", "القاهرة", "أسوان"], correct: 1 },
+                    { q: "ما هو العنصر الذي يمثله الرمز Au؟", options: ["الفضة", "الذهب", "النحاس"], correct: 1 },
+                    { q: "كم عدد ألوان علم الكويت؟", options: ["3", "4", "5"], correct: 1 },
+                    { q: "ما هو أبطأ حيوان في العالم؟", options: ["السلحفاة", "الكسلان", "الحلزون"], correct: 1 },
+                    { q: "ما هي عاصمة الإمارات؟", options: ["دبي", "أبوظبي", "الشارقة"], correct: 1 },
+                    { q: "كم قلب للأخطبوط؟", options: ["1", "2", "3"], correct: 2 },
+                    { q: "ما هي أكبر جزيرة في العالم؟", options: ["مدغشقر", "جرينلاند", "قبرص"], correct: 1 },
+                    { q: "ما هو الكوكب الأقرب للشمس؟", options: ["الزهرة", "عطارد", "المريخ"], correct: 1 },
+                    { q: "ما هو الغاز المستخدم في إطفاء الحرائق؟", options: ["الأكسجين", "ثاني أكسيد الكربون", "الهيدروجين"], correct: 1 },
+                    { q: "ما هو أقرب كوكب للأرض؟", options: ["عطارد", "الزهرة", "المريخ"], correct: 1 },
+                    { q: "كم عدد قارات العالم؟", options: ["5", "6", "7"], correct: 2 }
                 ],
-                movement: ["قم بتمثيل دور 'شيف' يطبخ أكلة غريبة", "حاول لمس أنفك بلسانك"]
+                islamic: [
+                    { q: "أول مؤذن في الإسلام؟", options: ["بلال بن رباح", "عمار بن ياسر", "أبو بكر"], correct: 0 },
+                    { q: "كم عدد سور القرآن الكريم؟", options: ["110", "114", "120"], correct: 1 },
+                    { q: "أطول سورة في القرآن؟", options: ["آل عمران", "البقرة", "النساء"], correct: 1 },
+                    { q: "سورة تسمى عروس القرآن؟", options: ["يس", "الرحمن", "الواقعة"], correct: 1 },
+                    { q: "أول من آمن من الرجال؟", options: ["عمر بن الخطاب", "علي بن أبي طالب", "أبو بكر الصديق"], correct: 2 },
+                    { q: "سورة لا تبدأ بالبسملة؟", options: ["النمل", "التوبة", "هود"], correct: 1 },
+                    { q: "كم عدد سجدات التلاوة؟", options: ["12", "15", "14"], correct: 1 },
+                    { q: "الملقب بسيف الله المسلول؟", options: ["خالد بن الوليد", "حمزة", "علي"], correct: 0 },
+                    { q: "أطول رقم ذكر في القرآن؟", options: ["مئة ألف", "خمسون ألف", "ألف"], correct: 0 },
+                    { q: "كم عدد أركان الإسلام؟", options: ["3", "5", "7"], correct: 1 },
+                    { q: "سورة تعادل ثلث القرآن؟", options: ["الإخلاص", "الفاتحة", "الكهف"], correct: 0 },
+                    { q: "النبي الذي ابتلعه الحوت؟", options: ["يوسف", "يونس", "نوح"], correct: 1 },
+                    { q: "اسم ناقة الرسول ﷺ؟", options: ["القصواء", "العضباء", "الوجناء"], correct: 0 },
+                    { q: "كم عمر النبي ﷺ عند وفاته؟", options: ["60", "63", "65"], correct: 1 },
+                    { q: "أعظم آية في القرآن؟", options: ["آية الكرسي", "آية الدين", "آية المباهلة"], correct: 0 },
+                    { q: "الملقبة بذات النطاقين؟", options: ["خديجة", "أسماء بنت أبي بكر", "عائشة"], correct: 1 },
+                    { q: "عدد الرسل المذكورين بالقرآن؟", options: ["20", "25", "30"], correct: 1 },
+                    { q: "عاصمة الدولة الأموية؟", options: ["بغداد", "دمشق", "المدينة"], correct: 1 },
+                    { q: "الملك الموكل بالوحي؟", options: ["إسرافيل", "ميكائيل", "جبريل"], correct: 2 },
+                    { q: "غزوة جُرح فيها النبي ﷺ؟", options: ["بدر", "أحد", "الخندق"], correct: 1 },
+                    { q: "أول زوجات الرسول ﷺ؟", options: ["عائشة", "سودة", "خديجة"], correct: 2 },
+                    { q: "من هو خاتم الأنبياء؟", options: ["عيسى عليه السلام", "محمد ﷺ", "موسى عليه السلام"], correct: 1 },
+                    { q: "كم عدد أركان الإيمان؟", options: ["5", "6", "7"], correct: 1 },
+                    { q: "ما هي القبلة الأولى؟", options: ["الكعبة", "المسجد الأقصى", "المسجد النبوي"], correct: 1 },
+                    { q: "من هو كليم الله؟", options: ["إبراهيم", "موسى", "عيسى"], correct: 1 },
+                    { q: "في أي مدينة ولد النبي ﷺ؟", options: ["المدينة", "مكة", "الطائف"], correct: 1 },
+                    { q: "ما هو الكتاب المنزل على داود؟", options: ["الإنجيل", "التوراة", "الزبور"], correct: 2 },
+                    { q: "من هو خليل الله؟", options: ["نوح", "إبراهيم", "موسى"], correct: 1 },
+                    { q: "كم عدد الصلوات المفروضة؟", options: ["3", "5", "17"], correct: 1 },
+                    { q: "ما اسم مرضعة النبي ﷺ؟", options: ["حليمة السعدية", "ثويبة", "آمنة"], correct: 0 },
+                    { q: "أين دفن النبي ﷺ؟", options: ["مكة", "المدينة", "القدس"], correct: 1 },
+                    { q: "من هو أول الخلفاء الراشدين؟", options: ["عمر", "أبو بكر", "عثمان"], correct: 1 },
+                    { q: "ما اسم الغار الذي نزل فيه الوحي؟", options: ["ثور", "حراء", "الكهف"], correct: 1 },
+                    { q: "من هو صقر قريش؟", options: ["خالد بن الوليد", "عبد الرحمن الداخل", "أبو عبيدة"], correct: 1 },
+                    { q: "كم عدد أبناء النبي ﷺ؟", options: ["5", "7", "3"], correct: 1 },
+                    { q: "ما هي أقصر سورة في القرآن؟", options: ["الإخلاص", "الكوثر", "الفلق"], correct: 1 },
+                    { q: "من هو أول من هاجر للحيشة؟", options: ["عثمان بن عفان", "جعفر بن أبي طالب", "عمر بن الخطاب"], correct: 0 },
+                    { q: "ما هي السورة التي تسمى قلب القرآن؟", options: ["الفاتحة", "يس", "الرحمن"], correct: 1 },
+                    { q: "كم كان عمر النبي ﷺ عند البعثة؟", options: ["30", "40", "50"], correct: 1 },
+                    { q: "من هو الصحابي الذي اهتز له عرش الرحمن؟", options: ["سعد بن معاذ", "معاذ بن جبل", "بلال"], correct: 0 },
+                    { q: "ما هو اسم خازن الجنة؟", options: ["مالك", "رضوان", "جبريل"], correct: 1 },
+                    { q: "ما هو اسم خازن النار؟", options: ["رضوان", "مالك", "ميكائيل"], correct: 1 },
+                    { q: "كم سنة استمرت الدعوة في مكة؟", options: ["10", "13", "23"], correct: 1 },
+                    { q: "ما هي أعظم سورة في القرآن؟", options: ["يس", "الفاتحة", "البقرة"], correct: 1 },
+                    { q: "من هي أم المساكين؟", options: ["خديجة", "زينب بنت خزيمة", "سودة"], correct: 1 },
+                    { q: "من هو ذو النورين؟", options: ["عثمان بن عفان", "علي بن أبي طالب", "عمر"], correct: 0 },
+                    { q: "كم عدد أولي العزم من الرسل؟", options: ["3", "5", "7"], correct: 1 },
+                    { q: "من هو النبي الذي أُلين له الحديد؟", options: ["سليمان", "داود", "يوسف"], correct: 1 },
+                    { q: "ما هو أول مسجد بُني في الإسلام؟", options: ["المسجد النبوي", "مسجد قباء", "المسجد الحرام"], correct: 1 },
+                    { q: "من هو خطيب الأنبياء؟", options: ["شعيب", "هود", "صالح"], correct: 0 }
+                ],
+                movement: ["قم بتمثيل دور 'طيار' واجه عاصفة", "تحدي السكوات: 15 مرة الآن", "مثل حركة حيوان البطريق لـ 20 ثانية", "حاول الوقوف على يديك (بمساعدة)", "تحدي الثبات: لا تضحك لـ 30 ثانية"]
             },
             children: {
                 brain: [
-                    { q: "كم عدد ألوان قوس قزح؟", options: ["5", "7", "9"], correct: 1 },
-                    { q: "ما هو الحيوان الذي يعيش في البحر وله 8 أرجل؟", options: ["السمكة", "الأخطبوط", "السرطان"], correct: 1 }
+                    { q: "ما هو لون السماء؟", options: ["أحمر", "أزرق", "أخضر"], correct: 1 },
+                    { q: "أي حيوان يعطينا الحليب؟", options: ["الأسد", "البقرة", "الأرنب"], correct: 1 },
+                    { q: "كم عدد أرجل القطة؟", options: ["2", "4", "6"], correct: 1 },
+                    { q: "ما هو لون الموز؟", options: ["أصفر", "أرجواني", "أسود"], correct: 0 },
+                    { q: "حيوان يقول (مواء)؟", options: ["الكلب", "القطة", "البطة"], correct: 1 }
                 ],
-                movement: ["اقفز مثل الكنغر", "قلد صوت الأسد بقوة"]
+                movement: ["اقفز مثل الضفدع 5 مرات", "المس أذنيك بيديك المتقاطعتين", "در حول نفسك مرتين", "المس أصابع قدميك", "قلد صوت العصفور"]
             }
         };
 
-        let myRole = ''; let myName = ''; let currentSection = ''; let currentType = ''; let currentIndex = -1;
-        let questionStartTime = 0;
+        let myRole = ''; let myName = ''; let currentSection = ''; let currentType = ''; 
+        let currentQuestions = []; let currentIndex = -1;
+
+        window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
+        window.verifyHost = () => {
+            if(document.getElementById('host-pin').value === '1234') {
+                document.getElementById('host-auth').classList.add('hidden');
+                setRole('host');
+            } else { alert("رمز خاطئ!"); }
+        };
 
         window.setRole = (role) => {
             myRole = role;
             if (role === 'player') {
                 myName = document.getElementById('player-name-input').value.trim();
-                if (!myName) return alert("أدخل اسمك");
+                if (!myName) return alert("أدخل اسمك أولاً");
             }
             document.getElementById('setup-screen').classList.add('hidden');
             if (role === 'host') {
@@ -135,39 +252,62 @@
             }
         };
 
-        window.chooseSection = (s) => { currentSection = s; document.getElementById('section-select').classList.add('hidden'); document.getElementById('type-select').classList.remove('hidden'); };
-        window.chooseType = (t) => { currentType = t; document.getElementById('type-select').classList.add('hidden'); document.getElementById('game-play').classList.remove('hidden'); document.getElementById('host-view').classList.remove('hidden'); };
+        window.chooseSection = (s) => { 
+            currentSection = s; 
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('type-select').classList.remove('hidden');
+            
+            const brainMenu = document.getElementById('brain-sub-menu');
+            if(s === 'adults') {
+                brainMenu.innerHTML = `
+                    <div class="text-teal-400 font-bold mb-1 text-sm">ألعاب ذهنية للكبار:</div>
+                    <button onclick="setupQuestions('culture')" class="w-full p-4 btn-purple rounded-xl font-bold mb-2">ثقافة عامة وعلوم</button>
+                    <button onclick="setupQuestions('islamic')" class="w-full p-4 btn-purple rounded-xl font-bold mb-2">أسئلة إسلامية</button>
+                `;
+            } else {
+                brainMenu.innerHTML = `<button onclick="setupQuestions('brain')" class="w-full p-4 btn-purple rounded-xl font-bold">ذكاء الأطفال</button>`;
+            }
+        };
+
+        window.setupQuestions = (type) => {
+            currentType = 'brain';
+            const fullBank = gameData[currentSection][type];
+            // Randomly pick 7 questions
+            currentQuestions = fullBank.sort(() => 0.5 - Math.random()).slice(0, 7);
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+        };
+
+        window.chooseType = (t) => {
+            currentType = t;
+            currentQuestions = gameData[currentSection][t];
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+        };
 
         window.triggerNext = () => {
             currentIndex++;
-            const dataSet = gameData[currentSection][currentType];
             remove(answersRef);
-            
-            if (currentIndex < dataSet.length) {
-                const item = dataSet[currentIndex];
-                set(liveRef, { 
-                    type: currentType, 
-                    content: item, 
-                    startTime: Date.now(), 
-                    status: 'playing' 
-                });
+            if (currentIndex < currentQuestions.length) {
+                const item = currentQuestions[currentIndex];
+                set(liveRef, { type: currentType, content: item, startTime: Date.now(), status: 'playing', qIdx: currentIndex });
                 renderHost(item);
                 listenForAnswers();
-            } else {
-                announceWinner();
-            }
+            } else { announceWinner(); }
         };
 
         function renderHost(item) {
             document.getElementById('display-title').innerText = (currentType === 'brain') ? item.q : "تحدي الحركة";
-            document.getElementById('display-content').innerHTML = (currentType === 'brain') ? item.options.map(opt => `<div class='p-3 bg-slate-800 rounded-lg border border-slate-700'>${opt}</div>`).join('') : `<p class='text-2xl text-teal-400 text-center font-bold'>${item}</p>`;
+            document.getElementById('display-content').innerHTML = (currentType === 'brain') ? item.options.map(opt => `<div class='p-3 bg-slate-800 rounded-lg border border-slate-700 text-center'>${opt}</div>`).join('') : `<p class='text-2xl text-teal-400 text-center font-bold'>${item}</p>`;
             document.getElementById('action-btn').innerText = "السؤال التالي";
         }
 
         function listenForAnswers() {
             onValue(answersRef, (snap) => {
                 const count = snap.val() ? Object.keys(snap.val()).length : 0;
-                document.getElementById('answer-counter').innerText = `الإجابات المستلمة: ${count}`;
+                document.getElementById('answer-counter').innerText = `الإجابات: ${count}`;
             });
         }
 
@@ -175,18 +315,12 @@
             const snap = await get(scoresRef);
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-            const winnerName = sorted.length > 0 ? sorted[0][0] : "الجميع";
-            
-            set(liveRef, { status: 'finished', winner: winnerName });
-            
-            document.getElementById('display-title').innerText = "🏆 الفائز هو 🏆";
-            document.getElementById('display-content').innerHTML = `<h1 class="text-5xl font-bold text-yellow-400 winner-anim text-center">${winnerName}</h1>`;
-            
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = sorted.map(([name, val]) => `<div class="flex justify-between p-2 bg-slate-800 mb-1 rounded"><span>${name}</span><span class="text-teal-400 font-bold">${Math.round(val)} نقطة</span></div>`).join('');
+            set(liveRef, { status: 'finished', winner: sorted.length ? sorted[0][0] : "لا يوجد" });
+            document.getElementById('display-title').innerText = "🏆 النتائج النهائية 🏆";
+            document.getElementById('display-content').innerHTML = `<h1 class="text-4xl font-bold text-yellow-400 winner-anim text-center">${sorted.length ? sorted[0][0] : "انتهت اللعبة"}</h1>`;
+            document.getElementById('leaderboard-list').innerHTML = sorted.map(([name, val]) => `<div class="flex justify-between p-2 bg-slate-800 mb-1 rounded"><span>${name}</span><span class="text-teal-400 font-bold">${Math.round(val)} نقطة</span></div>`).join('');
             document.getElementById('leaderboard-ui').classList.remove('hidden');
             document.getElementById('action-btn').classList.add('hidden');
-            
             confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
         }
 
@@ -195,7 +329,7 @@
                 const data = snap.val(); if (!data) return;
                 const area = document.getElementById('player-input-area');
                 if (data.status === 'finished') {
-                    area.innerHTML = (data.winner === myName) ? "<h1 class='text-3xl text-yellow-400 font-bold winner-anim'>لقد فزت! 🏆</h1>" : `<p class='text-slate-400'>الفائز هو: ${data.winner}</p>`;
+                    area.innerHTML = (data.winner === myName) ? "<h1 class='text-3xl text-yellow-400 font-bold'>لقد فزت! 🏆</h1>" : `<p class='text-slate-400'>انتهت اللعبة! الفائز: ${data.winner}</p>`;
                     return;
                 }
                 document.getElementById('player-q-text').innerText = (data.type === 'brain') ? data.content.q : "اتبع تعليمات المضيف!";
@@ -209,13 +343,11 @@
             set(ref(db, `current_answers/${myName}`), true);
             if (idx === correct) {
                 const timeTaken = (Date.now() - startTime) / 1000;
-                const speedBonus = Math.max(0, 10 - timeTaken); 
-                const totalPoints = 10 + speedBonus;
-                
+                const totalPoints = 10 + Math.max(0, 10 - timeTaken);
                 const myScoreRef = ref(db, `scores/${myName}`);
                 get(myScoreRef).then(s => set(myScoreRef, (s.val() || 0) + totalPoints));
             }
-            document.getElementById('player-input-area').innerHTML = "<p class='text-teal-500 font-bold animate-pulse'>تم الاستلام! انتظر السؤال التالي...</p>";
+            document.getElementById('player-input-area').innerHTML = "<p class='text-teal-500 font-bold animate-pulse text-center'>تم الاستلام!</p>";
         };
     </script>
 </body>
