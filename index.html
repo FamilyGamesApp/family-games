@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ألعاب العائلة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .bg-slate-card { background-color: #1e293b; }
+        .btn-teal { background-color: #14b8a6; }
+        .btn-purple { background-color: #a855f7; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-4">
+
+    <div id="app" class="max-w-md mx-auto w-full text-center py-10">
+        <h1 class="text-4xl font-bold mb-8 text-teal-400">ألعاب العائلة</h1>
+        
+        <div id="setup-screen" class="space-y-6">
+            <button onclick="startSession('host')" class="w-full btn-teal text-white p-6 rounded-2xl text-2xl font-bold shadow-lg">
+                أنا شاشة العرض (TV / Host)
+            </button>
+            <button onclick="startSession('player')" class="w-full bg-slate-card text-white p-6 rounded-2xl text-2xl font-bold shadow-md border border-slate-700">
+                أنا لاعب (الجوال)
+            </button>
+        </div>
+
+        <div id="game-content" class="hidden">
+            <p id="status-msg" class="text-slate-400 mt-4"></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Your Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
+            authDomain: "family-games-app.firebaseapp.com",
+            databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "family-games-app",
+            storageBucket: "family-games-app.firebasestorage.app",
+            messagingSenderId: "290150126558",
+            appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.startSession = function(role) {
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-content').classList.remove('hidden');
+            
+            if (role === 'host') {
+                setupHost();
+            } else {
+                setupPlayer();
+            }
+        };
+
+        function setupHost() {
+            document.getElementById('status-msg').innerText = "في انتظار اللاعبين...";
+            // Logic to listen for player answers and show questions
+            const gameRef = ref(db, 'current_game');
+            onValue(gameRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) renderHostUI(data);
+            });
+        }
+
+        function setupPlayer() {
+            document.getElementById('status-msg').innerText = "تم الاتصال. بانتظار السؤال...";
+            // Logic to send answers to Firebase
+        }
+
+        function renderHostUI(data) {
+            // Update the screen with question data
+        }
+    </script>
+</body>
+</html>
