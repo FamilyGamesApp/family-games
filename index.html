@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ألعاب العائلة - النسخة النهائية</title>
+    <title>ألعاب العائلة - النسخة المتطورة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; }
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
@@ -30,32 +30,42 @@
         </div>
 
         <div id="section-select" class="hidden space-y-4">
-            <h2 class="text-2xl font-bold mb-6">اختر القسم</h2>
+            <h2 class="text-2xl font-bold mb-6 text-slate-400">اختر الفئة</h2>
             <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-xl text-xl font-bold">قسم الكبار</button>
             <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-xl text-xl font-bold">قسم الأطفال</button>
         </div>
 
-        <div id="type-select" class="hidden space-y-4">
-            <h2 class="text-2xl font-bold mb-6">نوع اللعبة</h2>
-            <button onclick="chooseType('brain')" class="w-full p-6 btn-purple rounded-xl text-xl font-bold">ألعاب ذهنية</button>
-            <button onclick="chooseType('movement')" class="w-full p-6 btn-teal rounded-xl text-xl font-bold">ألعاب حركية</button>
+        <div id="type-select" class="hidden space-y-4 text-right">
+            <h2 class="text-2xl font-bold mb-6 text-center text-slate-400">اختر اللعبة</h2>
+            
+            <div class="text-teal-400 font-bold mb-2">ألعاب ذهنية:</div>
+            <button onclick="chooseType('brain')" class="w-full p-4 btn-purple rounded-xl font-bold mb-2">اللعبة الثقافية (متوفرة)</button>
+            <button class="w-full p-4 bg-slate-800 text-slate-500 rounded-xl font-bold mb-4 cursor-not-allowed border border-dashed border-slate-600" disabled>لعبة لغز الكلمات (قريباً)</button>
+
+            <div class="text-purple-400 font-bold mb-2">ألعاب حركية:</div>
+            <button onclick="chooseType('movement')" class="w-full p-4 btn-teal rounded-xl font-bold mb-2">تحدي الحركة (متوفرة)</button>
+            <button class="w-full p-4 bg-slate-800 text-slate-500 rounded-xl font-bold cursor-not-allowed border border-dashed border-slate-600" disabled>تحدي التقليد (قريباً)</button>
         </div>
 
         <div id="game-play" class="hidden">
             <div id="host-view" class="hidden space-y-4 text-right">
+                <div class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <span id="answer-counter" class="text-teal-400 font-bold">الإجابات المستلمة: 0</span>
+                </div>
+
                 <div id="host-display" class="bg-slate-card p-6 rounded-2xl border border-slate-700">
-                    <h2 id="display-title" class="text-2xl font-bold mb-4 text-teal-300">...</h2>
+                    <h2 id="display-title" class="text-2xl font-bold mb-4 text-teal-300 text-center">...</h2>
                     <div id="display-content" class="text-lg space-y-2"></div>
                 </div>
                 
-                <div id="leaderboard-ui" class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <h3 class="text-sm font-bold text-slate-500 mb-2 border-b border-slate-800 pb-1">لوحة النتائج</h3>
+                <div id="leaderboard-ui" class="hidden bg-slate-900 p-4 rounded-xl border border-teal-500">
+                    <h3 class="text-lg font-bold text-teal-400 mb-2 border-b border-slate-800 pb-1 text-center font-bold">النتائج النهائية</h3>
                     <div id="leaderboard-list" class="space-y-1"></div>
                 </div>
 
                 <div class="flex flex-col gap-3">
                     <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-4 rounded-xl font-bold">ابدأ</button>
-                    <button onclick="location.reload()" class="text-xs text-slate-600">إنهاء اللعبة</button>
+                    <button onclick="location.reload()" class="text-xs text-slate-600 text-center">إنهاء والعودة للرئيسية</button>
                 </div>
             </div>
 
@@ -70,9 +80,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // --- CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
             authDomain: "family-games-app.firebaseapp.com",
@@ -87,28 +96,28 @@
         const db = getDatabase(app);
         const liveRef = ref(db, 'live_game');
         const scoresRef = ref(db, 'scores');
+        const answersRef = ref(db, 'current_answers');
 
-        // --- GAME DATA ---
         const gameData = {
             adults: {
                 brain: [
-                    { q: "ما هو الكوكب الأحمر؟", options: ["المريخ", "المشتري", "زحل"], correct: 0 },
-                    { q: "كم عدد سجدات التلاوة في القرآن؟", options: ["12", "15", "14"], correct: 1 }
+                    { q: "ما هو أطول نهر في العالم؟", options: ["الأمازون", "النيل", "الميسيسيبي"], correct: 1 },
+                    { q: "في أي مدينة يقع برج إيفل؟", options: ["لندن", "باريس", "برلين"], correct: 1 }
                 ],
-                movement: ["اقفز على قدم واحدة 10 مرات", "مثل حركات الملاكمة لمدة 20 ثانية"]
+                movement: ["قم بتمثيل دور 'شيف' يطبخ أكلة غريبة", "حاول لمس أنفك بلسانك"]
             },
             children: {
                 brain: [
-                    { q: "ما هو لون الفراولة؟", options: ["أزرق", "أحمر", "أصفر"], correct: 1 },
-                    { q: "كم عدد أصابع اليد الواحدة؟", options: ["4", "5", "6"], correct: 1 }
+                    { q: "كم عدد ألوان قوس قزح؟", options: ["5", "7", "9"], correct: 1 },
+                    { q: "ما هو الحيوان الذي يعيش في البحر وله 8 أرجل؟", options: ["السمكة", "الأخطبوط", "السرطان"], correct: 1 }
                 ],
-                movement: ["طِر مثل العصفور", "امشِ مثل البطة"]
+                movement: ["اقفز مثل الكنغر", "قلد صوت الأسد بقوة"]
             }
         };
 
         let myRole = ''; let myName = ''; let currentSection = ''; let currentType = ''; let currentIndex = -1;
+        let questionStartTime = 0;
 
-        // --- INITIALIZATION ---
         window.setRole = (role) => {
             myRole = role;
             if (role === 'player') {
@@ -117,7 +126,7 @@
             }
             document.getElementById('setup-screen').classList.add('hidden');
             if (role === 'host') {
-                remove(scoresRef); // Reset scores for new game
+                remove(scoresRef);
                 document.getElementById('section-select').classList.remove('hidden');
             } else {
                 document.getElementById('game-play').classList.remove('hidden');
@@ -127,78 +136,86 @@
         };
 
         window.chooseSection = (s) => { currentSection = s; document.getElementById('section-select').classList.add('hidden'); document.getElementById('type-select').classList.remove('hidden'); };
-        window.chooseType = (t) => { currentType = t; document.getElementById('type-select').classList.add('hidden'); document.getElementById('game-play').classList.remove('hidden'); document.getElementById('host-view').classList.remove('hidden'); listenForScores(); };
+        window.chooseType = (t) => { currentType = t; document.getElementById('type-select').classList.add('hidden'); document.getElementById('game-play').classList.remove('hidden'); document.getElementById('host-view').classList.remove('hidden'); };
 
-        // --- HOST LOGIC ---
         window.triggerNext = () => {
             currentIndex++;
             const dataSet = gameData[currentSection][currentType];
+            remove(answersRef);
+            
             if (currentIndex < dataSet.length) {
                 const item = dataSet[currentIndex];
-                set(liveRef, { type: currentType, content: item, index: currentIndex, status: 'playing' });
+                set(liveRef, { 
+                    type: currentType, 
+                    content: item, 
+                    startTime: Date.now(), 
+                    status: 'playing' 
+                });
                 renderHost(item);
+                listenForAnswers();
             } else {
                 announceWinner();
             }
         };
 
         function renderHost(item) {
-            document.getElementById('display-title').innerText = (currentType === 'brain') ? item.q : "استعد للحركة!";
-            document.getElementById('display-content').innerHTML = (currentType === 'brain') ? item.options.map(opt => `<div class='p-2 bg-slate-800 rounded'>${opt}</div>`).join('') : `<p class='text-2xl text-teal-400'>${item}</p>`;
-            document.getElementById('action-btn').innerText = "التالي";
+            document.getElementById('display-title').innerText = (currentType === 'brain') ? item.q : "تحدي الحركة";
+            document.getElementById('display-content').innerHTML = (currentType === 'brain') ? item.options.map(opt => `<div class='p-3 bg-slate-800 rounded-lg border border-slate-700'>${opt}</div>`).join('') : `<p class='text-2xl text-teal-400 text-center font-bold'>${item}</p>`;
+            document.getElementById('action-btn').innerText = "السؤال التالي";
         }
 
-        function listenForScores() {
-            onValue(scoresRef, (snap) => {
-                const scores = snap.val() || {};
-                const list = document.getElementById('leaderboard-list');
-                list.innerHTML = Object.entries(scores).sort((a,b) => b[1]-a[1]).map(([name, val]) => `<div class="flex justify-between"><span>${name}</span><span class="text-teal-400">${val}</span></div>`).join('');
+        function listenForAnswers() {
+            onValue(answersRef, (snap) => {
+                const count = snap.val() ? Object.keys(snap.val()).length : 0;
+                document.getElementById('answer-counter').innerText = `الإجابات المستلمة: ${count}`;
             });
         }
 
         async function announceWinner() {
             const snap = await get(scoresRef);
             const scores = snap.val() || {};
-            const winner = Object.entries(scores).sort((a,b) => b[1]-a[1])[0];
-            const winnerName = winner ? winner[0] : "الجميع";
+            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+            const winnerName = sorted.length > 0 ? sorted[0][0] : "الجميع";
             
             set(liveRef, { status: 'finished', winner: winnerName });
+            
             document.getElementById('display-title').innerText = "🏆 الفائز هو 🏆";
-            document.getElementById('display-content').innerHTML = `<h1 class="text-5xl font-bold text-yellow-400 winner-anim">${winnerName}</h1>`;
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            document.getElementById('display-content').innerHTML = `<h1 class="text-5xl font-bold text-yellow-400 winner-anim text-center">${winnerName}</h1>`;
+            
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = sorted.map(([name, val]) => `<div class="flex justify-between p-2 bg-slate-800 mb-1 rounded"><span>${name}</span><span class="text-teal-400 font-bold">${Math.round(val)} نقطة</span></div>`).join('');
+            document.getElementById('leaderboard-ui').classList.remove('hidden');
+            document.getElementById('action-btn').classList.add('hidden');
+            
+            confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
         }
 
-        // --- PLAYER LOGIC ---
         function listenForGame() {
             onValue(liveRef, (snap) => {
                 const data = snap.val(); if (!data) return;
                 const area = document.getElementById('player-input-area');
-                
                 if (data.status === 'finished') {
-                    if (data.winner === myName) {
-                        area.innerHTML = "<h1 class='text-3xl text-yellow-400 font-bold winner-anim'>لقد فزت! 🏆</h1>";
-                        confetti();
-                    } else {
-                        area.innerHTML = `<p class='text-slate-400'>انتهت اللعبة! الفائز هو: ${data.winner}</p>`;
-                    }
+                    area.innerHTML = (data.winner === myName) ? "<h1 class='text-3xl text-yellow-400 font-bold winner-anim'>لقد فزت! 🏆</h1>" : `<p class='text-slate-400'>الفائز هو: ${data.winner}</p>`;
                     return;
                 }
-
-                document.getElementById('player-q-text').innerText = (data.type === 'brain') ? data.content.q : "انظر إلى الشاشة!";
+                document.getElementById('player-q-text').innerText = (data.type === 'brain') ? data.content.q : "اتبع تعليمات المضيف!";
                 if (data.type === 'brain') {
-                    area.innerHTML = data.content.options.map((opt, i) => `<button onclick="submitAnswer(${i}, ${data.content.correct})" class="p-4 btn-teal rounded-xl font-bold">${opt}</button>`).join('');
-                } else {
-                    area.innerHTML = "<p class='text-teal-400'>استعد للحركة!</p>";
-                }
+                    area.innerHTML = data.content.options.map((opt, i) => `<button onclick="submitAnswer(${i}, ${data.content.correct}, ${data.startTime})" class="p-4 btn-teal rounded-xl font-bold active:scale-95 transition-all">${opt}</button>`).join('');
+                } else { area.innerHTML = "<p class='text-teal-400 text-center font-bold'>استعد!</p>"; }
             });
         }
 
-        window.submitAnswer = (idx, correct) => {
+        window.submitAnswer = (idx, correct, startTime) => {
+            set(ref(db, `current_answers/${myName}`), true);
             if (idx === correct) {
+                const timeTaken = (Date.now() - startTime) / 1000;
+                const speedBonus = Math.max(0, 10 - timeTaken); 
+                const totalPoints = 10 + speedBonus;
+                
                 const myScoreRef = ref(db, `scores/${myName}`);
-                get(myScoreRef).then(s => set(myScoreRef, (s.val() || 0) + 10));
+                get(myScoreRef).then(s => set(myScoreRef, (s.val() || 0) + totalPoints));
             }
-            document.getElementById('player-input-area').innerHTML = "<p class='text-teal-500'>تم الإرسال!</p>";
+            document.getElementById('player-input-area').innerHTML = "<p class='text-teal-500 font-bold animate-pulse'>تم الاستلام! انتظر السؤال التالي...</p>";
         };
     </script>
 </body>
