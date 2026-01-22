@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ألعاب العائلة</title>
+    <title>تطبيق ألعاب العائلة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
-        .transition-all { transition: all 0.3s ease; }
+        .transition-all { transition: all 0.2s ease; }
+        .hidden { display: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col p-4">
@@ -20,36 +21,50 @@
         <h1 class="text-4xl font-bold mb-8 text-teal-400">ألعاب العائلة</h1>
         
         <div id="setup-screen" class="space-y-6">
-            <button onclick="startSession('host')" class="w-full btn-teal text-white p-6 rounded-2xl text-2xl font-bold shadow-lg transition-all active:scale-95">
-                أنا شاشة العرض (TV / Host)
-            </button>
-            <button onclick="startSession('player')" class="w-full bg-slate-card text-white p-6 rounded-2xl text-2xl font-bold shadow-md border border-slate-700 transition-all active:scale-95">
-                أنا لاعب (الجوال)
-            </button>
+            <button onclick="setRole('host')" class="w-full btn-teal text-white p-6 rounded-2xl text-2xl font-bold shadow-lg transition-all active:scale-95">أنا شاشة العرض (Host)</button>
+            <div class="space-y-2">
+                <input id="player-name-input" type="text" placeholder="أدخل اسمك..." class="w-full p-4 rounded-xl bg-slate-800 border border-slate-600 text-center text-white">
+                <button onclick="setRole('player')" class="w-full bg-slate-card text-white p-6 rounded-2xl text-2xl font-bold border border-slate-700">أنا لاعب (جوال)</button>
+            </div>
         </div>
 
-        <div id="game-content" class="hidden">
-            <div id="host-view" class="hidden space-y-6">
-                <div class="bg-slate-card p-6 rounded-2xl border border-slate-700">
-                    <h2 id="question-text" class="text-2xl font-bold mb-4">بانتظار بدء اللعبة...</h2>
-                    <div id="options-list" class="grid grid-cols-1 gap-3"></div>
+        <div id="section-select" class="hidden space-y-4">
+            <h2 class="text-2xl font-bold mb-6">اختر القسم</h2>
+            <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-xl text-xl font-bold">قسم الكبار</button>
+            <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-xl text-xl font-bold">قسم الأطفال</button>
+        </div>
+
+        <div id="type-select" class="hidden space-y-4">
+            <h2 class="text-2xl font-bold mb-6">نوع اللعبة</h2>
+            <button onclick="chooseType('brain')" class="w-full p-6 btn-purple rounded-xl text-xl font-bold">ألعاب ذهنية (تفاعلية)</button>
+            <button onclick="chooseType('movement')" class="w-full p-6 btn-teal rounded-xl text-xl font-bold">ألعاب حركية (تعليمات)</button>
+        </div>
+
+        <div id="game-play" class="hidden">
+            <div id="host-view" class="hidden space-y-4">
+                <div id="host-display" class="bg-slate-card p-8 rounded-2xl border border-slate-700 min-h-[200px] flex flex-col justify-center">
+                    <h2 id="display-title" class="text-2xl font-bold mb-4 text-teal-300">بانتظار البدء...</h2>
+                    <div id="display-content" class="text-lg space-y-2"></div>
                 </div>
-                <button id="start-btn" onclick="nextQuestion()" class="w-full btn-purple p-4 rounded-xl font-bold">ابدأ السؤال الأول</button>
+                <div id="host-controls" class="flex flex-col gap-3">
+                    <p id="answer-count" class="text-sm text-slate-400">الإجابات المستلمة: 0</p>
+                    <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-4 rounded-xl font-bold">ابدأ</button>
+                    <button onclick="location.reload()" class="text-sm text-slate-500 underline">العودة للرئيسية</button>
+                </div>
             </div>
 
             <div id="player-view" class="hidden space-y-4">
-                <p class="text-slate-400">اختر الإجابة الصحيحة:</p>
-                <div id="player-buttons" class="grid grid-cols-1 gap-4">
-                    </div>
+                <div class="bg-slate-800 p-4 rounded-xl border border-teal-900">
+                    <h2 id="player-question-text" class="font-bold text-lg text-teal-200 italic">انتظر المضيف لبدء اللعبة...</h2>
+                </div>
+                <div id="player-input-area" class="grid grid-cols-1 gap-4"></div>
             </div>
-            
-            <p id="status-msg" class="text-slate-500 mt-8 text-sm italic"></p>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
@@ -63,62 +78,129 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const gameRef = ref(db, 'live_game');
+        const liveRef = ref(db, 'live_game');
+        const answersRef = ref(db, 'answers');
 
-        const questions = [
-            { q: "ما هي عاصمة المملكة العربية السعودية؟", options: ["جدة", "الرياض", "الدمام", "مكة"], correct: 1 },
-            { q: "كم عدد قارات العالم؟", options: ["5", "6", "7", "8"], correct: 2 }
-        ];
+        const gameData = {
+            adults: {
+                brain: [
+                    { q: "ما هي أكبر صحراء في العالم؟", options: ["الصحراء الكبرى", "أنتاركتيكا", "الربع الخالي", "غوبي"], correct: 1 },
+                    { q: "ما هو العنصر الكيميائي الذي رمزه O؟", options: ["الذهب", "الحديد", "الأكسجين", "النحاس"], correct: 2 },
+                    { q: "من هو مخترع المصباح الكهربائي؟", options: ["نيوتن", "أينشتاين", "أديسون", "تسلا"], correct: 2 },
+                    { q: "كم عدد أضلاع المثلث؟", options: ["2", "3", "4", "5"], correct: 1 },
+                    { q: "ما هي عاصمة اليابان؟", options: ["سيول", "بكين", "طوكيو", "هانوي"], correct: 2 }
+                ],
+                movement: ["قم بتمثيل مهنة الطبيب بدون كلام لمدة دقيقة", "اقفز 20 مرة في مكانك", "تحدي الثبات: قف على رجل واحدة لمدة 30 ثانية", "قلد صوت 3 حيوانات مختلفة"]
+            },
+            children: {
+                brain: [
+                    { q: "ما لون الموز؟", options: ["أحمر", "أصفر", "أزرق"], correct: 1 },
+                    { q: "كم عدد أرجل القطة؟", options: ["2", "4", "6"], correct: 1 },
+                    { q: "ما هو الحيوان الذي يقول (مواء)؟", options: ["الكلب", "الأسد", "القطة"], correct: 2 },
+                    { q: "ما هي الفاكهة التي تشبه شكل القلب ولونها أحمر؟", options: ["الفراولة", "العنب", "الموز"], correct: 0 },
+                    { q: "السماء لونها...؟", options: ["أخضر", "أزرق", "أرجواني"], correct: 1 }
+                ],
+                movement: ["اقفز مثل الأرنب 5 مرات", "قلد صوت العصفور", "المس أصابع قدميك بدون ثني ركبتيك", "در حول نفسك مرتين"]
+            }
+        };
 
-        let currentQIndex = -1;
+        let myRole = '';
+        let myName = '';
+        let currentSection = '';
+        let currentType = '';
+        let currentIndex = -1;
 
-        window.startSession = (role) => {
+        window.setRole = (role) => {
+            myRole = role;
+            if (role === 'player') {
+                myName = document.getElementById('player-name-input').value.trim();
+                if (!myName) return alert("أدخل اسمك أولاً");
+            }
             document.getElementById('setup-screen').classList.add('hidden');
-            document.getElementById('game-content').classList.remove('hidden');
-            
-            if (role === 'host') {
-                document.getElementById('host-view').classList.remove('hidden');
-                document.getElementById('status-msg').innerText = "وضع شاشة العرض";
-            } else {
+            if (role === 'host') document.getElementById('section-select').classList.remove('hidden');
+            else {
+                document.getElementById('game-play').classList.remove('hidden');
                 document.getElementById('player-view').classList.remove('hidden');
-                document.getElementById('status-msg').innerText = "وضع اللاعب";
-                listenForQuestions();
+                listenForGameUpdate();
             }
         };
 
-        // HOST LOGIC
-        window.nextQuestion = () => {
-            currentQIndex++;
-            if(currentQIndex < questions.length) {
-                set(gameRef, {
-                    index: currentQIndex,
-                    question: questions[currentQIndex].q,
-                    options: questions[currentQIndex].options
+        window.chooseSection = (s) => {
+            currentSection = s;
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('type-select').classList.remove('hidden');
+        };
+
+        window.chooseType = (t) => {
+            currentType = t;
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+            listenForAnswers();
+        };
+
+        window.triggerNext = () => {
+            currentIndex++;
+            const dataSet = gameData[currentSection][currentType];
+            
+            if (currentIndex < dataSet.length) {
+                const item = dataSet[currentIndex];
+                set(liveRef, { 
+                    type: currentType, 
+                    content: item, 
+                    index: currentIndex 
                 });
-                renderHostQuestion(questions[currentQIndex]);
-                document.getElementById('start-btn').innerText = "السؤال التالي";
+                remove(answersRef);
+                renderHost(item);
             } else {
-                set(gameRef, { status: "finished" });
-                document.getElementById('question-text').innerText = "انتهت اللعبة!";
+                set(liveRef, { status: 'finished' });
+                document.getElementById('display-title').innerText = "انتهت اللعبة!";
             }
         };
 
-        function renderHostQuestion(data) {
-            document.getElementById('question-text').innerText = data.q;
-            const list = document.getElementById('options-list');
-            list.innerHTML = data.options.map(opt => `<div class="p-3 bg-slate-800 rounded-lg border border-slate-600">${opt}</div>`).join('');
+        function renderHost(item) {
+            const title = document.getElementById('display-title');
+            const content = document.getElementById('display-content');
+            if (currentType === 'brain') {
+                title.innerText = item.q;
+                content.innerHTML = item.options.map((opt, i) => `<div class="p-3 bg-slate-800 rounded border border-slate-600">${opt}</div>`).join('');
+            } else {
+                title.innerText = "تعليمات الحركة:";
+                content.innerHTML = `<p class='text-2xl text-teal-400'>${item}</p>`;
+            }
+            document.getElementById('action-btn').innerText = "التالي";
         }
 
-        // PLAYER LOGIC
-        function listenForQuestions() {
-            onValue(gameRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.options) {
-                    const btnContainer = document.getElementById('player-buttons');
-                    btnContainer.innerHTML = data.options.map((opt, i) => 
-                        `<button onclick="alert('تم إرسال الإجابة!')" class="p-5 btn-teal rounded-xl text-xl font-bold shadow-md active:bg-teal-700">${opt}</button>`
-                    ).join('');
+        function listenForGameUpdate() {
+            onValue(liveRef, (snap) => {
+                const data = snap.val();
+                if (!data) return;
+                const area = document.getElementById('player-input-area');
+                if (data.status === 'finished') {
+                    area.innerHTML = "<p>انتهت الجولة!</p>";
+                    return;
                 }
+                document.getElementById('player-question-text').innerText = (data.type === 'brain') ? data.content.q : "اتبع التعليمات على الشاشة!";
+                
+                if (data.type === 'brain') {
+                    area.innerHTML = data.content.options.map((opt, i) => 
+                        `<button onclick="submitAnswer(${i}, ${data.content.correct})" class="p-4 btn-teal rounded-xl font-bold">${opt}</button>`
+                    ).join('');
+                } else {
+                    area.innerHTML = "<p class='text-teal-400'>لعبة حركية: استعد!</p>";
+                }
+            });
+        }
+
+        window.submitAnswer = (idx, correct) => {
+            set(ref(db, `answers/${myName}`), { correct: (idx === correct) });
+            document.getElementById('player-input-area').innerHTML = "<p class='text-teal-500'>تم الإرسال!</p>";
+        };
+
+        function listenForAnswers() {
+            onValue(answersRef, (snap) => {
+                const count = snap.val() ? Object.keys(snap.val()).length : 0;
+                document.getElementById('answer-count').innerText = `الإجابات المستلمة: ${count}`;
             });
         }
     </script>
