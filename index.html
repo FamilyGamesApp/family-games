@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ألعاب العائلة - النسخة النهائية</title>
+    <title>ألعاب العائلة - Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
@@ -46,34 +46,34 @@
         </div>
 
         <div id="type-select" class="hidden space-y-4">
-            <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center">
-                <span>تفعيل مؤقت السؤال</span>
+            <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center text-sm">
+                <span>تفعيل مؤقت السؤال (15ث)</span>
                 <input type="checkbox" id="timer-enabled" class="w-6 h-6 accent-teal-500">
             </div>
             <div id="brain-sub-menu" class="space-y-3"></div>
-            <button onclick="setupTwisters()" class="w-full p-6 bg-orange-600 rounded-2xl font-bold">تلاعب لفظي 👅</button>
+            <button onclick="setupTwisters()" class="w-full p-6 bg-orange-600 rounded-2xl font-bold shadow-lg">تلاعب لفظي 👅</button>
             <button onclick="chooseType('movement')" class="w-full p-4 btn-teal rounded-2xl font-bold mt-4">تحدي الحركة</button>
         </div>
 
         <div id="game-play" class="hidden">
             <div id="host-view" class="hidden space-y-4">
                 <div class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
-                    <span id="answer-counter" class="text-teal-400 font-bold">بانتظار اللاعبين...</span>
-                    <button onclick="goHome()" class="text-xs text-red-400">إنهاء ✖</button>
+                    <span id="answer-counter" class="text-teal-400 font-bold">بانتظار الإجابات...</span>
+                    <button onclick="goHome()" class="text-xs text-red-400 underline">إنهاء</button>
                 </div>
                 
                 <div id="timer-container" class="hidden w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                     <div id="timer-progress" class="timer-bar bg-teal-400 h-full w-full"></div>
                 </div>
                 
-                <div id="host-display" class="bg-slate-card p-8 rounded-3xl border border-slate-700 min-h-[200px] flex flex-col justify-center">
+                <div id="host-display" class="bg-slate-card p-8 rounded-3xl border border-slate-700 min-h-[220px] flex flex-col justify-center">
                     <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور على: <span id="current-player-name">---</span></div>
                     <h2 id="display-title" class="text-2xl font-bold mb-4">...</h2>
                     <div id="display-content" class="space-y-2 text-right"></div>
                 </div>
 
                 <div id="host-controls">
-                    <div id="twister-scoring" class="hidden bg-slate-800 p-4 rounded-xl mb-4">
+                    <div id="twister-scoring" class="hidden bg-slate-800 p-4 rounded-xl mb-4 border border-orange-500">
                         <p class="text-sm mb-2 text-slate-400">قيم الأداء (0-10):</p>
                         <div class="grid grid-cols-5 gap-2">
                             <button onclick="awardManual(2)" class="p-2 bg-red-900 rounded">2</button>
@@ -83,7 +83,7 @@
                             <button onclick="awardManual(10)" class="p-2 bg-green-500 rounded font-bold">10</button>
                         </div>
                     </div>
-                    <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-2xl font-bold text-xl shadow-lg">ابدأ الجولة</button>
+                    <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-2xl font-bold text-xl shadow-lg">التالي</button>
                 </div>
 
                 <div id="leaderboard-ui" class="hidden bg-slate-900 p-4 rounded-xl border border-teal-500 mt-4">
@@ -92,7 +92,7 @@
             </div>
 
             <div id="player-view" class="hidden space-y-4">
-                <div class="bg-slate-800 p-4 rounded-xl border border-teal-900 text-center">
+                <div class="bg-slate-800 p-4 rounded-xl border border-teal-900">
                     <h2 id="player-q-text" class="font-bold text-teal-200 italic">بانتظار المضيف...</h2>
                 </div>
                 <div id="player-input-area" class="grid grid-cols-1 gap-4"></div>
@@ -124,6 +124,16 @@
         let myRole = ''; let myName = ''; let currentSection = ''; let currentType = ''; 
         let currentQuestions = []; let currentIndex = -1;
         let playersList = []; let timerInterval = null;
+
+        // Shuffle Utility
+        function shuffleArray(arr) {
+            const newArr = [...arr];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        }
 
         window.goHome = () => { if(myRole === 'host') { remove(liveRef); remove(scoresRef); remove(answersRef); } location.reload(); };
         window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
@@ -162,13 +172,17 @@
 
         window.setupQuestions = (type) => {
             currentType = 'brain';
-            currentQuestions = gameData[currentSection][type].sort(() => 0.5 - Math.random()).slice(0, 7);
+            currentIndex = -1;
+            const pool = gameData[currentSection][type];
+            currentQuestions = shuffleArray(pool).slice(0, 7);
             showGameUI();
         };
 
         window.setupTwisters = () => {
             currentType = 'twister';
-            currentQuestions = gameData.adults.twisters.sort(() => 0.5 - Math.random()).slice(0, 5);
+            currentIndex = -1;
+            const pool = gameData.adults.twisters;
+            currentQuestions = shuffleArray(pool).slice(0, 5);
             showGameUI();
         };
 
@@ -186,11 +200,13 @@
             if (currentIndex < currentQuestions.length) {
                 const item = currentQuestions[currentIndex];
                 let pSpot = "الجميع";
+                
                 if (currentType === 'twister') {
                     pSpot = playersList[currentIndex % playersList.length] || "المتطوع";
                     document.getElementById('player-spotlight').classList.remove('hidden');
                     document.getElementById('current-player-name').innerText = pSpot;
                     document.getElementById('twister-scoring').classList.add('hidden');
+                    document.getElementById('answer-counter').innerText = "وضع التصحيح اليدوي";
                 } else {
                     document.getElementById('player-spotlight').classList.add('hidden');
                     listenForAnswers();
@@ -260,11 +276,7 @@
 
         function listenForGame() {
             onValue(liveRef, (snap) => {
-                const data = snap.val(); if(!data) {
-                    document.getElementById('player-q-text').innerText = "بانتظار المضيف...";
-                    document.getElementById('player-input-area').innerHTML = "";
-                    return;
-                }
+                const data = snap.val(); if(!data) return;
                 const area = document.getElementById('player-input-area');
                 if(data.status === 'timeup') {
                     area.innerHTML = "<p class='text-red-500 font-bold text-center text-xl'>انتهى الوقت!</p>";
@@ -287,7 +299,7 @@
                 const points = 10 + Math.max(0, 10 - speed);
                 get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + points));
             }
-            document.getElementById('player-input-area').innerHTML = "<p class='text-teal-400 text-center font-bold animate-pulse'>تم الإرسال!</p>";
+            document.getElementById('player-input-area').innerHTML = "<p class='text-teal-400 text-center font-bold'>تم الإرسال!</p>";
         };
     </script>
 </body>
