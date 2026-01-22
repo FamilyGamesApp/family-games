@@ -51,7 +51,7 @@
                 <input type="checkbox" id="timer-enabled" class="w-6 h-6 accent-teal-500">
             </div>
             <div id="brain-sub-menu" class="space-y-3"></div>
-            <button onclick="setupTwisters()" class="w-full p-6 bg-orange-600 rounded-2xl font-bold shadow-lg">تلاعب لفظي 👅</button>
+            <button id="btn-twister" onclick="setupTwisters()" class="w-full p-6 bg-orange-600 rounded-2xl font-bold shadow-lg">تلاعب لفظي 👅</button>
             <button onclick="chooseType('movement')" class="w-full p-4 btn-teal rounded-2xl font-bold mt-4">تحدي الحركة</button>
         </div>
 
@@ -84,6 +84,11 @@
                         </div>
                     </div>
                     <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-2xl font-bold text-xl shadow-lg">التالي</button>
+                    
+                    <div id="post-game-controls" class="hidden space-y-3 mt-4">
+                        <button onclick="restartSameCategory()" class="w-full p-5 btn-teal rounded-2xl font-bold text-xl">جولة جديدة</button>
+                        <button onclick="backToGameList()" class="w-full p-4 bg-slate-700 rounded-2xl font-bold">قائمة الألعاب</button>
+                    </div>
                 </div>
 
                 <div id="leaderboard-ui" class="hidden bg-slate-900 p-4 rounded-xl border border-teal-500 mt-4">
@@ -92,7 +97,7 @@
             </div>
 
             <div id="player-view" class="hidden space-y-4">
-                <div class="bg-slate-800 p-4 rounded-xl border border-teal-900">
+                <div class="bg-slate-800 p-4 rounded-xl border border-teal-900 text-center">
                     <h2 id="player-q-text" class="font-bold text-teal-200 italic">بانتظار المضيف...</h2>
                 </div>
                 <div id="player-input-area" class="grid grid-cols-1 gap-4"></div>
@@ -122,10 +127,10 @@
         const answersRef = ref(db, 'current_answers');
 
         let myRole = ''; let myName = ''; let currentSection = ''; let currentType = ''; 
+        let lastGameConfig = { section: '', type: '', poolName: '' }; // Saved for restart
         let currentQuestions = []; let currentIndex = -1;
         let playersList = []; let timerInterval = null;
 
-        // Shuffle Utility
         function shuffleArray(arr) {
             const newArr = [...arr];
             for (let i = newArr.length - 1; i > 0; i--) {
@@ -171,6 +176,7 @@
         };
 
         window.setupQuestions = (type) => {
+            lastGameConfig = { section: currentSection, type: 'brain', poolName: type };
             currentType = 'brain';
             currentIndex = -1;
             const pool = gameData[currentSection][type];
@@ -179,6 +185,7 @@
         };
 
         window.setupTwisters = () => {
+            lastGameConfig = { section: 'adults', type: 'twister', poolName: 'twisters' };
             currentType = 'twister';
             currentIndex = -1;
             const pool = gameData.adults.twisters;
@@ -187,10 +194,30 @@
         };
 
         function showGameUI() {
+            document.getElementById('leaderboard-ui').classList.add('hidden');
+            document.getElementById('post-game-controls').classList.add('hidden');
+            document.getElementById('action-btn').classList.remove('hidden');
             document.getElementById('type-select').classList.add('hidden');
             document.getElementById('game-play').classList.remove('hidden');
             document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('display-content').innerHTML = "استعدوا...";
+            document.getElementById('display-title').innerText = "جولة جديدة";
         }
+
+        // RESTART LOGIC
+        window.restartSameCategory = () => {
+            // Reset scores in Firebase
+            playersList.forEach(p => set(ref(db, `scores/${p}`), 0));
+            if(lastGameConfig.type === 'brain') setupQuestions(lastGameConfig.poolName);
+            else setupTwisters();
+        };
+
+        window.backToGameList = () => {
+            playersList.forEach(p => set(ref(db, `scores/${p}`), 0));
+            remove(liveRef);
+            document.getElementById('host-view').classList.add('hidden');
+            document.getElementById('type-select').classList.remove('hidden');
+        };
 
         window.triggerNext = () => {
             currentIndex++;
@@ -200,18 +227,15 @@
             if (currentIndex < currentQuestions.length) {
                 const item = currentQuestions[currentIndex];
                 let pSpot = "الجميع";
-                
                 if (currentType === 'twister') {
                     pSpot = playersList[currentIndex % playersList.length] || "المتطوع";
                     document.getElementById('player-spotlight').classList.remove('hidden');
                     document.getElementById('current-player-name').innerText = pSpot;
                     document.getElementById('twister-scoring').classList.add('hidden');
-                    document.getElementById('answer-counter').innerText = "وضع التصحيح اليدوي";
                 } else {
                     document.getElementById('player-spotlight').classList.add('hidden');
                     listenForAnswers();
                 }
-
                 set(liveRef, { type: currentType, content: item, startTime: Date.now(), status: 'playing', activePlayer: pSpot });
                 renderHost(item);
                 if (document.getElementById('timer-enabled').checked) startTimer(15);
@@ -254,7 +278,7 @@
             if (currentType === 'brain') {
                 title.innerText = item.q;
                 content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-lg'>${o}</div>`).join('');
-            } else if (currentType === 'twister') {
+            } else {
                 title.innerText = "كرر الجملة 5 مرات بسرعة:";
                 content.innerHTML = `<p class='text-3xl text-teal-400 font-bold text-center'>${item}</p>`;
             }
@@ -266,11 +290,14 @@
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
             set(liveRef, { status: 'finished', winner: sorted[0] ? sorted[0][0] : "---" });
+            
             document.getElementById('display-title').innerText = "🏆 النتائج النهائية 🏆";
             document.getElementById('display-content').innerHTML = `<h1 class='text-4xl text-yellow-400'>الفائز: ${sorted[0] ? sorted[0][0] : "---"}</h1>`;
             document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between p-2 bg-slate-800 mb-1 rounded'><span>${n}</span><span>${Math.round(v)}</span></div>`).join('');
+            
             document.getElementById('leaderboard-ui').classList.remove('hidden');
             document.getElementById('action-btn').classList.add('hidden');
+            document.getElementById('post-game-controls').classList.remove('hidden');
             confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
         }
 
