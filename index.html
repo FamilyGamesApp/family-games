@@ -2,184 +2,240 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ألعاب العائلة Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; margin: 0; padding: 0; }
+        :root {
+            --app-height: 100%;
+            /* Responsive Font Sizes */
+            --font-title: clamp(1.5rem, 5vw, 3rem);
+            --font-body: clamp(1rem, 3vw, 1.8rem);
+        }
+
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            overflow: hidden; 
+            height: 100vh;
+            height: -webkit-fill-available;
+        }
+
+        /* Adjusts for large TV screens */
+        @media (min-width: 1024px) {
+            #app { max-width: 800px !important; }
+            .key-btn { height: 80px !important; font-size: 2rem !important; }
+            .digit-box { width: 100px !important; height: 100px !important; font-size: 3rem !important; }
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
         .hidden { display: none !important; }
         
         /* CSS HANDS ANIMATION */
-        .hand-container { position: relative; width: 200px; height: 120px; margin: 20px auto; perspective: 1000px; }
-        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 4px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #78350f; }
-        .hand-left { left: 0; transform-origin: left; border-right: none; border-radius: 20px 0 0 20px; }
-        .hand-right { right: 0; transform-origin: right; border-left: none; border-radius: 0 20px 20px 0; }
+        .hand-container { 
+            position: relative; 
+            width: clamp(200px, 40vw, 400px); 
+            height: clamp(120px, 25vw, 250px); 
+            margin: 20px auto; 
+            perspective: 1000px; 
+        }
+        .hand { 
+            position: absolute; width: 50%; height: 100%; background: #fbbf24; 
+            border: 4px solid #b45309; transition: transform 0.6s ease-in-out; 
+            z-index: 10; display: flex; align-items: center; justify-content: center; 
+        }
+        .hand-left { left: 0; transform-origin: left; border-radius: 20px 0 0 20px; border-right: none; }
+        .hand-right { right: 0; transform-origin: right; border-radius: 0 20px 20px 0; border-left: none; }
         .open .hand-left { transform: rotateY(-110deg); }
         .open .hand-right { transform: rotateY(110deg); }
-        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; }
+        
+        .number-reveal { 
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; 
+            font-size: clamp(3rem, 10vw, 7rem); font-weight: 800; color: #fff; z-index: 5; 
+            opacity: 0; transition: opacity 0.2s; 
+        }
         .open .number-reveal { opacity: 1; }
 
-        /* PULSE EFFECT */
         .pulse-bg { animation: pulseBg 1.5s infinite; }
-        @keyframes pulseBg { 0% { background-color: #1e293b; } 50% { background-color: #312e81; } 100% { background-color: #1e293b; } }
+        @keyframes pulseBg { 0%, 100% { background-color: #1e293b; } 50% { background-color: #312e81; } }
 
         /* KEYPAD STYLES */
-        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 300px; margin: 0 auto; }
-        .key-btn { height: 60px; display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.5rem; font-weight: bold; transition: all 0.2s; border-bottom: 4px solid #0f172a; touch-action: manipulation; }
-        .key-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
-        .key-btn.disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
-        .key-btn.submit { background: #14b8a6; color: white; font-size: 1rem; }
+        .keypad-grid { 
+            display: grid; grid-template-columns: repeat(3, 1fr); 
+            gap: clamp(4px, 1.5vw, 12px); width: 100%; max-width: 400px; margin: 0 auto; 
+        }
+        .key-btn { 
+            height: clamp(50px, 12vh, 70px); 
+            display: flex; align-items: center; justify-content: center; 
+            background: #334155; border-radius: 12px; font-size: 1.5rem; 
+            font-weight: bold; border-bottom: 4px solid #0f172a; touch-action: manipulation;
+        }
+        .key-btn.disabled { opacity: 0.2; pointer-events: none; }
         
-        .digit-box { width: 60px; height: 60px; border: 2px solid #475569; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; background: #1e293b; transition: all 0.4s; }
-        .digit-correct { background: #059669 !important; border-color: #10b981 !important; }
-        .digit-wrong { background: #991b1b !important; border-color: #ef4444 !important; text-decoration: line-through; position: relative; }
-        .digit-wrong::after { content: 'X'; position: absolute; font-size: 12px; top: 2px; right: 2px; text-decoration: none; color: #fff; }
-
-        .timer-bar { height: 100%; background: #14b8a6; transition: width 0.1s linear; }
+        .digit-box { 
+            width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); 
+            border: 2px solid #475569; border-radius: 12px; display: flex; 
+            align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; 
+            background: #1e293b; transition: all 0.4s; 
+        }
+        .digit-correct { background: #059669 !important; }
+        .digit-wrong { background: #991b1b !important; text-decoration: line-through; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
 
-    <div id="app" class="max-w-md mx-auto w-full px-4 py-6 flex flex-col h-screen">
-        <div class="flex justify-between items-center mb-4 shrink-0">
+    <div id="app" class="px-4 py-4 sm:py-8">
+        <header class="flex justify-between items-center mb-4 shrink-0">
             <button onclick="goHome()" id="global-home-btn" class="hidden text-slate-400 text-sm">🏠 الرئيسية</button>
-            <h1 class="text-2xl font-bold text-teal-400 mx-auto">ألعاب العائلة</h1>
-        </div>
+            <h1 class="font-extrabold text-teal-400 mx-auto" style="font-size: var(--font-title);">ألعاب العائلة</h1>
+        </header>
         
-        <div id="setup-screen" class="space-y-6 my-auto">
-            <div class="bg-slate-card p-6 rounded-3xl shadow-xl border border-slate-700">
-                <input id="player-name-input" type="text" placeholder="أدخل اسمك..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none">
-                <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-2xl text-xl font-bold">دخول</button>
-            </div>
-            <button onclick="showHostAuth()" class="text-slate-500 text-sm underline">إعدادات المشرف (Host)</button>
-        </div>
-
-        <div id="host-auth" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50">
-            <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs">
-                <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4">
-                <button onclick="verifyHost()" class="w-full p-3 btn-purple rounded-xl font-bold">تأكيد</button>
-            </div>
-        </div>
-
-        <div id="section-select" class="hidden space-y-4 my-auto">
-            <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-2xl font-bold border-b-4 border-slate-900 text-xl">قسم الكبار</button>
-            <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-2xl font-bold border-b-4 border-pink-950 text-xl">قسم الأطفال</button>
-        </div>
-
-        <div id="type-select" class="hidden space-y-4 my-auto overflow-y-auto">
-            <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center text-sm">
-                <span>مؤقت السؤال</span>
-                <input type="checkbox" id="timer-enabled" class="w-6 h-6 accent-teal-500" checked>
-            </div>
-            <div id="brain-sub-menu" class="space-y-3"></div>
-            <button onclick="setupTwisters()" class="w-full p-6 bg-orange-600 rounded-2xl font-bold">تلاعب لفظي 👅</button>
-        </div>
-
-        <div id="memory-difficulty" class="hidden space-y-4 my-auto">
-            <h2 class="text-xl font-bold">اختر الصعوبة</h2>
-            <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-2xl font-bold">سهل (4 أرقام / 2.5 ث)</button>
-            <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-2xl font-bold">متوسط (4 أرقام / 1.8 ث)</button>
-            <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-2xl font-bold">صعب (4 أرقام / 1.1 ث)</button>
-        </div>
-
-        <div id="game-play" class="hidden flex-1 flex flex-col">
-            
-            <div id="host-view" class="hidden space-y-4 h-full">
-                <div class="bg-slate-800 p-3 rounded-lg flex justify-between">
-                    <span id="answer-counter" class="text-teal-400">...</span>
-                    <span id="host-timer-text" class="text-red-400 font-bold"></span>
+        <main class="flex-1 flex flex-col justify-center overflow-hidden">
+            <div id="setup-screen" class="space-y-6 w-full max-w-sm mx-auto">
+                <div class="bg-slate-card p-6 rounded-3xl shadow-2xl border border-slate-700">
+                    <input id="player-name-input" type="text" placeholder="أدخل اسمك..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-lg">
+                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform">دخول اللعبة</button>
                 </div>
+                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline text-center">إعدادات المشرف (Host)</button>
+            </div>
 
-                <div id="host-game-container" class="bg-slate-card rounded-3xl p-6 flex-1 flex flex-col justify-center relative overflow-hidden">
-                    <div id="memory-visuals" class="hidden">
-                        <div id="hand-wrapper" class="hand-container">
-                            <div class="hand hand-left"></div>
-                            <div class="number-reveal" id="target-number-display">0000</div>
-                            <div class="hand hand-right"></div>
+            <div id="host-auth" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-6 z-50">
+                <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
+                    <h2 class="mb-4 text-white">رمز الدخول للمشرف</h2>
+                    <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-2xl tracking-widest">
+                    <button onclick="verifyHost()" class="w-full p-3 btn-purple rounded-xl font-bold">تأكيد</button>
+                </div>
+            </div>
+
+            <div id="section-select" class="hidden space-y-4 w-full max-w-md mx-auto z-10">
+                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-3xl font-bold border-b-8 border-slate-900 text-2xl hover:bg-slate-600 transition-colors">قسم الكبار</button>
+                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-3xl font-bold border-b-8 border-pink-950 text-2xl hover:bg-pink-800 transition-colors">قسم الأطفال</button>
+            </div>
+
+            <div id="type-select" class="hidden space-y-4 w-full max-w-md mx-auto z-10 overflow-y-auto pr-2">
+                <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center">
+                    <span class="text-lg">تفعيل مؤقت السؤال</span>
+                    <input type="checkbox" id="timer-enabled" class="w-8 h-8 accent-teal-500" checked>
+                </div>
+                <div id="brain-sub-menu" class="space-y-3"></div>
+                <button onclick="setupTwisters()" class="w-full p-6 bg-orange-600 rounded-3xl font-bold text-2xl shadow-xl">تلاعب لفظي 👅</button>
+            </div>
+
+            <div id="memory-difficulty" class="hidden space-y-4 w-full max-w-md mx-auto z-10">
+                <h2 class="text-center font-bold text-2xl mb-4">اختر الصعوبة</h2>
+                <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-2xl font-bold text-xl">سهل</button>
+                <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-2xl font-bold text-xl">متوسط</button>
+                <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-2xl font-bold text-xl">صعب جداً</button>
+            </div>
+
+            <div id="game-play" class="hidden flex-1 flex flex-col h-full">
+                <div id="host-view" class="hidden flex flex-col h-full space-y-4">
+                    <div class="bg-slate-800 p-3 rounded-2xl flex justify-between items-center shrink-0 border border-slate-700">
+                        <span id="answer-counter" class="text-teal-400 font-bold">...</span>
+                        <span id="host-timer-text" class="text-red-400 font-black text-xl"></span>
+                    </div>
+
+                    <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-6 flex-1 flex flex-col justify-center relative overflow-hidden shadow-2xl border border-slate-700">
+                        <div id="memory-visuals" class="hidden text-center">
+                            <div id="hand-wrapper" class="hand-container">
+                                <div class="hand hand-left"></div>
+                                <div class="number-reveal" id="target-number-display">0000</div>
+                                <div class="hand hand-right"></div>
+                            </div>
+                            <h3 id="host-status-msg" class="font-bold text-2xl mt-4">...</h3>
                         </div>
-                        <h3 id="host-status-msg" class="text-xl font-bold">استعد...</h3>
-                    </div>
 
-                    <div id="standard-visuals">
-                        <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور على: <span id="current-player-name">---</span></div>
-                        <h2 id="display-title" class="text-2xl font-bold">...</h2>
-                        <div id="display-content" class="mt-4 text-xl"></div>
-                    </div>
-                </div>
-
-                <div id="host-controls" class="pb-6">
-                    <div id="twister-scoring" class="hidden grid grid-cols-5 gap-2 mb-4">
-                        <button onclick="awardManual(2)" class="p-3 bg-red-900 rounded-xl">2</button>
-                        <button onclick="awardManual(6)" class="p-3 bg-yellow-700 rounded-xl">6</button>
-                        <button onclick="awardManual(10)" class="p-3 bg-green-600 rounded-xl font-bold">10</button>
-                    </div>
-                    <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-2xl font-bold text-xl">ابدأ الجولة</button>
-                    
-                    <div id="post-game-controls" class="hidden space-y-2 mt-2">
-                        <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold">جولة جديدة</button>
-                        <button onclick="backToGameList()" class="w-full p-3 bg-slate-700 rounded-xl font-bold">القائمة</button>
-                    </div>
-                </div>
-
-                <div id="leaderboard-ui" class="hidden bg-slate-900 p-4 rounded-xl border border-teal-500 overflow-y-auto max-h-48">
-                    <div id="leaderboard-list"></div>
-                </div>
-            </div>
-
-            <div id="player-view" class="hidden flex flex-col h-full">
-                <div class="bg-slate-800 p-3 rounded-xl flex justify-between text-xs mb-4">
-                    <span id="p-round">جولة: -</span>
-                    <span id="p-status" class="text-teal-400 font-bold">بانتظار المضيف</span>
-                    <span id="p-score">نقاطي: 0</span>
-                </div>
-
-                <div class="flex-1 flex flex-col justify-center items-center">
-                    <div id="player-quiz-ui" class="w-full space-y-4">
-                        <div id="player-q-text" class="text-center font-bold text-lg mb-4">...</div>
-                        <div id="player-input-area" class="grid grid-cols-1 gap-3"></div>
-                    </div>
-
-                    <div id="player-memory-ui" class="hidden w-full flex flex-col items-center">
-                        <div class="flex gap-2 mb-8" id="digit-boxes">
-                            <div class="digit-box" data-idx="0">-</div>
-                            <div class="digit-box" data-idx="1">-</div>
-                            <div class="digit-box" data-idx="2">-</div>
-                            <div class="digit-box" data-idx="3">-</div>
+                        <div id="standard-visuals" class="text-center">
+                            <div id="player-spotlight" class="hidden text-orange-400 font-bold text-xl mb-4">الدور على: <span id="current-player-name" class="underline">---</span></div>
+                            <h2 id="display-title" class="font-bold leading-tight" style="font-size: var(--font-body);">...</h2>
+                            <div id="display-content" class="mt-6 text-2xl text-teal-200"></div>
                         </div>
-                        <div id="p-memory-timer" class="text-red-500 font-bold mb-4"></div>
+                    </div>
+
+                    <div id="host-controls" class="shrink-0 py-2">
+                        <div id="twister-scoring" class="hidden grid grid-cols-5 gap-2 mb-4">
+                            <button onclick="awardManual(2)" class="p-4 bg-red-900 rounded-xl font-bold">2</button>
+                            <button onclick="awardManual(4)" class="p-4 bg-orange-800 rounded-xl font-bold">4</button>
+                            <button onclick="awardManual(6)" class="p-4 bg-yellow-700 rounded-xl font-bold">6</button>
+                            <button onclick="awardManual(8)" class="p-4 bg-green-800 rounded-xl font-bold">8</button>
+                            <button onclick="awardManual(10)" class="p-4 bg-green-500 rounded-xl font-black">10</button>
+                        </div>
+                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-6 rounded-3xl font-black text-2xl shadow-xl active:scale-95 transition-transform">التالي</button>
+                        
+                        <div id="post-game-controls" class="hidden grid grid-cols-2 gap-3 mt-2">
+                            <button onclick="restartSameCategory()" class="p-4 btn-teal rounded-2xl font-bold">جولة جديدة</button>
+                            <button onclick="backToGameList()" class="p-4 bg-slate-700 rounded-2xl font-bold">القائمة</button>
+                        </div>
+                    </div>
+
+                    <div id="leaderboard-ui" class="hidden bg-slate-900/80 p-4 rounded-2xl border border-teal-500/50 backdrop-blur-sm overflow-y-auto max-h-[25vh] shrink-0">
+                        <div id="leaderboard-list" class="space-y-1"></div>
                     </div>
                 </div>
 
-                <div id="keypad-container" class="pb-4 mt-auto">
-                    <div class="keypad-grid">
-                        <button class="key-btn key-num disabled" onclick="pressKey('1')">1</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('2')">2</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('3')">3</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('4')">4</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('5')">5</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('6')">6</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('7')">7</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('8')">8</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('9')">9</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('back')">⌫</button>
-                        <button class="key-btn key-num disabled" onclick="pressKey('0')">0</button>
-                        <button class="key-btn key-num disabled submit" id="mem-submit" onclick="submitMemory()">إرسال</button>
+                <div id="player-view" class="hidden flex flex-col h-full">
+                    <div class="bg-slate-800 p-3 rounded-2xl flex justify-between text-sm mb-4 shrink-0 border border-slate-700">
+                        <span id="p-round">جولة: -</span>
+                        <span id="p-status" class="text-teal-400 font-bold">جاهز؟</span>
+                        <span id="p-score" class="font-bold">0</span>
+                    </div>
+
+                    <div class="flex-1 flex flex-col justify-center">
+                        <div id="player-quiz-ui" class="w-full space-y-4">
+                            <div id="player-q-text" class="text-center font-bold text-xl mb-4 italic px-4">...</div>
+                            <div id="player-input-area" class="px-2 space-y-3"></div>
+                        </div>
+
+                        <div id="player-memory-ui" class="hidden w-full flex flex-col items-center">
+                            <div class="flex gap-2 mb-8" id="digit-boxes">
+                                <div class="digit-box" data-idx="0">-</div>
+                                <div class="digit-box" data-idx="1">-</div>
+                                <div class="digit-box" data-idx="2">-</div>
+                                <div class="digit-box" data-idx="3">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="keypad-container" class="hidden pb-4 shrink-0">
+                        <div class="keypad-grid">
+                            <button class="key-btn disabled" onclick="pressKey('1')">1</button>
+                            <button class="key-btn disabled" onclick="pressKey('2')">2</button>
+                            <button class="key-btn disabled" onclick="pressKey('3')">3</button>
+                            <button class="key-btn disabled" onclick="pressKey('4')">4</button>
+                            <button class="key-btn disabled" onclick="pressKey('5')">5</button>
+                            <button class="key-btn disabled" onclick="pressKey('6')">6</button>
+                            <button class="key-btn disabled" onclick="pressKey('7')">7</button>
+                            <button class="key-btn disabled" onclick="pressKey('8')">8</button>
+                            <button class="key-btn disabled" onclick="pressKey('9')">9</button>
+                            <button class="key-btn disabled text-red-400" onclick="pressKey('back')">⌫</button>
+                            <button class="key-btn disabled" onclick="pressKey('0')">0</button>
+                            <button class="key-btn disabled submit" id="mem-submit" onclick="submitMemory()">إرسال</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script type="module">
         import { gameData } from './questions.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
             authDomain: "family-games-app.firebaseapp.com",
@@ -189,7 +245,6 @@
             messagingSenderId: "290150126558",
             appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const liveRef = ref(db, 'live_game');
@@ -198,18 +253,18 @@
 
         let myRole = '', myName = '', currentSection = '', currentType = '';
         let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
-        let playersList = [], timerInterval = null, memoryInput = "";
+        let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
 
-        // UI NAVIGATION
+        // AUTH & SETUP
         window.goHome = () => { if(myRole === 'host') { remove(liveRef); remove(scoresRef); } location.reload(); };
         window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
-        window.verifyHost = () => { if(document.getElementById('host-pin').value === '1234') { document.getElementById('host-auth').classList.add('hidden'); setRole('host'); } else { alert("رمز خاطئ!"); } };
+        window.verifyHost = () => { if(document.getElementById('host-pin').value === '1234') { document.getElementById('host-auth').classList.add('hidden'); setRole('host'); } else { alert("خطأ!"); } };
 
         window.setRole = (role) => {
             myRole = role;
             if (role === 'player') {
                 myName = document.getElementById('player-name-input').value.trim();
-                if (!myName) return alert("الاسم مطلوب");
+                if (!myName) return;
                 set(ref(db, `scores/${myName}`), 0);
             }
             document.getElementById('setup-screen').classList.add('hidden');
@@ -231,10 +286,10 @@
             document.getElementById('type-select').classList.remove('hidden');
             const menu = document.getElementById('brain-sub-menu');
             menu.innerHTML = (s === 'adults') ? 
-                `<button onclick="setupQuestions('culture')" class="w-full p-4 btn-purple rounded-xl font-bold mb-2">ثقافة عامة</button>
-                 <button onclick="setupQuestions('islamic')" class="w-full p-4 btn-purple rounded-xl font-bold mb-2">أسئلة إسلامية</button>
-                 <button onclick="showMemoryDiff()" class="w-full p-4 bg-indigo-600 rounded-xl font-bold mb-2">لعبة الذاكرة 🧠</button>` :
-                `<button onclick="setupQuestions('brain')" class="w-full p-4 btn-purple rounded-xl font-bold">ذكاء الأطفال</button>`;
+                `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold mb-3 text-xl">ثقافة عامة</button>
+                 <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold mb-3 text-xl">أسئلة إسلامية</button>
+                 <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold mb-3 text-xl">لعبة الذاكرة 🧠</button>` :
+                `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold text-xl">ذكاء الأطفال</button>`;
         };
 
         window.showMemoryDiff = () => {
@@ -242,7 +297,7 @@
             document.getElementById('memory-difficulty').classList.remove('hidden');
         };
 
-        // --- GAME SETUP LOGIC ---
+        // GAME LOADING
         window.setupQuestions = (type) => {
             currentType = 'brain'; currentIndex = -1;
             lastGameConfig = { section: currentSection, type: 'brain', pool: type };
@@ -266,22 +321,20 @@
         };
 
         function showHostUI() {
-            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('type-select').classList.add('hidden');
             document.getElementById('game-play').classList.remove('hidden');
-            document.getElementById('post-game-controls').classList.add('hidden');
-            document.getElementById('action-btn').classList.remove('hidden');
-            document.getElementById('leaderboard-ui').classList.add('hidden');
-            document.getElementById('standard-visuals').classList.remove('hidden');
-            document.getElementById('memory-visuals').classList.add('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
             document.getElementById('display-title').innerText = "الجولة القادمة";
-            document.getElementById('display-content').innerText = "اضغط ابدأ عندما يكتمل اللاعبون";
+            document.getElementById('display-content').innerText = "استعدوا للبدء!";
         }
 
-        // --- HOST TRIGGER NEXT ---
+        // GAME ENGINE
         window.triggerNext = () => {
             currentIndex++;
             clearInterval(timerInterval);
             remove(answersRef);
+            document.getElementById('leaderboard-ui').classList.add('hidden');
+
             if (currentIndex >= currentQuestions.length) return announceWinner();
 
             const item = currentQuestions[currentIndex];
@@ -291,60 +344,95 @@
                 let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
                 set(liveRef, { type: currentType, content: item, round: currentIndex + 1, status: 'playing', activePlayer: pSpot, startTime: Date.now() });
                 renderHostStandard(item, pSpot);
-                if (document.getElementById('timer-enabled').checked) startStandardTimer(15);
+                if (document.getElementById('timer-enabled').checked) startTimer(15);
             }
         };
 
-        // --- MEMORY MATCH LOGIC (HOST) ---
         async function handleMemoryRound(target) {
             const diff = lastGameConfig.diff;
             const config = { easy: [2500, 10], medium: [1800, 8], hard: [1100, 5] }[diff];
-            
             document.getElementById('standard-visuals').classList.add('hidden');
             document.getElementById('memory-visuals').classList.remove('hidden');
             document.getElementById('target-number-display').innerText = target;
             
-            // 1. Countdown
             let cd = 3;
-            document.getElementById('host-status-msg').innerText = `الجولة تبدأ في... ${cd}`;
             set(liveRef, { type: 'memory', status: 'countdown', round: currentIndex + 1 });
-            
             const countInt = setInterval(() => {
-                cd--;
                 document.getElementById('host-status-msg').innerText = `الجولة تبدأ في... ${cd}`;
-                if(cd === 0) {
+                if(cd-- === 0) {
                     clearInterval(countInt);
-                    // 2. Reveal
                     document.getElementById('hand-wrapper').classList.add('open');
                     document.getElementById('host-game-container').classList.add('pulse-bg');
                     set(liveRef, { type: 'memory', status: 'reveal', target: target, duration: config[0] });
-                    
                     setTimeout(() => {
-                        // 3. Input Phase
                         document.getElementById('hand-wrapper').classList.remove('open');
                         document.getElementById('host-game-container').classList.remove('pulse-bg');
                         document.getElementById('host-status-msg').innerText = "اللاعبون يكتبون...";
                         set(liveRef, { type: 'memory', status: 'input', target: target, duration: config[1], startTime: Date.now() });
-                        startStandardTimer(config[1], true);
+                        startTimer(config[1], true);
                         listenForAnswers();
                     }, config[0]);
                 }
             }, 1000);
         }
 
-        // --- GENERAL UTILS ---
-        function startStandardTimer(sec, isMemory = false) {
+        function startTimer(sec, isMemory = false) {
             let remain = sec;
-            document.getElementById('host-timer-text').innerText = remain + "ث";
             timerInterval = setInterval(() => {
-                remain--;
                 document.getElementById('host-timer-text').innerText = remain + "ث";
-                if (remain <= 0) {
+                if (remain-- <= 0) {
                     clearInterval(timerInterval);
-                    if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                     if (isMemory) showMemoryResults();
+                    else showMidGameLeaderboard();
+                    if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                 }
             }, 1000);
+        }
+
+        async function showMemoryResults() {
+            set(liveRef, { status: 'scoring' });
+            const target = currentQuestions[currentIndex];
+            const ansSnap = await get(answersRef);
+            const answers = ansSnap.val() || {};
+            let displayHtml = `<div class='space-y-2 text-lg'>`;
+            for(let pName of playersList) {
+                const pData = answers[pName] || { val: "----", time: 99999 };
+                let score = 0, coloredDigits = "";
+                for(let i=0; i<4; i++) {
+                    const char = pData.val[i] || "-";
+                    if(char === target[i]) { score += 2; coloredDigits += `<span class="text-green-500 mx-0.5">${char}</span>`; }
+                    else { coloredDigits += `<span class="text-red-500 line-through mx-0.5">${char}</span>`; }
+                }
+                if(score === 8) { score = 10; if(pData.time < 3000) score += 5; }
+                const curS = await get(ref(db, `scores/${pName}`));
+                set(ref(db, `scores/${pName}`), (curS.val() || 0) + score);
+                displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span>${coloredDigits} (+${score})</span></div>`;
+            }
+            document.getElementById('display-content').innerHTML = displayHtml;
+            showMidGameLeaderboard();
+        }
+
+        async function showMidGameLeaderboard() {
+            const snap = await get(scoresRef);
+            const scores = snap.val() || {};
+            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+            document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between p-1'><span>${n}</span><span>${Math.round(v)}</span></div>`).join('');
+            document.getElementById('leaderboard-ui').classList.remove('hidden');
+            set(liveRef, { status: 'scoring' });
+        }
+
+        function renderHostStandard(item, pSpot) {
+            const title = document.getElementById('display-title');
+            const content = document.getElementById('display-content');
+            if (currentType === 'brain') {
+                title.innerText = item.q;
+                content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-2xl mb-2 text-xl'>${o}</div>`).join('');
+            } else {
+                title.innerText = "كرر بسرعة 5 مرات:";
+                content.innerHTML = `<p class='text-4xl text-teal-400 font-black'>${item}</p>`;
+                document.getElementById('current-player-name').innerText = pSpot;
+                document.getElementById('player-spotlight').classList.remove('hidden');
+            }
         }
 
         function listenForAnswers() {
@@ -354,177 +442,98 @@
             });
         }
 
-        async function showMemoryResults() {
-            set(liveRef, { status: 'scoring' });
-            const target = currentQuestions[currentIndex];
-            const ansSnap = await get(answersRef);
-            const answers = ansSnap.val() || {};
-            
-            let displayHtml = `<div class='text-sm space-y-2'>`;
-            for(let pName of playersList) {
-                const pData = answers[pName] || { val: "----", time: 0 };
-                let score = 0;
-                let coloredDigits = "";
-                
-                // Compare
-                for(let i=0; i<4; i++) {
-                    const char = pData.val[i] || "-";
-                    if(char === target[i]) {
-                        score += 2;
-                        coloredDigits += `<span class="text-green-500 font-bold mx-0.5">${char}</span>`;
-                    } else {
-                        coloredDigits += `<span class="text-red-500 line-through mx-0.5">${char}</span>`;
-                    }
-                }
-                
-                if(score === 8) { // Perfect
-                    score = 10;
-                    if(pData.time > 0 && pData.time < 3000) score += 5;
-                }
-                
-                // Update score in DB
-                const sRef = ref(db, `scores/${pName}`);
-                const curS = await get(sRef);
-                set(sRef, (curS.val() || 0) + score);
-                
-                displayHtml += `<div class="flex justify-between border-b border-slate-700 pb-1">
-                    <span>${pName}: ${coloredDigits}</span>
-                    <span class="text-teal-400">+${score}</span>
-                </div>`;
-            }
-            displayHtml += `</div>`;
-            document.getElementById('display-content').innerHTML = displayHtml;
-            document.getElementById('host-status-msg').innerText = "النتائج:";
-        }
-
-        function renderHostStandard(item, pSpot) {
-            const title = document.getElementById('display-title');
-            const content = document.getElementById('display-content');
-            if (currentType === 'brain') {
-                title.innerText = item.q;
-                content.innerHTML = item.options.map(o => `<div class='p-2 bg-slate-800 rounded'>${o}</div>`).join('');
-            } else {
-                title.innerText = "تلاعب لفظي:";
-                content.innerHTML = `<p class='text-2xl text-teal-400 font-bold'>${item}</p>`;
-                document.getElementById('current-player-name').innerText = pSpot;
-                document.getElementById('player-spotlight').classList.remove('hidden');
-            }
-        }
-
         async function announceWinner() {
             const snap = await get(scoresRef);
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
             const winner = sorted[0] ? sorted[0][0] : "---";
-            
-            set(liveRef, { status: 'finished', winner: winner, finalScores: scores });
-            
-            document.getElementById('display-title').innerText = "🏆 الفائز 🏆";
-            document.getElementById('display-content').innerHTML = `<h1 class='text-4xl text-yellow-400'>${winner}</h1>`;
-            document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between p-1'><span>${n}</span><span>${v}</span></div>`).join('');
-            
-            document.getElementById('leaderboard-ui').classList.remove('hidden');
+            set(liveRef, { status: 'finished', winner: winner });
+            document.getElementById('display-title').innerText = "🏆 الفائز النهائي 🏆";
+            document.getElementById('display-content').innerHTML = `<h1 class='text-6xl text-yellow-400 font-black'>${winner}</h1>`;
             document.getElementById('post-game-controls').classList.remove('hidden');
             document.getElementById('action-btn').classList.add('hidden');
-            confetti({ particleCount: 150, spread: 70 });
+            confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         }
 
-        // --- PLAYER LOGIC ---
+        // PLAYER ENGINE
         function listenForGame() {
             onValue(liveRef, (snap) => {
                 const data = snap.val(); if(!data) return;
-                const phase = data.status;
-                
-                // Update Global Status Bar
                 document.getElementById('p-round').innerText = `جولة: ${data.round || 1}`;
-                get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = `نقاطي: ${s.val() || 0}`);
+                get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = `نقاطي: ${Math.round(s.val() || 0)}`);
 
-                if(phase === 'finished') {
-                    document.getElementById('p-status').innerText = "انتهت اللعبة!";
-                    document.getElementById('player-q-text').innerHTML = `<div class='text-yellow-400 text-2xl'>الفائز: ${data.winner}</div>`;
-                    document.getElementById('player-input-area').innerHTML = "تحقق من شاشة المضيف";
-                    confetti({ particleCount: 100 });
+                if(data.status === 'finished') {
+                    confetti();
+                    document.getElementById('player-q-text').innerText = "انتهت المسابقة!";
+                    document.getElementById('player-input-area').innerHTML = `<div class='text-yellow-400 text-3xl font-bold'>الفائز هو: ${data.winner}</div>`;
                     return;
                 }
 
                 if(data.type === 'memory') {
+                    document.getElementById('keypad-container').classList.remove('hidden');
+                    document.getElementById('player-memory-ui').classList.remove('hidden');
+                    document.getElementById('player-quiz-ui').classList.add('hidden');
                     handlePlayerMemory(data);
                 } else {
+                    document.getElementById('keypad-container').classList.add('hidden');
+                    document.getElementById('player-memory-ui').classList.add('hidden');
+                    document.getElementById('player-quiz-ui').classList.remove('hidden');
                     handlePlayerStandard(data);
                 }
             });
         }
 
         function handlePlayerMemory(data) {
-            const ui = document.getElementById('player-memory-ui');
-            const quizUi = document.getElementById('player-quiz-ui');
-            ui.classList.remove('hidden');
-            quizUi.classList.add('hidden');
-
-            if(data.status === 'countdown' || data.status === 'reveal') {
-                document.getElementById('p-status').innerText = "راقب شاشة المضيف!";
-                setKeypadState(false);
-                resetMemoryUI();
-            } else if(data.status === 'input') {
-                document.getElementById('p-status').innerText = "أدخل الأرقام!";
+            if(data.status === 'input') {
+                document.getElementById('p-status').innerText = "اكتب الآن!";
                 setKeypadState(true);
-            } else if(data.status === 'scoring') {
-                document.getElementById('p-status').innerText = "تم الإرسال";
+                if(!roundStartTime) roundStartTime = Date.now();
+            } else {
+                document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتهى الوقت" : "راقب الشاشة";
                 setKeypadState(false);
+                if(data.status === 'countdown') { resetMemoryUI(); roundStartTime = 0; }
             }
         }
 
         function setKeypadState(enabled) {
-            document.querySelectorAll('.key-btn').forEach(b => {
-                b.classList.toggle('disabled', !enabled);
-            });
-            // Submit only enabled if 4 digits
+            document.querySelectorAll('.key-btn').forEach(b => b.classList.toggle('disabled', !enabled));
             document.getElementById('mem-submit').classList.add('disabled');
         }
 
         window.pressKey = (key) => {
-            if(key === 'back') {
-                memoryInput = memoryInput.slice(0, -1);
-            } else if(memoryInput.length < 4) {
-                memoryInput += key;
-            }
-            updateMemoryBoxes();
+            if(key === 'back') memoryInput = memoryInput.slice(0, -1);
+            else if(memoryInput.length < 4) memoryInput += key;
+            const boxes = document.querySelectorAll('#digit-boxes .digit-box');
+            boxes.forEach((box, i) => box.innerText = memoryInput[i] || "-");
+            document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
         };
 
-        function updateMemoryBoxes() {
-            const boxes = document.querySelectorAll('#digit-boxes .digit-box');
-            boxes.forEach((box, i) => {
-                box.innerText = memoryInput[i] || "-";
-            });
-            document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
-        }
-
         window.submitMemory = () => {
-            const timeTaken = Date.now() - (lastGameConfig.startTime || 0); // Simplified sync
-            set(ref(db, `current_answers/${myName}`), { val: memoryInput, time: 5000 }); // Default 5s for demo
+            set(ref(db, `current_answers/${myName}`), { val: memoryInput, time: Date.now() - roundStartTime });
             setKeypadState(false);
-            document.getElementById('p-status').innerText = "انتظر النتائج...";
+            document.getElementById('p-status').innerText = "تم الإرسال ✓";
         };
 
         function resetMemoryUI() {
             memoryInput = "";
-            updateMemoryBoxes();
-            document.querySelectorAll('.digit-box').forEach(b => b.className = 'digit-box');
+            document.querySelectorAll('.digit-box').forEach(b => { b.innerText = "-"; b.className = "digit-box"; });
         }
 
         function handlePlayerStandard(data) {
-            document.getElementById('player-memory-ui').classList.add('hidden');
-            document.getElementById('player-quiz-ui').classList.remove('hidden');
-            
+            if(data.status === 'scoring') {
+                document.getElementById('p-status').innerText = "انتظر...";
+                document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400'>بانتظار الجولة القادمة</div>";
+                return;
+            }
             if(data.type === 'brain') {
-                document.getElementById('p-status').innerText = "أجب بسرعة!";
+                document.getElementById('p-status').innerText = "أجب الآن!";
                 document.getElementById('player-q-text').innerText = data.content.q;
                 document.getElementById('player-input-area').innerHTML = data.content.options.map((o, i) => 
-                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-4 btn-teal rounded-xl font-bold">${o}</button>`
+                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-5 btn-teal rounded-2xl font-bold block w-full text-xl shadow-md active:scale-95">${o}</button>`
                 ).join('');
             } else {
                 document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك الآن!" : "استمع للمتحدث";
-                document.getElementById('player-q-text').innerText = (data.activePlayer === myName) ? data.content : "...";
+                document.getElementById('player-q-text').innerText = (data.activePlayer === myName) ? data.content : "---";
                 document.getElementById('player-input-area').innerHTML = "";
             }
         }
@@ -532,14 +541,12 @@
         window.submitQuiz = (idx, correct, start) => {
             set(ref(db, `current_answers/${myName}`), true);
             if(idx === correct) {
-                const speed = (Date.now() - start) / 1000;
-                const pts = 10 + Math.max(0, 10 - speed);
+                const pts = 10 + Math.max(0, 10 - (Date.now() - start)/1000);
                 get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + pts));
             }
-            document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400'>تم الإرسال</div>";
+            document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 text-2xl font-bold'>تم الإرسال ✓</div>";
         };
 
-        // --- SCORE RESTART ---
         window.restartSameCategory = () => {
             playersList.forEach(p => set(ref(db, `scores/${p}`), 0));
             if(lastGameConfig.type === 'memory') startMemory(lastGameConfig.diff);
@@ -554,9 +561,12 @@
             document.getElementById('type-select').classList.remove('hidden');
         };
 
-        function shuffleArray(arr) {
-            return arr.sort(() => Math.random() - 0.5);
-        }
+        function shuffleArray(arr) { return arr.sort(() => Math.random() - 0.5); }
+        window.awardManual = (pts) => {
+            const name = document.getElementById('current-player-name').innerText;
+            get(ref(db, `scores/${name}`)).then(s => set(ref(db, `scores/${name}`), (s.val() || 0) + pts));
+            document.getElementById('twister-scoring').classList.add('hidden');
+        };
     </script>
 </body>
 </html>
