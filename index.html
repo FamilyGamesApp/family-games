@@ -10,7 +10,6 @@
     <style>
         :root {
             --app-height: 100%;
-            /* Responsive Font Sizes */
             --font-title: clamp(1.5rem, 5vw, 3rem);
             --font-body: clamp(1rem, 3vw, 1.8rem);
         }
@@ -21,20 +20,22 @@
             color: #f8fafc; 
             overflow: hidden; 
             height: 100vh;
-            height: -webkit-fill-available;
+            /* SAFE AREA PADDING FOR IPHONE/ANDROID NOTCHES */
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
         }
 
-        /* Adjusts for large TV screens */
+        /* Large Screen / TV Optimization */
         @media (min-width: 1024px) {
             #app { max-width: 800px !important; }
-            .key-btn { height: 80px !important; font-size: 2rem !important; }
-            .digit-box { width: 100px !important; height: 100px !important; font-size: 3rem !important; }
+            .key-btn { height: 80px !important; font-size: 2.2rem !important; }
+            .digit-box { width: 100px !important; height: 100px !important; font-size: 3.5rem !important; }
         }
 
         #app {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100%;
             max-width: 100%;
             margin: 0 auto;
         }
@@ -75,97 +76,98 @@
         /* KEYPAD STYLES */
         .keypad-grid { 
             display: grid; grid-template-columns: repeat(3, 1fr); 
-            gap: clamp(4px, 1.5vw, 12px); width: 100%; max-width: 400px; margin: 0 auto; 
+            gap: clamp(6px, 2vw, 14px); width: 100%; max-width: 450px; margin: 0 auto; 
         }
         .key-btn { 
-            height: clamp(50px, 12vh, 70px); 
+            height: clamp(55px, 11vh, 75px); 
             display: flex; align-items: center; justify-content: center; 
-            background: #334155; border-radius: 12px; font-size: 1.5rem; 
-            font-weight: bold; border-bottom: 4px solid #0f172a; touch-action: manipulation;
+            background: #334155; border-radius: 16px; font-size: 1.6rem; 
+            font-weight: bold; border-bottom: 5px solid #0f172a; touch-action: manipulation;
         }
-        .key-btn.disabled { opacity: 0.2; pointer-events: none; }
+        .key-btn.disabled { opacity: 0.15; pointer-events: none; }
+        .key-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
         
         .digit-box { 
-            width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); 
-            border: 2px solid #475569; border-radius: 12px; display: flex; 
-            align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; 
+            width: clamp(55px, 16vw, 85px); height: clamp(55px, 16vw, 85px); 
+            border: 3px solid #475569; border-radius: 15px; display: flex; 
+            align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; 
             background: #1e293b; transition: all 0.4s; 
         }
-        .digit-correct { background: #059669 !important; }
-        .digit-wrong { background: #991b1b !important; text-decoration: line-through; }
+        .digit-correct { background: #059669 !important; border-color: #10b981 !important; }
+        .digit-wrong { background: #991b1b !important; border-color: #f43f5e !important; text-decoration: line-through; }
     </style>
 </head>
 <body>
 
-    <div id="app" class="px-4 py-4 sm:py-8">
-        <header class="flex justify-between items-center mb-4 shrink-0">
-            <button onclick="goHome()" id="global-home-btn" class="hidden text-slate-400 text-sm">🏠 الرئيسية</button>
-            <h1 class="font-extrabold text-teal-400 mx-auto" style="font-size: var(--font-title);">ألعاب العائلة</h1>
+    <div id="app" class="px-5 py-2">
+        <header class="flex justify-between items-center mb-2 shrink-0">
+            <button onclick="goHome()" id="global-home-btn" class="hidden text-slate-400 text-sm bg-slate-800 px-3 py-1 rounded-lg">🏠</button>
+            <h1 class="font-black text-teal-400 mx-auto" style="font-size: var(--font-title);">ألعاب العائلة</h1>
         </header>
         
         <main class="flex-1 flex flex-col justify-center overflow-hidden">
             <div id="setup-screen" class="space-y-6 w-full max-w-sm mx-auto">
-                <div class="bg-slate-card p-6 rounded-3xl shadow-2xl border border-slate-700">
-                    <input id="player-name-input" type="text" placeholder="أدخل اسمك..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-lg">
-                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition-transform">دخول اللعبة</button>
+                <div class="bg-slate-card p-6 rounded-[2.5rem] shadow-2xl border border-slate-700">
+                    <input id="player-name-input" type="text" placeholder="أدخل اسمك هنا..." class="w-full p-4 rounded-2xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-xl font-bold">
+                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-2xl text-2xl font-black shadow-lg active:scale-95 transition-transform">دخول</button>
                 </div>
-                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline text-center">إعدادات المشرف (Host)</button>
+                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline text-center">دخول المشرف (Host)</button>
             </div>
 
-            <div id="host-auth" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-6 z-50">
+            <div id="host-auth" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
                 <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
-                    <h2 class="mb-4 text-white">رمز الدخول للمشرف</h2>
-                    <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-2xl tracking-widest">
-                    <button onclick="verifyHost()" class="w-full p-3 btn-purple rounded-xl font-bold">تأكيد</button>
+                    <h2 class="mb-4 text-white font-bold">رمز المشرف</h2>
+                    <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl tracking-widest outline-none border border-teal-500">
+                    <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black text-xl">تأكيد</button>
                 </div>
             </div>
 
             <div id="section-select" class="hidden space-y-4 w-full max-w-md mx-auto z-10">
-                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-3xl font-bold border-b-8 border-slate-900 text-2xl hover:bg-slate-600 transition-colors">قسم الكبار</button>
-                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-3xl font-bold border-b-8 border-pink-950 text-2xl hover:bg-pink-800 transition-colors">قسم الأطفال</button>
+                <button onclick="chooseSection('adults')" class="w-full p-7 bg-slate-700 rounded-[2rem] font-black border-b-8 border-slate-900 text-2xl">قسم الكبار</button>
+                <button onclick="chooseSection('children')" class="w-full p-7 bg-pink-900 rounded-[2rem] font-black border-b-8 border-pink-950 text-2xl">قسم الأطفال</button>
             </div>
 
-            <div id="type-select" class="hidden space-y-4 w-full max-w-md mx-auto z-10 overflow-y-auto pr-2">
-                <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center">
-                    <span class="text-lg">تفعيل مؤقت السؤال</span>
+            <div id="type-select" class="hidden space-y-4 w-full max-w-md mx-auto z-10">
+                <div class="bg-slate-800 p-5 rounded-2xl flex justify-between items-center border border-slate-700">
+                    <span class="text-xl font-bold">المؤقت</span>
                     <input type="checkbox" id="timer-enabled" class="w-8 h-8 accent-teal-500" checked>
                 </div>
-                <div id="brain-sub-menu" class="space-y-3"></div>
-                <button onclick="setupTwisters()" class="w-full p-6 bg-orange-600 rounded-3xl font-bold text-2xl shadow-xl">تلاعب لفظي 👅</button>
+                <div id="brain-sub-menu" class="space-y-4"></div>
+                <button onclick="setupTwisters()" class="w-full p-7 bg-orange-600 rounded-[2rem] font-black text-2xl border-b-8 border-orange-800">تلاعب لفظي 👅</button>
             </div>
 
             <div id="memory-difficulty" class="hidden space-y-4 w-full max-w-md mx-auto z-10">
-                <h2 class="text-center font-bold text-2xl mb-4">اختر الصعوبة</h2>
+                <h2 class="text-center font-black text-2xl mb-4">اختر الصعوبة</h2>
                 <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-2xl font-bold text-xl">سهل</button>
                 <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-2xl font-bold text-xl">متوسط</button>
-                <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-2xl font-bold text-xl">صعب جداً</button>
+                <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-2xl font-bold text-xl">صعب</button>
             </div>
 
             <div id="game-play" class="hidden flex-1 flex flex-col h-full">
-                <div id="host-view" class="hidden flex flex-col h-full space-y-4">
-                    <div class="bg-slate-800 p-3 rounded-2xl flex justify-between items-center shrink-0 border border-slate-700">
-                        <span id="answer-counter" class="text-teal-400 font-bold">...</span>
-                        <span id="host-timer-text" class="text-red-400 font-black text-xl"></span>
+                <div id="host-view" class="hidden flex flex-col h-full space-y-3">
+                    <div class="bg-slate-800 p-3 rounded-2xl flex justify-between items-center border border-slate-700">
+                        <span id="answer-counter" class="text-teal-400 font-bold text-lg">...</span>
+                        <span id="host-timer-text" class="text-red-400 font-black text-2xl"></span>
                     </div>
 
-                    <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-6 flex-1 flex flex-col justify-center relative overflow-hidden shadow-2xl border border-slate-700">
+                    <div id="host-game-container" class="bg-slate-card rounded-[2.5rem] p-6 flex-1 flex flex-col justify-center relative overflow-hidden shadow-2xl border-2 border-slate-700">
                         <div id="memory-visuals" class="hidden text-center">
                             <div id="hand-wrapper" class="hand-container">
                                 <div class="hand hand-left"></div>
                                 <div class="number-reveal" id="target-number-display">0000</div>
                                 <div class="hand hand-right"></div>
                             </div>
-                            <h3 id="host-status-msg" class="font-bold text-2xl mt-4">...</h3>
+                            <h3 id="host-status-msg" class="font-black text-2xl mt-4 text-teal-400">...</h3>
                         </div>
 
                         <div id="standard-visuals" class="text-center">
-                            <div id="player-spotlight" class="hidden text-orange-400 font-bold text-xl mb-4">الدور على: <span id="current-player-name" class="underline">---</span></div>
-                            <h2 id="display-title" class="font-bold leading-tight" style="font-size: var(--font-body);">...</h2>
-                            <div id="display-content" class="mt-6 text-2xl text-teal-200"></div>
+                            <div id="player-spotlight" class="hidden text-orange-400 font-bold text-xl mb-4">الدور على: <span id="current-player-name" class="text-white bg-orange-600 px-3 py-1 rounded-lg">---</span></div>
+                            <h2 id="display-title" class="font-black leading-tight" style="font-size: var(--font-body);">...</h2>
+                            <div id="display-content" class="mt-6 text-2xl text-slate-300 font-bold"></div>
                         </div>
                     </div>
 
-                    <div id="host-controls" class="shrink-0 py-2">
+                    <div id="host-controls" class="py-2">
                         <div id="twister-scoring" class="hidden grid grid-cols-5 gap-2 mb-4">
                             <button onclick="awardManual(2)" class="p-4 bg-red-900 rounded-xl font-bold">2</button>
                             <button onclick="awardManual(4)" class="p-4 bg-orange-800 rounded-xl font-bold">4</button>
@@ -173,29 +175,29 @@
                             <button onclick="awardManual(8)" class="p-4 bg-green-800 rounded-xl font-bold">8</button>
                             <button onclick="awardManual(10)" class="p-4 bg-green-500 rounded-xl font-black">10</button>
                         </div>
-                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-6 rounded-3xl font-black text-2xl shadow-xl active:scale-95 transition-transform">التالي</button>
+                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-6 rounded-[2rem] font-black text-3xl shadow-xl active:scale-95 transition-transform border-b-8 border-purple-900">التالي</button>
                         
                         <div id="post-game-controls" class="hidden grid grid-cols-2 gap-3 mt-2">
-                            <button onclick="restartSameCategory()" class="p-4 btn-teal rounded-2xl font-bold">جولة جديدة</button>
-                            <button onclick="backToGameList()" class="p-4 bg-slate-700 rounded-2xl font-bold">القائمة</button>
+                            <button onclick="restartSameCategory()" class="p-4 btn-teal rounded-2xl font-bold text-lg">جولة جديدة</button>
+                            <button onclick="backToGameList()" class="p-4 bg-slate-700 rounded-2xl font-bold text-lg text-slate-300">القائمة</button>
                         </div>
                     </div>
 
-                    <div id="leaderboard-ui" class="hidden bg-slate-900/80 p-4 rounded-2xl border border-teal-500/50 backdrop-blur-sm overflow-y-auto max-h-[25vh] shrink-0">
-                        <div id="leaderboard-list" class="space-y-1"></div>
+                    <div id="leaderboard-ui" class="hidden bg-slate-900/90 p-4 rounded-3xl border-2 border-teal-500 backdrop-blur-md overflow-y-auto max-h-[20vh]">
+                        <div id="leaderboard-list" class="space-y-2 font-bold text-lg"></div>
                     </div>
                 </div>
 
                 <div id="player-view" class="hidden flex flex-col h-full">
-                    <div class="bg-slate-800 p-3 rounded-2xl flex justify-between text-sm mb-4 shrink-0 border border-slate-700">
-                        <span id="p-round">جولة: -</span>
-                        <span id="p-status" class="text-teal-400 font-bold">جاهز؟</span>
-                        <span id="p-score" class="font-bold">0</span>
+                    <div class="bg-slate-800 p-3 rounded-2xl flex justify-between text-base mb-4 border border-slate-700">
+                        <span id="p-round" class="font-bold">جولة: -</span>
+                        <span id="p-status" class="text-teal-400 font-black">جاهز؟</span>
+                        <span id="p-score" class="font-black text-yellow-400">0</span>
                     </div>
 
                     <div class="flex-1 flex flex-col justify-center">
                         <div id="player-quiz-ui" class="w-full space-y-4">
-                            <div id="player-q-text" class="text-center font-bold text-xl mb-4 italic px-4">...</div>
+                            <div id="player-q-text" class="text-center font-black text-2xl mb-6 italic px-4">...</div>
                             <div id="player-input-area" class="px-2 space-y-3"></div>
                         </div>
 
@@ -209,7 +211,7 @@
                         </div>
                     </div>
 
-                    <div id="keypad-container" class="hidden pb-4 shrink-0">
+                    <div id="keypad-container" class="hidden pb-4">
                         <div class="keypad-grid">
                             <button class="key-btn disabled" onclick="pressKey('1')">1</button>
                             <button class="key-btn disabled" onclick="pressKey('2')">2</button>
@@ -220,9 +222,9 @@
                             <button class="key-btn disabled" onclick="pressKey('7')">7</button>
                             <button class="key-btn disabled" onclick="pressKey('8')">8</button>
                             <button class="key-btn disabled" onclick="pressKey('9')">9</button>
-                            <button class="key-btn disabled text-red-400" onclick="pressKey('back')">⌫</button>
+                            <button class="key-btn disabled text-red-500" onclick="pressKey('back')">⌫</button>
                             <button class="key-btn disabled" onclick="pressKey('0')">0</button>
-                            <button class="key-btn disabled submit" id="mem-submit" onclick="submitMemory()">إرسال</button>
+                            <button class="key-btn disabled submit !bg-teal-600 !text-white" id="mem-submit" onclick="submitMemory()">إرسال</button>
                         </div>
                     </div>
                 </div>
@@ -235,7 +237,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
             authDomain: "family-games-app.firebaseapp.com",
@@ -255,7 +256,6 @@
         let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
         let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
 
-        // AUTH & SETUP
         window.goHome = () => { if(myRole === 'host') { remove(liveRef); remove(scoresRef); } location.reload(); };
         window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
         window.verifyHost = () => { if(document.getElementById('host-pin').value === '1234') { document.getElementById('host-auth').classList.add('hidden'); setRole('host'); } else { alert("خطأ!"); } };
@@ -286,10 +286,10 @@
             document.getElementById('type-select').classList.remove('hidden');
             const menu = document.getElementById('brain-sub-menu');
             menu.innerHTML = (s === 'adults') ? 
-                `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold mb-3 text-xl">ثقافة عامة</button>
-                 <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold mb-3 text-xl">أسئلة إسلامية</button>
-                 <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold mb-3 text-xl">لعبة الذاكرة 🧠</button>` :
-                `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-600 rounded-3xl font-bold text-xl">ذكاء الأطفال</button>`;
+                `<button onclick="setupQuestions('culture')" class="w-full p-6 bg-indigo-700 rounded-3xl font-black mb-3 text-xl">ثقافة عامة 🌍</button>
+                 <button onclick="setupQuestions('islamic')" class="w-full p-6 bg-indigo-700 rounded-3xl font-black mb-3 text-xl">إسلاميات 🕌</button>
+                 <button onclick="showMemoryDiff()" class="w-full p-6 bg-indigo-700 rounded-3xl font-black mb-3 text-xl">الذاكرة 🧠</button>` :
+                `<button onclick="setupQuestions('brain')" class="w-full p-6 bg-indigo-700 rounded-3xl font-black text-xl text-white">ذكاء الأطفال 💡</button>`;
         };
 
         window.showMemoryDiff = () => {
@@ -297,7 +297,6 @@
             document.getElementById('memory-difficulty').classList.remove('hidden');
         };
 
-        // GAME LOADING
         window.setupQuestions = (type) => {
             currentType = 'brain'; currentIndex = -1;
             lastGameConfig = { section: currentSection, type: 'brain', pool: type };
@@ -325,10 +324,9 @@
             document.getElementById('game-play').classList.remove('hidden');
             document.getElementById('host-view').classList.remove('hidden');
             document.getElementById('display-title').innerText = "الجولة القادمة";
-            document.getElementById('display-content').innerText = "استعدوا للبدء!";
+            document.getElementById('display-content').innerText = "استعدوا!";
         }
 
-        // GAME ENGINE
         window.triggerNext = () => {
             currentIndex++;
             clearInterval(timerInterval);
@@ -367,7 +365,7 @@
                     setTimeout(() => {
                         document.getElementById('hand-wrapper').classList.remove('open');
                         document.getElementById('host-game-container').classList.remove('pulse-bg');
-                        document.getElementById('host-status-msg').innerText = "اللاعبون يكتبون...";
+                        document.getElementById('host-status-msg').innerText = "الآن اكتب الرقم!";
                         set(liveRef, { type: 'memory', status: 'input', target: target, duration: config[1], startTime: Date.now() });
                         startTimer(config[1], true);
                         listenForAnswers();
@@ -426,9 +424,9 @@
             const content = document.getElementById('display-content');
             if (currentType === 'brain') {
                 title.innerText = item.q;
-                content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-2xl mb-2 text-xl'>${o}</div>`).join('');
+                content.innerHTML = item.options.map(o => `<div class='p-4 bg-slate-800 rounded-2xl mb-2 text-xl border border-slate-600 font-bold'>${o}</div>`).join('');
             } else {
-                title.innerText = "كرر بسرعة 5 مرات:";
+                title.innerText = "كررها 5 مرات بسرعة!";
                 content.innerHTML = `<p class='text-4xl text-teal-400 font-black'>${item}</p>`;
                 document.getElementById('current-player-name').innerText = pSpot;
                 document.getElementById('player-spotlight').classList.remove('hidden');
@@ -438,7 +436,7 @@
         function listenForAnswers() {
             onValue(answersRef, (snap) => {
                 const count = snap.val() ? Object.keys(snap.val()).length : 0;
-                document.getElementById('answer-counter').innerText = `الإجابات: ${count} / ${playersList.length}`;
+                document.getElementById('answer-counter').innerText = `المشاركون: ${count} / ${playersList.length}`;
             });
         }
 
@@ -448,8 +446,8 @@
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
             const winner = sorted[0] ? sorted[0][0] : "---";
             set(liveRef, { status: 'finished', winner: winner });
-            document.getElementById('display-title').innerText = "🏆 الفائز النهائي 🏆";
-            document.getElementById('display-content').innerHTML = `<h1 class='text-6xl text-yellow-400 font-black'>${winner}</h1>`;
+            document.getElementById('display-title').innerText = "🏆 بطل الجلسة 🏆";
+            document.getElementById('display-content').innerHTML = `<h1 class='text-6xl text-yellow-400 font-black mb-4'>${winner}</h1>`;
             document.getElementById('post-game-controls').classList.remove('hidden');
             document.getElementById('action-btn').classList.add('hidden');
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
@@ -460,12 +458,16 @@
             onValue(liveRef, (snap) => {
                 const data = snap.val(); if(!data) return;
                 document.getElementById('p-round').innerText = `جولة: ${data.round || 1}`;
-                get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = `نقاطي: ${Math.round(s.val() || 0)}`);
+                get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = Math.round(s.val() || 0));
 
                 if(data.status === 'finished') {
-                    confetti();
-                    document.getElementById('player-q-text').innerText = "انتهت المسابقة!";
-                    document.getElementById('player-input-area').innerHTML = `<div class='text-yellow-400 text-3xl font-bold'>الفائز هو: ${data.winner}</div>`;
+                    const isWinner = (data.winner === myName);
+                    document.getElementById('player-q-text').innerText = isWinner ? "👑 أنت الفائز! 👑" : "حظاً أوفر!";
+                    document.getElementById('player-input-area').innerHTML = `<div class='text-center space-y-4'>
+                        <div class='text-yellow-400 text-4xl font-black'>الفائز: ${data.winner}</div>
+                        <div class='text-slate-400'>${isWinner ? 'أحسنت صنعاً، أنت بطل هذه اللعبة!' : 'لقد أبليت حسناً، حاول في المرة القادمة'}</div>
+                    </div>`;
+                    if(isWinner) confetti({ particleCount: 200, spread: 100 });
                     return;
                 }
 
@@ -489,7 +491,7 @@
                 setKeypadState(true);
                 if(!roundStartTime) roundStartTime = Date.now();
             } else {
-                document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتهى الوقت" : "راقب الشاشة";
+                document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتظر النتيجة" : "راقب الشاشة";
                 setKeypadState(false);
                 if(data.status === 'countdown') { resetMemoryUI(); roundStartTime = 0; }
             }
@@ -511,7 +513,7 @@
         window.submitMemory = () => {
             set(ref(db, `current_answers/${myName}`), { val: memoryInput, time: Date.now() - roundStartTime });
             setKeypadState(false);
-            document.getElementById('p-status').innerText = "تم الإرسال ✓";
+            document.getElementById('p-status').innerText = "تم ✓";
         };
 
         function resetMemoryUI() {
@@ -522,14 +524,14 @@
         function handlePlayerStandard(data) {
             if(data.status === 'scoring') {
                 document.getElementById('p-status').innerText = "انتظر...";
-                document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400'>بانتظار الجولة القادمة</div>";
+                document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 font-bold'>انتهت الجولة، تحقق من شاشة المضيف</div>";
                 return;
             }
             if(data.type === 'brain') {
                 document.getElementById('p-status').innerText = "أجب الآن!";
                 document.getElementById('player-q-text').innerText = data.content.q;
                 document.getElementById('player-input-area').innerHTML = data.content.options.map((o, i) => 
-                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-5 btn-teal rounded-2xl font-bold block w-full text-xl shadow-md active:scale-95">${o}</button>`
+                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-6 bg-slate-700 rounded-[1.5rem] font-black block w-full text-xl shadow-lg border-b-4 border-slate-900 active:scale-95 transition-all text-white">${o}</button>`
                 ).join('');
             } else {
                 document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك الآن!" : "استمع للمتحدث";
@@ -544,7 +546,7 @@
                 const pts = 10 + Math.max(0, 10 - (Date.now() - start)/1000);
                 get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + pts));
             }
-            document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 text-2xl font-bold'>تم الإرسال ✓</div>";
+            document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 text-3xl font-black mt-10 animate-bounce'>تم الإرسال ✓</div>";
         };
 
         window.restartSameCategory = () => {
