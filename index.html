@@ -36,10 +36,9 @@
         .keypad-grid { 
             display: grid; grid-template-columns: repeat(3, 1fr); 
             gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; 
-            direction: ltr;
+            direction: ltr; /* Forces 1-2-3 to start from left */
         }
-        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border: 2px solid #475569; color: white; cursor: pointer; transition: all 0.2s; }
-        .key-btn:hover { background: #475569; }
+        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border-bottom: 4px solid #0f172a; }
         .key-btn.disabled { opacity: 0.1; pointer-events: none; }
 
         /* Scoreboard Specific Style */
@@ -53,7 +52,7 @@
         .hand-right { right: 0; transform-origin: right; border-radius: 0 15px 15px 0; }
         .open .hand-left { transform: rotateY(-110deg); }
         .open .hand-right { transform: rotateY(110deg); }
-        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.6s; }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
     </style>
 </head>
@@ -69,7 +68,7 @@
         <main class="flex-1 flex flex-col justify-center overflow-hidden">
             <div id="setup-screen" class="space-y-6 w-full px-4">
                 <div class="bg-slate-card p-6 rounded-[2rem] shadow-2xl border border-slate-700">
-                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none focus:border-teal-500">
+                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-xl font-bold">
                     <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black">دخول</button>
                 </div>
                 <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
@@ -83,18 +82,18 @@
             </div>
 
             <div id="section-select" class="hidden space-y-4 px-4 w-full">
-                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-users"></i></button>
-                <button onclick="chooseSection('islamic')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">أسئلة إسلامية <i class="fa-solid fa-star"></i></button>
-                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-chart-bar"></i></button>
+                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
+                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
+                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
             </div>
 
-            <div id="type-select" class="hidden space-y-4 px-4 w-full overflow-y-auto">
+            <div id="type-select" class="hidden scroll-container px-4 w-full">
                 <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700 mb-4">
                     <span class="font-bold">المؤقت</span>
                     <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
                 </div>
                 <div id="brain-sub-menu" class="space-y-3"></div>
-                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue"></i></button>
+                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i></button>
             </div>
 
             <div id="memory-difficulty" class="hidden space-y-4 px-4 w-full">
@@ -161,7 +160,7 @@
                     <div class="flex-1 flex flex-col justify-center">
                         <div id="player-quiz-ui" class="w-full space-y-3">
                             <div id="player-q-text" class="text-center font-black text-xl mb-4 px-2">...</div>
-                            <div id="player-input-area" class="px-2 space-y-3 overflow-y-auto max-h-[40vh]"></div>
+                            <div id="player-input-area" class="px-2 space-y-3 scroll-container max-h-[40vh]"></div>
                         </div>
                         <div id="player-memory-ui" class="hidden w-full flex flex-col items-center">
                             <div id="digit-boxes">
@@ -193,365 +192,365 @@
         </main>
     </div>
 
-<script type="module">
-    import { gameData } from './questions.js';
+    <script type="module">
+        import { gameData } from './questions.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // ===== STATE VARIABLES =====
-    let myRole = '', myName = '', currentSection = '', currentType = '';
-    let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
-    let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
-    let scores = {};
-    let timerEnabled = true;
-    let sessionHistory = {
-        adults: [],
-        islamic: [],
-        movement: [],
-        twister: []
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
+            authDomain: "family-games-app.firebaseapp.com",
+            databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "family-games-app",
+            storageBucket: "family-games-app.firebasestorage.app",
+            messagingSenderId: "290150126558",
+            appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
+        };
+        const fbApp = initializeApp(firebaseConfig);
+        const db = getDatabase(fbApp);
+        const liveRef = ref(db, 'live_game');
+        const scoresRef = ref(db, 'scores');
+        const answersRef = ref(db, 'current_answers');
 
-    // ===== UTILITY FUNCTIONS =====
+        let myRole = '', myName = '', currentSection = '', currentType = '';
+        let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
+        let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
 
-    function hideAllScreens() {
-        document.getElementById('setup-screen').classList.add('hidden');
-        document.getElementById('section-select').classList.add('hidden');
-        document.getElementById('type-select').classList.add('hidden');
-        document.getElementById('memory-difficulty').classList.add('hidden');
-        document.getElementById('game-play').classList.add('hidden');
-        document.getElementById('host-auth').classList.add('hidden');
-    }
-
-    function showElement(id) {
-        document.getElementById(id).classList.remove('hidden');
-    }
-
-    function hideElement(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
-
-    // ===== SETUP & ROLE FUNCTIONS =====
-
-    window.setRole = (role) => {
-        const nameInput = document.getElementById('player-name-input').value.trim();
-        if (!nameInput) {
-            alert('من فضلك أدخل اسمك');
-            return;
-        }
-        myRole = role;
-        myName = nameInput;
-        scores[myName] = 0;
-        hideAllScreens();
-        showElement('section-select');
-        console.log('Player set:', myName);
-    };
-
-    window.showHostAuth = () => {
-        showElement('host-auth');
-    };
-
-    window.verifyHost = () => {
-        const pin = document.getElementById('host-pin').value;
-        if (pin === '1234') {
-            myRole = 'host';
-            myName = 'Host';
-            hideAllScreens();
-            showElement('section-select');
-            document.getElementById('global-home-btn').classList.remove('hidden');
-            document.getElementById('host-back-btn').classList.remove('hidden');
-            console.log('Host authenticated');
-        } else {
-            alert('رقم التحقق غير صحيح');
-            document.getElementById('host-pin').value = '';
-        }
-    };
-
-    window.chooseSection = (section) => {
-        currentSection = section;
-        if (section === 'scoreboard-only') {
-            toggleScoreboardOnly();
-        } else {
-            hideAllScreens();
-            showElement('type-select');
-            populateGameTypes(section);
-        }
-    };
-
-    function populateGameTypes(section) {
-        const menu = document.getElementById('brain-sub-menu');
-        menu.innerHTML = '';
-
-        const types = {
-            adults: [
-                { name: 'أسئلة ثقافية', id: 'adults' },
-            ],
-            islamic: [
-                { name: 'أسئلة إسلامية', id: 'islamic' }
-            ]
+        window.backToGameMenu = () => {
+            if(myRole !== 'host') return;
+            remove(liveRef); remove(answersRef);
+            document.getElementById('host-view').classList.add('hidden');
+            document.getElementById('game-play').classList.add('hidden');
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            document.getElementById('section-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
+            document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-top-bar').classList.remove('hidden');
         };
 
-        const gameTypes = types[section] || [];
-        gameTypes.forEach(type => {
-            const btn = document.createElement('button');
-            btn.className = 'w-full p-4 bg-blue-700 rounded-xl font-bold';
-            btn.textContent = type.name;
-            btn.onclick = () => setupQuestions(type.id);
-            menu.appendChild(btn);
-        });
-    }
+        window.goHome = () => { if(myRole === 'host') { remove(liveRef); remove(scoresRef); } location.reload(); };
+        window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
+        window.verifyHost = () => { if(document.getElementById('host-pin').value === '1234') { document.getElementById('host-auth').classList.add('hidden'); setRole('host'); } else { alert("خطأ!"); } };
 
-    window.toggleScoreboardOnly = () => {
-        myRole = 'scoreboard';
-        hideAllScreens();
-        showElement('game-play');
-        showElement('host-view');
-        showElement('dedicated-scoreboard');
-        document.getElementById('global-home-btn').classList.remove('hidden');
-    };
-
-    // ===== GAME SETUP FUNCTIONS =====
-
-    function getRandomSet(poolType, dataArray, size) {
-        let availableQuestions = dataArray.filter((_, index) => 
-            !sessionHistory[poolType].includes(index)
-        );
-
-        if (availableQuestions.length < size) {
-            sessionHistory[poolType] = [];
-            availableQuestions = [...dataArray];
-            console.log(`Pool ${poolType} reshuffled.`);
-        }
-
-        let shuffled = availableQuestions.sort(() => 0.5 - Math.random());
-        let selected = shuffled.slice(0, size);
-
-        selected.forEach(q => {
-            const originalIndex = dataArray.indexOf(q);
-            if (!sessionHistory[poolType].includes(originalIndex)) {
-                sessionHistory[poolType].push(originalIndex);
+        window.setRole = (role) => {
+            myRole = role;
+            if (role === 'player') {
+                myName = document.getElementById('player-name-input').value.trim();
+                if (!myName) return;
+                set(ref(db, `scores/${myName}`), 0);
             }
-        });
-
-        return selected;
-    }
-
-    function setupQuestions(type) {
-        if (!gameData[currentSection] || !gameData[currentSection][type]) {
-            console.error('Invalid section or type:', currentSection, type);
-            return;
-        }
-
-        currentType = type;
-        currentIndex = -1;
-        lastGameConfig = { section: currentSection, type: type };
-        currentQuestions = getRandomSet(type, gameData[currentSection][type], 7);
-        showHostUI();
-    }
-
-    window.setupTwisters = () => {
-        currentType = 'twisters';
-        currentIndex = -1;
-        lastGameConfig = { section: 'adults', type: 'twisters' };
-        currentQuestions = getRandomSet('twister', gameData.adults.twisters, 5);
-        showHostUI();
-    };
-
-    window.startMemory = (difficulty) => {
-        currentType = 'memory';
-        lastGameConfig = { type: 'memory', diff: difficulty };
-        hideAllScreens();
-        showElement('game-play');
-        if (myRole === 'host') {
-            showElement('host-view');
-            document.getElementById('memory-visuals').classList.remove('hidden');
-            document.getElementById('standard-visuals').classList.add('hidden');
-        } else if (myRole === 'player') {
-            showElement('player-view');
-            document.getElementById('player-memory-ui').classList.remove('hidden');
-            document.getElementById('player-quiz-ui').classList.add('hidden');
-            document.getElementById('keypad-container').classList.remove('hidden');
-        }
-        triggerNext();
-    };
-
-    function showHostUI() {
-        hideAllScreens();
-        showElement('game-play');
-        showElement('host-view');
-        document.getElementById('memory-visuals').classList.add('hidden');
-        document.getElementById('standard-visuals').classList.remove('hidden');
-        document.getElementById('host-back-btn').classList.remove('hidden');
-        if (myRole === 'player') {
-            showElement('player-view');
-            document.getElementById('player-quiz-ui').classList.remove('hidden');
-            document.getElementById('player-memory-ui').classList.add('hidden');
-            document.getElementById('keypad-container').classList.add('hidden');
-        }
-        triggerNext();
-    }
-
-    // ===== GAME FLOW FUNCTIONS =====
-
-    window.triggerNext = () => {
-        currentIndex++;
-        if (currentIndex >= currentQuestions.length) {
-            endGame();
-            return;
-        }
-
-        const question = currentQuestions[currentIndex];
-        if (currentType === 'twisters') {
-            displayTwister(question);
-        } else if (currentType === 'memory') {
-            displayMemory();
-        } else {
-            displayQuestion(question);
-        }
-    };
-
-    function displayQuestion(question) {
-        document.getElementById('display-title').textContent = question.q;
-        const contentDiv = document.getElementById('display-content');
-        contentDiv.innerHTML = '';
-
-        const playerInputArea = document.getElementById('player-input-area');
-        playerInputArea.innerHTML = '';
-
-        question.options.forEach((option, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'w-full p-3 bg-slate-700 rounded-lg hover:bg-slate-600 text-white font-bold';
-            btn.textContent = option;
-            btn.onclick = () => checkAnswer(index, question.correct);
-            playerInputArea.appendChild(btn);
-        });
-
-        document.getElementById('answer-counter').textContent = `السؤال: ${currentIndex + 1}/${currentQuestions.length}`;
-    }
-
-    function displayTwister(twister) {
-        document.getElementById('display-title').textContent = 'تلاعب لفظي';
-        document.getElementById('display-content').innerHTML = `<p class="text-2xl font-bold text-teal-400">${twister}</p>`;
-        document.getElementById('twister-scoring').classList.remove('hidden');
-        document.getElementById('answer-counter').textContent = `${currentIndex + 1}/${currentQuestions.length}`;
-    }
-
-    function displayMemory() {
-        const targetNumber = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-        document.getElementById('target-number-display').textContent = targetNumber;
-        document.getElementById('hand-wrapper').classList.add('open');
-        memoryInput = '';
-        updateDigitBoxes();
-    }
-
-    function checkAnswer(selectedIndex, correctIndex) {
-        if (selectedIndex === correctIndex) {
-            if (myName in scores) {
-                scores[myName] += 10;
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('global-home-btn').classList.remove('hidden');
+            if (role === 'host') {
+                remove(liveRef); remove(answersRef);
+                document.getElementById('section-select').classList.remove('hidden');
+                onValue(scoresRef, (snap) => {
+                    if(snap.val()) {
+                        playersList = Object.keys(snap.val());
+                        updateLeaderboardUI(snap.val());
+                    }
+                });
             } else {
-                scores[myName] = 10;
+                document.getElementById('game-play').classList.remove('hidden');
+                document.getElementById('player-view').classList.remove('hidden');
+                listenForGame();
             }
-            document.getElementById('p-score').textContent = scores[myName];
-            document.getElementById('p-status').textContent = '✓ صحيح!';
-            document.getElementById('p-status').style.color = '#10b981';
-        } else {
-            document.getElementById('p-status').textContent = '✗ خطأ!';
-            document.getElementById('p-status').style.color = '#ef4444';
+        };
+
+        // FIX 2: Scoreboard-only view Logic
+        window.toggleScoreboardOnly = () => {
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('host-game-container').classList.add('hidden');
+            document.getElementById('host-top-bar').classList.add('hidden');
+            document.getElementById('leaderboard-ui').classList.add('hidden');
+            document.getElementById('action-btn').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            
+            const scoreArea = document.getElementById('dedicated-scoreboard');
+            scoreArea.classList.remove('hidden');
+            
+            get(scoresRef).then(snap => {
+                const scores = snap.val() || {};
+                const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+                document.getElementById('dedicated-list').innerHTML = sorted.map(([n,v]) => `
+                    <div class="score-row">
+                        <span class="font-bold text-slate-300">${n}</span>
+                        <span class="font-black text-amber-400">${Math.round(v)}</span>
+                    </div>
+                `).join('');
+            });
+        };
+
+        window.chooseSection = (s) => {
+            currentSection = s;
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('type-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            const menu = document.getElementById('brain-sub-menu');
+            menu.innerHTML = (s === 'adults') ? 
+                `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">ثقافة عامة <i class="fa-solid fa-earth-africa"></i></button>
+                 <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">إسلاميات <i class="fa-solid fa-kaaba"></i></button>
+                 <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">الذاكرة <i class="fa-solid fa-brain"></i></button>` :
+                `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black text-lg text-white">ذكاء الأطفال <i class="fa-solid fa-lightbulb"></i></button>`;
+        };
+
+        window.showMemoryDiff = () => {
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.remove('hidden');
+        };
+
+        function getRandomSet(arr, size) {
+            let shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, size);
         }
-    }
 
-    function updateDigitBoxes() {
-        const boxes = document.querySelectorAll('.digit-box');
-        boxes.forEach((box, i) => {
-            box.textContent = memoryInput[i] || '-';
-        });
-    }
+        window.setupQuestions = (type) => {
+            currentType = 'brain'; currentIndex = -1;
+            lastGameConfig = { section: currentSection, type: 'brain', pool: type };
+            currentQuestions = getRandomSet(gameData[currentSection][type], 7);
+            showHostUI();
+        };
 
-    window.pressKey = (key) => {
-        if (key === 'back') {
-            memoryInput = memoryInput.slice(0, -1);
-        } else if (key !== 'submit') {
-            if (memoryInput.length < 4) {
-                memoryInput += key;
+        window.setupTwisters = () => {
+            currentType = 'twister'; currentIndex = -1;
+            lastGameConfig = { section: 'adults', type: 'twister' };
+            currentQuestions = getRandomSet(gameData.adults.twisters, 5);
+            showHostUI();
+        };
+
+        window.startMemory = (diff) => {
+            currentType = 'memory'; currentIndex = -1;
+            lastGameConfig = { type: 'memory', diff: diff };
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            currentQuestions = Array.from({length: 5}, () => Math.floor(1000 + Math.random() * 9000).toString());
+            showHostUI();
+        };
+
+        function showHostUI() {
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('display-title').innerText = "الجولة القادمة";
+            document.getElementById('display-content').innerText = "استعدوا للبدء!";
+            document.getElementById('action-btn').classList.remove('hidden');
+            document.getElementById('post-game-controls').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
+            document.getElementById('host-top-bar').classList.remove('hidden');
+        }
+
+        window.triggerNext = () => {
+            currentIndex++;
+            clearInterval(timerInterval);
+            remove(answersRef);
+            if (currentIndex >= currentQuestions.length) return announceWinner();
+            const item = currentQuestions[currentIndex];
+            if (currentType === 'memory') {
+                handleMemoryRound(item);
+            } else {
+                let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
+                set(liveRef, { type: currentType, content: item, round: currentIndex + 1, status: 'playing', activePlayer: pSpot, startTime: Date.now() });
+                renderHostStandard(item, pSpot);
+                if (document.getElementById('timer-enabled').checked) startTimer(15);
+            }
+        };
+
+        async function handleMemoryRound(target) {
+            const diff = lastGameConfig.diff;
+            const config = { easy: [2500, 10], medium: [1800, 8], hard: [1100, 5] }[diff];
+            document.getElementById('standard-visuals').classList.add('hidden');
+            document.getElementById('memory-visuals').classList.remove('hidden');
+            document.getElementById('target-number-display').innerText = target;
+            let cd = 3;
+            set(liveRef, { type: 'memory', status: 'countdown', round: currentIndex + 1 });
+            const countInt = setInterval(() => {
+                document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
+                if(cd-- === 0) {
+                    clearInterval(countInt);
+                    document.getElementById('hand-wrapper').classList.add('open');
+                    set(liveRef, { type: 'memory', status: 'reveal', target: target, duration: config[0] });
+                    setTimeout(() => {
+                        document.getElementById('hand-wrapper').classList.remove('open');
+                        document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
+                        set(liveRef, { type: 'memory', status: 'input', target: target, duration: config[1], startTime: Date.now() });
+                        startTimer(config[1], true);
+                    }, config[0]);
+                }
+            }, 1000);
+        }
+
+        function startTimer(sec, isMemory = false) {
+            let remain = sec;
+            timerInterval = setInterval(() => {
+                document.getElementById('host-timer-text').innerText = remain + "ث";
+                if (remain-- <= 0) {
+                    clearInterval(timerInterval);
+                    if (isMemory) showMemoryResults();
+                    if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
+                }
+            }, 1000);
+        }
+
+        async function showMemoryResults() {
+            set(liveRef, { status: 'scoring' });
+            const target = currentQuestions[currentIndex];
+            const ansSnap = await get(answersRef);
+            const answers = ansSnap.val() || {};
+            let displayHtml = `<div class='space-y-1 text-sm'>`;
+            for(let pName of playersList) {
+                const pData = answers[pName] || { val: "----" };
+                let score = 0, coloredDigits = "";
+                for(let i=0; i<4; i++) {
+                    const char = pData.val[i] || "-";
+                    if(char === target[i]) { score += 2; coloredDigits += `<span class="text-green-500 mx-0.5">${char}</span>`; }
+                    else { coloredDigits += `<span class="text-red-500 line-through mx-0.5">${char}</span>`; }
+                }
+                if(score === 8) score = 10;
+                get(ref(db, `scores/${pName}`)).then(s => set(ref(db, `scores/${pName}`), (s.val() || 0) + score));
+                displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span style="direction:ltr;">${coloredDigits}</span></div>`;
+            }
+            document.getElementById('display-content').innerHTML = displayHtml;
+        }
+
+        function updateLeaderboardUI(scores) {
+            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+            document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between'><span>${n}</span><span class='font-bold'>${Math.round(v)}</span></div>`).join('');
+        }
+
+        function renderHostStandard(item, pSpot) {
+            const title = document.getElementById('display-title');
+            const content = document.getElementById('display-content');
+            document.getElementById('memory-visuals').classList.add('hidden');
+            document.getElementById('standard-visuals').classList.remove('hidden');
+            if (currentType === 'brain') {
+                title.innerText = item.q;
+                content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-xl mb-1 border border-slate-600 font-bold'>${o}</div>`).join('');
+            } else {
+                title.innerText = "كررها 5 مرات بسرعة!";
+                content.innerHTML = `<p class='text-3xl text-teal-400 font-black'>${item}</p>`;
+                document.getElementById('current-player-name').innerText = pSpot;
+                document.getElementById('player-spotlight').classList.remove('hidden');
             }
         }
-        updateDigitBoxes();
-    };
 
-    window.submitMemory = () => {
-        if (memoryInput.length === 4) {
-            checkAnswer(0, 0);
-            setTimeout(() => triggerNext(), 1000);
-        } else {
-            alert('من فضلك أدخل رقماً من 4 خانات');
-        }
-    };
-
-    window.awardManual = (points) => {
-        if (myName in scores) {
-            scores[myName] += points;
-        } else {
-            scores[myName] = points;
-        }
-        console.log('Award:', points, 'Total:', scores[myName]);
-        triggerNext();
-    };
-
-    function endGame() {
-        document.getElementById('post-game-controls').classList.remove('hidden');
-        document.getElementById('action-btn').classList.add('hidden');
-        document.getElementById('twister-scoring').classList.add('hidden');
-        showScoreboard();
-    }
-
-    function showScoreboard() {
-        const leaderboard = document.getElementById('leaderboard-list');
-        leaderboard.innerHTML = '';
-        
-        const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-        sortedScores.forEach(([name, score], index) => {
-            const div = document.createElement('div');
-            div.className = 'flex justify-between p-2 bg-slate-800 rounded';
-            div.innerHTML = `<span>${index + 1}. ${name}</span><span class="font-bold text-yellow-400">${score}</span>`;
-            leaderboard.appendChild(div);
+        onValue(answersRef, (snap) => {
+            const count = snap.val() ? Object.keys(snap.val()).length : 0;
+            document.getElementById('answer-counter').innerText = `المشاركات: ${count} / ${playersList.length}`;
         });
-    }
 
-    window.restartSameCategory = () => {
-        currentIndex = -1;
-        document.getElementById('post-game-controls').classList.add('hidden');
-        document.getElementById('action-btn').classList.remove('hidden');
-        if (lastGameConfig.type === 'memory') {
-            startMemory(lastGameConfig.diff);
-        } else if (lastGameConfig.type === 'twisters') {
-            setupTwisters();
-        } else {
-            setupQuestions(lastGameConfig.type);
+        async function announceWinner() {
+            const snap = await get(scoresRef);
+            const scores = snap.val() || {};
+            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+            const winner = sorted[0] ? sorted[0][0] : "---";
+            set(liveRef, { status: 'finished', winner: winner });
+            document.getElementById('display-title').innerText = "بطل الجلسة الحالية";
+            document.getElementById('display-content').innerHTML = `<h1 class='text-5xl text-yellow-400 font-black mb-4'>${winner}</h1>`;
+            document.getElementById('post-game-controls').classList.remove('hidden');
+            document.getElementById('action-btn').classList.add('hidden');
+            confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         }
-    };
 
-    window.backToGameMenu = () => {
-        hideAllScreens();
-        showElement('section-select');
-        document.getElementById('host-back-btn').classList.add('hidden');
-        sessionHistory = { adults: [], islamic: [], movement: [], twister: [] };
-    };
+        function listenForGame() {
+            onValue(liveRef, (snap) => {
+                const data = snap.val(); if(!data) return;
+                get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = Math.round(s.val() || 0));
+                if(data.status === 'finished') {
+                    const isWin = (data.winner === myName);
+                    document.getElementById('player-q-text').innerText = isWin ? "أنت البطل!" : "حظاً أوفر";
+                    document.getElementById('player-input-area').innerHTML = `<div class='text-center'><div class='text-yellow-400 text-3xl font-black mb-2'>الفائز: ${data.winner}</div></div>`;
+                    if(isWin) confetti();
+                    return;
+                }
+                if(data.type === 'memory') {
+                    document.getElementById('keypad-container').classList.remove('hidden');
+                    document.getElementById('player-memory-ui').classList.remove('hidden');
+                    document.getElementById('player-quiz-ui').classList.add('hidden');
+                    handlePlayerMemory(data);
+                } else {
+                    document.getElementById('keypad-container').classList.add('hidden');
+                    document.getElementById('player-memory-ui').classList.add('hidden');
+                    document.getElementById('player-quiz-ui').classList.remove('hidden');
+                    handlePlayerStandard(data);
+                }
+            });
+        }
 
-    window.goHome = () => {
-        hideAllScreens();
-        showElement('setup-screen');
-        document.getElementById('player-name-input').value = '';
-        document.getElementById('host-pin').value = '';
-        document.getElementById('global-home-btn').classList.add('hidden');
-        document.getElementById('host-back-btn').classList.add('hidden');
-        myRole = '';
-        myName = '';
-        currentSection = '';
-        currentType = '';
-        scores = {};
-        sessionHistory = { adults: [], islamic: [], movement: [], twister: [] };
-    };
+        function handlePlayerMemory(data) {
+            const kbtns = document.querySelectorAll('.key-btn');
+            if(data.status === 'input') {
+                document.getElementById('p-status').innerText = "أدخل الرقم!";
+                kbtns.forEach(b => b.classList.remove('disabled'));
+                if(!roundStartTime) roundStartTime = Date.now();
+            } else {
+                document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتهى" : "راقب...";
+                kbtns.forEach(b => b.classList.add('disabled'));
+                if(data.status === 'countdown') { resetMemoryUI(); roundStartTime = 0; }
+            }
+        }
 
-    // Initialize
-    console.log('App loaded successfully');
-</script>
+        window.pressKey = (key) => {
+            if(key === 'back') memoryInput = memoryInput.slice(0, -1);
+            else if(memoryInput.length < 4) memoryInput += key;
+            const boxes = document.querySelectorAll('.digit-box');
+            // FILL LTR Logic
+            boxes.forEach((box, i) => box.innerText = memoryInput[i] || "-");
+            document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
+        };
 
+        window.submitMemory = () => {
+            set(ref(db, `current_answers/${myName}`), { val: memoryInput, time: Date.now() - roundStartTime });
+            document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
+            document.getElementById('p-status').innerText = "تم ✓";
+        };
+
+        function resetMemoryUI() {
+            memoryInput = ""; document.querySelectorAll('.digit-box').forEach(b => { b.innerText = "-"; });
+        }
+
+        function handlePlayerStandard(data) {
+            if(data.status === 'scoring') {
+                document.getElementById('p-status').innerText = "النتيجة...";
+                document.getElementById('player-input-area').innerHTML = ""; return;
+            }
+            if(data.type === 'brain') {
+                document.getElementById('p-status').innerText = "أجب الآن!";
+                document.getElementById('player-q-text').innerText = data.content.q;
+                document.getElementById('player-input-area').innerHTML = data.content.options.map((o, i) => 
+                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900">${o}</button>`
+                ).join('');
+            } else {
+                document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
+                document.getElementById('player-q-text').innerText = (data.activePlayer === myName) ? data.content : "---";
+                document.getElementById('player-input-area').innerHTML = "";
+            }
+        }
+
+        window.submitQuiz = (idx, correct, start) => {
+            set(ref(db, `current_answers/${myName}`), true);
+            if(idx === correct) {
+                const pts = 10 + Math.max(0, 10 - (Date.now() - start)/1000);
+                get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + pts));
+            }
+            document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 text-2xl font-black mt-5'>تم ✓</div>";
+        };
+
+        window.restartSameCategory = () => {
+            if(lastGameConfig.type === 'memory') startMemory(lastGameConfig.diff);
+            else if(lastGameConfig.type === 'brain') setupQuestions(lastGameConfig.pool);
+            else setupTwisters();
+        };
+
+        window.awardManual = (pts) => {
+            const name = document.getElementById('current-player-name').innerText;
+            get(ref(db, `scores/${name}`)).then(s => set(ref(db, `scores/${name}`), (s.val() || 0) + pts));
+            document.getElementById('twister-scoring').classList.add('hidden');
+        };
+    </script>
 </body>
 </html>
