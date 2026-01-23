@@ -1,49 +1,557 @@
-<script>
-    function setRole(role) {
-        // Your implementation here
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ألعاب العائلة Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            color: #f8fafc; 
+            padding: env(safe-area-inset-top, 24px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 15px);
+            display: flex; flex-direction: column;
+        }
+        #app { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 800px; margin: 0 auto; }
+        .bg-slate-card { background-color: #1e293b; }
+        .btn-teal { background-color: #14b8a6; }
+        .btn-purple { background-color: #a855f7; }
+        .hidden { display: none !important; }
+
+        /* FIX 1: Number Boxes LTR */
+        #digit-boxes { display: flex; flex-direction: row-reverse; justify-content: center; gap: 8px; }
+        .digit-box { 
+            width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); 
+            border: 2px solid #475569; border-radius: 12px; display: flex; 
+            align-items: center; justify-content: center; font-size: 1.8rem; 
+            font-weight: 900; background: #1e293b; direction: ltr;
+        }
+
+        /* FIX 3: Keypad LTR Grid */
+        .keypad-grid { 
+            display: grid; grid-template-columns: repeat(3, 1fr); 
+            gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; 
+            direction: ltr;
+        }
+        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border: 2px solid #475569; color: white; cursor: pointer; transition: all 0.2s; }
+        .key-btn:hover { background: #475569; }
+        .key-btn.disabled { opacity: 0.1; pointer-events: none; }
+
+        /* Scoreboard Specific Style */
+        .score-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; font-size: 1.2rem; }
+        .score-row:last-child { border: none; }
+
+        /* Host Layout */
+        .hand-container { position: relative; width: clamp(180px, 40vw, 400px); height: clamp(100px, 20vw, 250px); margin: 10px auto; perspective: 1000px; }
+        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 3px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
+        .hand-left { left: 0; transform-origin: left; border-radius: 15px 0 0 15px; }
+        .hand-right { right: 0; transform-origin: right; border-radius: 0 15px 15px 0; }
+        .open .hand-left { transform: rotateY(-110deg); }
+        .open .hand-right { transform: rotateY(110deg); }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.6s; }
+        .open .number-reveal { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <header class="flex justify-between items-center py-2 shrink-0">
+            <button onclick="goHome()" id="global-home-btn" class="hidden text-white bg-slate-800 p-3 rounded-full"><i class="fa-solid fa-house"></i></button>
+            <h1 class="font-black text-teal-400 mx-auto" style="font-size: var(--font-title);">ألعاب العائلة</h1>
+            <button onclick="backToGameMenu()" id="host-back-btn" class="hidden text-white bg-red-900 p-3 rounded-full"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+        </header>
+        
+        <main class="flex-1 flex flex-col justify-center overflow-hidden">
+            <div id="setup-screen" class="space-y-6 w-full px-4">
+                <div class="bg-slate-card p-6 rounded-[2rem] shadow-2xl border border-slate-700">
+                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none focus:border-teal-500">
+                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black">دخول</button>
+                </div>
+                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
+            </div>
+
+            <div id="host-auth" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
+                <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
+                    <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl outline-none border border-teal-500">
+                    <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black">تأكيد</button>
+                </div>
+            </div>
+
+            <div id="section-select" class="hidden space-y-4 px-4 w-full">
+                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-users"></i></button>
+                <button onclick="chooseSection('islamic')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">أسئلة إسلامية <i class="fa-solid fa-star"></i></button>
+                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-chart-bar"></i></button>
+            </div>
+
+            <div id="type-select" class="hidden space-y-4 px-4 w-full overflow-y-auto">
+                <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700 mb-4">
+                    <span class="font-bold">المؤقت</span>
+                    <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
+                </div>
+                <div id="brain-sub-menu" class="space-y-3"></div>
+                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue"></i></button>
+            </div>
+
+            <div id="memory-difficulty" class="hidden space-y-4 px-4 w-full">
+                <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-xl font-bold">سهل</button>
+                <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-xl font-bold">متوسط</button>
+                <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-xl font-bold">صعب</button>
+            </div>
+
+            <div id="game-play" class="hidden flex-1 flex flex-col px-2">
+                <div id="host-view" class="hidden flex flex-col h-full">
+                    <div id="host-top-bar" class="bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700 shrink-0">
+                        <span id="answer-counter">...</span>
+                        <span id="host-timer-text" class="text-red-400 font-black"></span>
+                    </div>
+
+                    <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
+                        <div id="memory-visuals" class="hidden text-center">
+                            <div id="hand-wrapper" class="hand-container">
+                                <div class="hand hand-left"></div>
+                                <div class="number-reveal" id="target-number-display">0000</div>
+                                <div class="hand hand-right"></div>
+                            </div>
+                            <h3 id="host-status-msg" class="font-bold text-lg text-teal-400 mt-2">...</h3>
+                        </div>
+
+                        <div id="standard-visuals" class="text-center">
+                            <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور: <span id="current-player-name" class="bg-orange-600 text-white px-2 rounded">---</span></div>
+                            <h2 id="display-title" class="font-black text-xl leading-tight">...</h2>
+                            <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
+                        </div>
+                    </div>
+
+                    <div id="dedicated-scoreboard" class="hidden flex-1 bg-slate-900 rounded-[2rem] p-6 border-2 border-amber-500 overflow-y-auto">
+                        <h2 class="text-2xl font-black text-amber-400 text-center mb-6">ترتيب النقاط الحالي <i class="fa-solid fa-ranking-star"></i></h2>
+                        <div id="dedicated-list" class="divide-y divide-slate-800"></div>
+                    </div>
+
+                    <div id="host-controls" class="py-3 shrink-0">
+                        <div id="twister-scoring" class="hidden grid grid-cols-5 gap-1 mb-3">
+                            <button onclick="awardManual(2)" class="p-3 bg-red-900 rounded-lg">2</button>
+                            <button onclick="awardManual(4)" class="p-3 bg-orange-800 rounded-lg">4</button>
+                            <button onclick="awardManual(6)" class="p-3 bg-yellow-700 rounded-lg">6</button>
+                            <button onclick="awardManual(8)" class="p-3 bg-green-800 rounded-lg">8</button>
+                            <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
+                        </div>
+                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
+                        
+                        <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
+                            <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
+                            <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
+                        </div>
+                    </div>
+
+                    <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
+                        <div id="leaderboard-list" class="space-y-1 text-sm"></div>
+                    </div>
+                </div>
+
+                <div id="player-view" class="hidden flex flex-col h-full">
+                    <div class="bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700">
+                        <span id="p-status" class="text-teal-400 font-black italic">جاهز؟</span>
+                        <span id="p-score" class="font-black text-yellow-400 text-lg">0</span>
+                    </div>
+                    <div class="flex-1 flex flex-col justify-center">
+                        <div id="player-quiz-ui" class="w-full space-y-3">
+                            <div id="player-q-text" class="text-center font-black text-xl mb-4 px-2">...</div>
+                            <div id="player-input-area" class="px-2 space-y-3 overflow-y-auto max-h-[40vh]"></div>
+                        </div>
+                        <div id="player-memory-ui" class="hidden w-full flex flex-col items-center">
+                            <div id="digit-boxes">
+                                <div class="digit-box" data-idx="0">-</div>
+                                <div class="digit-box" data-idx="1">-</div>
+                                <div class="digit-box" data-idx="2">-</div>
+                                <div class="digit-box" data-idx="3">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="keypad-container" class="hidden pb-2 shrink-0">
+                        <div class="keypad-grid">
+                            <button class="key-btn" onclick="pressKey('1')">1</button>
+                            <button class="key-btn" onclick="pressKey('2')">2</button>
+                            <button class="key-btn" onclick="pressKey('3')">3</button>
+                            <button class="key-btn" onclick="pressKey('4')">4</button>
+                            <button class="key-btn" onclick="pressKey('5')">5</button>
+                            <button class="key-btn" onclick="pressKey('6')">6</button>
+                            <button class="key-btn" onclick="pressKey('7')">7</button>
+                            <button class="key-btn" onclick="pressKey('8')">8</button>
+                            <button class="key-btn" onclick="pressKey('9')">9</button>
+                            <button class="key-btn text-red-500" onclick="pressKey('back')"><i class="fa-solid fa-delete-left"></i></button>
+                            <button class="key-btn" onclick="pressKey('0')">0</button>
+                            <button class="key-btn submit !bg-teal-600" id="mem-submit" onclick="submitMemory()">إرسال</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script type="module">
+    import { gameData } from './questions.js';
+
+    // ===== STATE VARIABLES =====
+    let myRole = '', myName = '', currentSection = '', currentType = '';
+    let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
+    let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
+    let scores = {};
+    let timerEnabled = true;
+    let sessionHistory = {
+        adults: [],
+        islamic: [],
+        movement: [],
+        twister: []
+    };
+
+    // ===== UTILITY FUNCTIONS =====
+
+    function hideAllScreens() {
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('section-select').classList.add('hidden');
+        document.getElementById('type-select').classList.add('hidden');
+        document.getElementById('memory-difficulty').classList.add('hidden');
+        document.getElementById('game-play').classList.add('hidden');
+        document.getElementById('host-auth').classList.add('hidden');
     }
 
-    function showHostAuth() {
-        // Your implementation here
+    function showElement(id) {
+        document.getElementById(id).classList.remove('hidden');
     }
 
-    function verifyHost(host) {
-        // Your implementation here
+    function hideElement(id) {
+        document.getElementById(id).classList.add('hidden');
     }
 
-    function chooseSection(section) {
-        // Your implementation here
+    // ===== SETUP & ROLE FUNCTIONS =====
+
+    window.setRole = (role) => {
+        const nameInput = document.getElementById('player-name-input').value.trim();
+        if (!nameInput) {
+            alert('من فضلك أدخل اسمك');
+            return;
+        }
+        myRole = role;
+        myName = nameInput;
+        scores[myName] = 0;
+        hideAllScreens();
+        showElement('section-select');
+        console.log('Player set:', myName);
+    };
+
+    window.showHostAuth = () => {
+        showElement('host-auth');
+    };
+
+    window.verifyHost = () => {
+        const pin = document.getElementById('host-pin').value;
+        if (pin === '1234') {
+            myRole = 'host';
+            myName = 'Host';
+            hideAllScreens();
+            showElement('section-select');
+            document.getElementById('global-home-btn').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            console.log('Host authenticated');
+        } else {
+            alert('رقم التحقق غير صحيح');
+            document.getElementById('host-pin').value = '';
+        }
+    };
+
+    window.chooseSection = (section) => {
+        currentSection = section;
+        if (section === 'scoreboard-only') {
+            toggleScoreboardOnly();
+        } else {
+            hideAllScreens();
+            showElement('type-select');
+            populateGameTypes(section);
+        }
+    };
+
+    function populateGameTypes(section) {
+        const menu = document.getElementById('brain-sub-menu');
+        menu.innerHTML = '';
+
+        const types = {
+            adults: [
+                { name: 'أسئلة ثقافية', id: 'adults' },
+            ],
+            islamic: [
+                { name: 'أسئلة إسلامية', id: 'islamic' }
+            ]
+        };
+
+        const gameTypes = types[section] || [];
+        gameTypes.forEach(type => {
+            const btn = document.createElement('button');
+            btn.className = 'w-full p-4 bg-blue-700 rounded-xl font-bold';
+            btn.textContent = type.name;
+            btn.onclick = () => setupQuestions(type.id);
+            menu.appendChild(btn);
+        });
     }
 
-    function toggleScoreboardOnly() {
-        // Your implementation here
+    window.toggleScoreboardOnly = () => {
+        myRole = 'scoreboard';
+        hideAllScreens();
+        showElement('game-play');
+        showElement('host-view');
+        showElement('dedicated-scoreboard');
+        document.getElementById('global-home-btn').classList.remove('hidden');
+    };
+
+    // ===== GAME SETUP FUNCTIONS =====
+
+    function getRandomSet(poolType, dataArray, size) {
+        let availableQuestions = dataArray.filter((_, index) => 
+            !sessionHistory[poolType].includes(index)
+        );
+
+        if (availableQuestions.length < size) {
+            sessionHistory[poolType] = [];
+            availableQuestions = [...dataArray];
+            console.log(`Pool ${poolType} reshuffled.`);
+        }
+
+        let shuffled = availableQuestions.sort(() => 0.5 - Math.random());
+        let selected = shuffled.slice(0, size);
+
+        selected.forEach(q => {
+            const originalIndex = dataArray.indexOf(q);
+            if (!sessionHistory[poolType].includes(originalIndex)) {
+                sessionHistory[poolType].push(originalIndex);
+            }
+        });
+
+        return selected;
     }
 
-    function startMemory() {
-        // Your implementation here
+    function setupQuestions(type) {
+        if (!gameData[currentSection] || !gameData[currentSection][type]) {
+            console.error('Invalid section or type:', currentSection, type);
+            return;
+        }
+
+        currentType = type;
+        currentIndex = -1;
+        lastGameConfig = { section: currentSection, type: type };
+        currentQuestions = getRandomSet(type, gameData[currentSection][type], 7);
+        showHostUI();
     }
 
-    function awardManual(score) {
-        // Your implementation here
-    }
+    window.setupTwisters = () => {
+        currentType = 'twisters';
+        currentIndex = -1;
+        lastGameConfig = { section: 'adults', type: 'twisters' };
+        currentQuestions = getRandomSet('twister', gameData.adults.twisters, 5);
+        showHostUI();
+    };
 
-    function triggerNext() {
-        // Your implementation here
-    }
-
-    function backToGameMenu() {
-        // Your implementation here
-    }
-
-    function pressKey(key) {
-        // Your implementation here
-    }
-
-    function submitMemory(memory) {
-        // Your implementation here
-    }
+    window.startMemory = (difficulty) => {
+        currentType = 'memory';
+        lastGameConfig = { type: 'memory', diff: difficulty };
+        hideAllScreens();
+        showElement('game-play');
+        if (myRole === 'host') {
+            showElement('host-view');
+            document.getElementById('memory-visuals').classList.remove('hidden');
+            document.getElementById('standard-visuals').classList.add('hidden');
+        } else if (myRole === 'player') {
+            showElement('player-view');
+            document.getElementById('player-memory-ui').classList.remove('hidden');
+            document.getElementById('player-quiz-ui').classList.add('hidden');
+            document.getElementById('keypad-container').classList.remove('hidden');
+        }
+        triggerNext();
+    };
 
     function showHostUI() {
-        // Your implementation here
+        hideAllScreens();
+        showElement('game-play');
+        showElement('host-view');
+        document.getElementById('memory-visuals').classList.add('hidden');
+        document.getElementById('standard-visuals').classList.remove('hidden');
+        document.getElementById('host-back-btn').classList.remove('hidden');
+        if (myRole === 'player') {
+            showElement('player-view');
+            document.getElementById('player-quiz-ui').classList.remove('hidden');
+            document.getElementById('player-memory-ui').classList.add('hidden');
+            document.getElementById('keypad-container').classList.add('hidden');
+        }
+        triggerNext();
     }
+
+    // ===== GAME FLOW FUNCTIONS =====
+
+    window.triggerNext = () => {
+        currentIndex++;
+        if (currentIndex >= currentQuestions.length) {
+            endGame();
+            return;
+        }
+
+        const question = currentQuestions[currentIndex];
+        if (currentType === 'twisters') {
+            displayTwister(question);
+        } else if (currentType === 'memory') {
+            displayMemory();
+        } else {
+            displayQuestion(question);
+        }
+    };
+
+    function displayQuestion(question) {
+        document.getElementById('display-title').textContent = question.q;
+        const contentDiv = document.getElementById('display-content');
+        contentDiv.innerHTML = '';
+
+        const playerInputArea = document.getElementById('player-input-area');
+        playerInputArea.innerHTML = '';
+
+        question.options.forEach((option, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'w-full p-3 bg-slate-700 rounded-lg hover:bg-slate-600 text-white font-bold';
+            btn.textContent = option;
+            btn.onclick = () => checkAnswer(index, question.correct);
+            playerInputArea.appendChild(btn);
+        });
+
+        document.getElementById('answer-counter').textContent = `السؤال: ${currentIndex + 1}/${currentQuestions.length}`;
+    }
+
+    function displayTwister(twister) {
+        document.getElementById('display-title').textContent = 'تلاعب لفظي';
+        document.getElementById('display-content').innerHTML = `<p class="text-2xl font-bold text-teal-400">${twister}</p>`;
+        document.getElementById('twister-scoring').classList.remove('hidden');
+        document.getElementById('answer-counter').textContent = `${currentIndex + 1}/${currentQuestions.length}`;
+    }
+
+    function displayMemory() {
+        const targetNumber = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+        document.getElementById('target-number-display').textContent = targetNumber;
+        document.getElementById('hand-wrapper').classList.add('open');
+        memoryInput = '';
+        updateDigitBoxes();
+    }
+
+    function checkAnswer(selectedIndex, correctIndex) {
+        if (selectedIndex === correctIndex) {
+            if (myName in scores) {
+                scores[myName] += 10;
+            } else {
+                scores[myName] = 10;
+            }
+            document.getElementById('p-score').textContent = scores[myName];
+            document.getElementById('p-status').textContent = '✓ صحيح!';
+            document.getElementById('p-status').style.color = '#10b981';
+        } else {
+            document.getElementById('p-status').textContent = '✗ خطأ!';
+            document.getElementById('p-status').style.color = '#ef4444';
+        }
+    }
+
+    function updateDigitBoxes() {
+        const boxes = document.querySelectorAll('.digit-box');
+        boxes.forEach((box, i) => {
+            box.textContent = memoryInput[i] || '-';
+        });
+    }
+
+    window.pressKey = (key) => {
+        if (key === 'back') {
+            memoryInput = memoryInput.slice(0, -1);
+        } else if (key !== 'submit') {
+            if (memoryInput.length < 4) {
+                memoryInput += key;
+            }
+        }
+        updateDigitBoxes();
+    };
+
+    window.submitMemory = () => {
+        if (memoryInput.length === 4) {
+            checkAnswer(0, 0);
+            setTimeout(() => triggerNext(), 1000);
+        } else {
+            alert('من فضلك أدخل رقماً من 4 خانات');
+        }
+    };
+
+    window.awardManual = (points) => {
+        if (myName in scores) {
+            scores[myName] += points;
+        } else {
+            scores[myName] = points;
+        }
+        console.log('Award:', points, 'Total:', scores[myName]);
+        triggerNext();
+    };
+
+    function endGame() {
+        document.getElementById('post-game-controls').classList.remove('hidden');
+        document.getElementById('action-btn').classList.add('hidden');
+        document.getElementById('twister-scoring').classList.add('hidden');
+        showScoreboard();
+    }
+
+    function showScoreboard() {
+        const leaderboard = document.getElementById('leaderboard-list');
+        leaderboard.innerHTML = '';
+        
+        const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        sortedScores.forEach(([name, score], index) => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between p-2 bg-slate-800 rounded';
+            div.innerHTML = `<span>${index + 1}. ${name}</span><span class="font-bold text-yellow-400">${score}</span>`;
+            leaderboard.appendChild(div);
+        });
+    }
+
+    window.restartSameCategory = () => {
+        currentIndex = -1;
+        document.getElementById('post-game-controls').classList.add('hidden');
+        document.getElementById('action-btn').classList.remove('hidden');
+        if (lastGameConfig.type === 'memory') {
+            startMemory(lastGameConfig.diff);
+        } else if (lastGameConfig.type === 'twisters') {
+            setupTwisters();
+        } else {
+            setupQuestions(lastGameConfig.type);
+        }
+    };
+
+    window.backToGameMenu = () => {
+        hideAllScreens();
+        showElement('section-select');
+        document.getElementById('host-back-btn').classList.add('hidden');
+        sessionHistory = { adults: [], islamic: [], movement: [], twister: [] };
+    };
+
+    window.goHome = () => {
+        hideAllScreens();
+        showElement('setup-screen');
+        document.getElementById('player-name-input').value = '';
+        document.getElementById('host-pin').value = '';
+        document.getElementById('global-home-btn').classList.add('hidden');
+        document.getElementById('host-back-btn').classList.add('hidden');
+        myRole = '';
+        myName = '';
+        currentSection = '';
+        currentType = '';
+        scores = {};
+        sessionHistory = { adults: [], islamic: [], movement: [], twister: [] };
+    };
+
+    // Initialize
+    console.log('App loaded successfully');
 </script>
+
+</body>
+</html>
