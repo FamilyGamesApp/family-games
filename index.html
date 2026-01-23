@@ -4,29 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ألعاب العائلة Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            /* Dynamic height to fix mobile browser address bar issues */
             --app-height: 100vh;
             --font-title: clamp(1.4rem, 5vw, 2.5rem);
         }
-
-        /* The master fix for margins and system bars */
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #0f172a;
-        }
-
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
         body { 
             font-family: 'Tajawal', sans-serif; 
             color: #f8fafc; 
-            /* Universal padding for status bars (iPhone Notch / Android Hole-punch) */
             padding-top: env(safe-area-inset-top, 24px);
             padding-bottom: env(safe-area-inset-bottom, 20px);
             padding-left: env(safe-area-inset-left, 15px);
@@ -34,98 +24,50 @@
             display: flex;
             flex-direction: column;
         }
-
-        #app {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 600px; /* Centered for tablets/TVs */
-            margin: 0 auto;
-            position: relative;
-        }
-
-        /* Scrollable area for lists like question types */
-        .scroll-container {
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 20px;
-        }
-
-        /* Large Screen / TV Optimization */
-        @media (min-width: 1024px) {
-            #app { max-width: 900px !important; }
-            .key-btn { height: 90px !important; font-size: 2.5rem !important; }
-            .digit-box { width: 110px !important; height: 110px !important; font-size: 4rem !important; }
-        }
-
+        #app { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 800px; margin: 0 auto; position: relative; }
+        .scroll-container { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 20px; }
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
         .hidden { display: none !important; }
         
-        /* CSS HANDS ANIMATION */
-        .hand-container { 
-            position: relative; 
-            width: clamp(180px, 40vw, 400px); 
-            height: clamp(100px, 20vw, 250px); 
-            margin: 10px auto; 
-            perspective: 1000px; 
-        }
-        .hand { 
-            position: absolute; width: 50%; height: 100%; background: #fbbf24; 
-            border: 3px solid #b45309; transition: transform 0.6s ease-in-out; 
-            z-index: 10; display: flex; align-items: center; justify-content: center; 
-        }
+        /* Layout Fixes */
+        .hand-container { position: relative; width: clamp(180px, 40vw, 400px); height: clamp(100px, 20vw, 250px); margin: 10px auto; perspective: 1000px; }
+        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 3px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; display: flex; align-items: center; justify-content: center; }
         .hand-left { left: 0; transform-origin: left; border-radius: 15px 0 0 15px; border-right: none; }
         .hand-right { right: 0; transform-origin: right; border-radius: 0 15px 15px 0; border-left: none; }
         .open .hand-left { transform: rotateY(-110deg); }
         .open .hand-right { transform: rotateY(110deg); }
-        
-        .number-reveal { 
-            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; 
-            font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; 
-            opacity: 0; transition: opacity 0.2s; 
-        }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; }
         .open .number-reveal { opacity: 1; }
 
-        /* KEYPAD STYLES */
-        .keypad-grid { 
-            display: grid; grid-template-columns: repeat(3, 1fr); 
-            gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; 
-        }
-        .key-btn { 
-            height: clamp(50px, 10vh, 70px); 
-            display: flex; align-items: center; justify-content: center; 
-            background: #334155; border-radius: 12px; font-size: 1.4rem; 
-            font-weight: bold; border-bottom: 4px solid #0f172a; touch-action: manipulation;
-        }
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; }
+        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border-bottom: 4px solid #0f172a; touch-action: manipulation; }
         .key-btn.disabled { opacity: 0.1; pointer-events: none; }
-        
-        .digit-box { 
-            width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); 
-            border: 2px solid #475569; border-radius: 12px; display: flex; 
-            align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; 
-            background: #1e293b; 
-        }
+        .digit-box { width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); border: 2px solid #475569; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; background: #1e293b; }
     </style>
 </head>
 <body>
 
     <div id="app">
         <header class="flex justify-between items-center py-2 shrink-0">
-            <button onclick="goHome()" id="global-home-btn" class="hidden text-slate-400 bg-slate-800 p-2 rounded-full">🏠</button>
+            <button onclick="goHome()" id="global-home-btn" class="hidden text-white bg-slate-800 p-3 rounded-full">
+                <i class="fa-solid fa-house"></i>
+            </button>
             <h1 class="font-black text-teal-400 mx-auto" style="font-size: var(--font-title);">ألعاب العائلة</h1>
+            <button onclick="backToGameMenu()" id="host-back-btn" class="hidden text-white bg-red-900 p-3 rounded-full">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
         </header>
         
         <main class="flex-1 flex flex-col justify-center overflow-hidden">
             
             <div id="setup-screen" class="space-y-6 w-full px-4">
                 <div class="bg-slate-card p-6 rounded-[2rem] shadow-2xl border border-slate-700">
-                    <input id="player-name-input" type="text" placeholder="اسم اللاعب..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-xl">
+                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-xl font-bold">
                     <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black">دخول</button>
                 </div>
-                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">دخول المشرف</button>
+                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
             </div>
 
             <div id="host-auth" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
@@ -136,8 +78,15 @@
             </div>
 
             <div id="section-select" class="hidden space-y-4 px-4 w-full">
-                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار</button>
-                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال</button>
+                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">
+                    قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i>
+                </button>
+                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">
+                    قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i>
+                </button>
+                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">
+                    جدول النقاط <i class="fa-solid fa-trophy mr-2"></i>
+                </button>
             </div>
 
             <div id="type-select" class="hidden scroll-container px-4 w-full">
@@ -146,7 +95,9 @@
                     <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
                 </div>
                 <div id="brain-sub-menu" class="space-y-3"></div>
-                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي 👅</button>
+                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">
+                    تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i>
+                </button>
             </div>
 
             <div id="memory-difficulty" class="hidden space-y-4 px-4 w-full">
@@ -188,13 +139,14 @@
                             <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
                         </div>
                         <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
-                        <div id="post-game-controls" class="hidden grid grid-cols-2 gap-2 mt-2">
-                            <button onclick="restartSameCategory()" class="p-3 btn-teal rounded-xl font-bold">إعادة</button>
-                            <button onclick="backToGameList()" class="p-3 bg-slate-700 rounded-xl font-bold">خروج</button>
+                        
+                        <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
+                            <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg shadow-lg">جولة جديدة (نفس القسم)</button>
+                            <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold text-slate-300">القائمة الرئيسية</button>
                         </div>
                     </div>
 
-                    <div id="leaderboard-ui" class="hidden bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2">
+                    <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
                         <div id="leaderboard-list" class="space-y-1 text-sm"></div>
                     </div>
                 </div>
@@ -231,7 +183,7 @@
                             <button class="key-btn disabled" onclick="pressKey('7')">7</button>
                             <button class="key-btn disabled" onclick="pressKey('8')">8</button>
                             <button class="key-btn disabled" onclick="pressKey('9')">9</button>
-                            <button class="key-btn disabled text-red-500" onclick="pressKey('back')">⌫</button>
+                            <button class="key-btn disabled text-red-500" onclick="pressKey('back')"><i class="fa-solid fa-delete-left"></i></button>
                             <button class="key-btn disabled" onclick="pressKey('0')">0</button>
                             <button class="key-btn disabled submit !bg-teal-600" id="mem-submit" onclick="submitMemory()">إرسال</button>
                         </div>
@@ -255,8 +207,8 @@
             messagingSenderId: "290150126558",
             appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
         };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        const fbApp = initializeApp(firebaseConfig);
+        const db = getDatabase(fbApp);
         const liveRef = ref(db, 'live_game');
         const scoresRef = ref(db, 'scores');
         const answersRef = ref(db, 'current_answers');
@@ -265,9 +217,30 @@
         let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
         let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
 
-        window.goHome = () => { if(myRole === 'host') { remove(liveRef); remove(scoresRef); } location.reload(); };
+        // Global back to Main Menu (Host Only)
+        window.backToGameMenu = () => {
+            if(myRole !== 'host') return;
+            remove(liveRef);
+            remove(answersRef);
+            document.getElementById('host-view').classList.add('hidden');
+            document.getElementById('game-play').classList.add('hidden');
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            document.getElementById('section-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.add('hidden');
+        };
+
+        window.goHome = () => { 
+            if(myRole === 'host') { remove(liveRef); remove(scoresRef); } 
+            location.reload(); 
+        };
+
         window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
-        window.verifyHost = () => { if(document.getElementById('host-pin').value === '1234') { document.getElementById('host-auth').classList.add('hidden'); setRole('host'); } else { alert("خطأ!"); } };
+        window.verifyHost = () => { 
+            if(document.getElementById('host-pin').value === '1234') { 
+                document.getElementById('host-auth').classList.add('hidden'); setRole('host'); 
+            } else { alert("خطأ!"); } 
+        };
 
         window.setRole = (role) => {
             myRole = role;
@@ -278,10 +251,16 @@
             }
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('global-home-btn').classList.remove('hidden');
+            
             if (role === 'host') {
                 remove(liveRef); remove(answersRef);
                 document.getElementById('section-select').classList.remove('hidden');
-                onValue(scoresRef, (snap) => { if(snap.val()) playersList = Object.keys(snap.val()); });
+                onValue(scoresRef, (snap) => {
+                    if(snap.val()) {
+                        playersList = Object.keys(snap.val());
+                        updateLeaderboardUI(snap.val());
+                    }
+                });
             } else {
                 document.getElementById('game-play').classList.remove('hidden');
                 document.getElementById('player-view').classList.remove('hidden');
@@ -289,16 +268,28 @@
             }
         };
 
+        // Scoreboard Toggle for Host
+        window.toggleScoreboardOnly = () => {
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('display-title').innerText = "جدول النقاط العام";
+            document.getElementById('display-content').innerText = "متابعة النتائج الحالية";
+            document.getElementById('action-btn').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+        };
+
         window.chooseSection = (s) => {
             currentSection = s;
             document.getElementById('section-select').classList.add('hidden');
             document.getElementById('type-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
             const menu = document.getElementById('brain-sub-menu');
             menu.innerHTML = (s === 'adults') ? 
-                `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">ثقافة عامة 🌍</button>
-                 <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">إسلاميات 🕌</button>
-                 <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">الذاكرة 🧠</button>` :
-                `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black text-lg text-white">ذكاء الأطفال 💡</button>`;
+                `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">ثقافة عامة <i class="fa-solid fa-earth-africa"></i></button>
+                 <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">إسلاميات <i class="fa-solid fa-kaaba"></i></button>
+                 <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">الذاكرة <i class="fa-solid fa-brain"></i></button>` :
+                `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black text-lg text-white">ذكاء الأطفال <i class="fa-solid fa-lightbulb"></i></button>`;
         };
 
         window.showMemoryDiff = () => {
@@ -306,17 +297,23 @@
             document.getElementById('memory-difficulty').classList.remove('hidden');
         };
 
+        // Improved Randomization Logic
+        function getRandomSet(arr, size) {
+            let shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, size);
+        }
+
         window.setupQuestions = (type) => {
             currentType = 'brain'; currentIndex = -1;
             lastGameConfig = { section: currentSection, type: 'brain', pool: type };
-            currentQuestions = shuffleArray(gameData[currentSection][type]).slice(0, 7);
+            currentQuestions = getRandomSet(gameData[currentSection][type], 7);
             showHostUI();
         };
 
         window.setupTwisters = () => {
             currentType = 'twister'; currentIndex = -1;
             lastGameConfig = { section: 'adults', type: 'twister' };
-            currentQuestions = shuffleArray(gameData.adults.twisters).slice(0, 5);
+            currentQuestions = getRandomSet(gameData.adults.twisters, 5);
             showHostUI();
         };
 
@@ -333,14 +330,17 @@
             document.getElementById('game-play').classList.remove('hidden');
             document.getElementById('host-view').classList.remove('hidden');
             document.getElementById('display-title').innerText = "الجولة القادمة";
-            document.getElementById('display-content').innerText = "استعدوا!";
+            document.getElementById('display-content').innerText = "استعدوا للبدء!";
+            document.getElementById('action-btn').classList.remove('hidden');
+            document.getElementById('post-game-controls').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
         }
 
+        // GAME FLOW
         window.triggerNext = () => {
             currentIndex++;
             clearInterval(timerInterval);
             remove(answersRef);
-            document.getElementById('leaderboard-ui').classList.add('hidden');
 
             if (currentIndex >= currentQuestions.length) return announceWinner();
 
@@ -388,7 +388,6 @@
                 if (remain-- <= 0) {
                     clearInterval(timerInterval);
                     if (isMemory) showMemoryResults();
-                    else showMidGameLeaderboard();
                     if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                 }
             }, 1000);
@@ -414,21 +413,18 @@
                 displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span>${coloredDigits}</span></div>`;
             }
             document.getElementById('display-content').innerHTML = displayHtml;
-            showMidGameLeaderboard();
         }
 
-        async function showMidGameLeaderboard() {
-            const snap = await get(scoresRef);
-            const scores = snap.val() || {};
+        function updateLeaderboardUI(scores) {
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-            document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between'><span>${n}</span><span>${Math.round(v)}</span></div>`).join('');
-            document.getElementById('leaderboard-ui').classList.remove('hidden');
-            set(liveRef, { status: 'scoring' });
+            document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between'><span>${n}</span><span class='font-bold'>${Math.round(v)}</span></div>`).join('');
         }
 
         function renderHostStandard(item, pSpot) {
             const title = document.getElementById('display-title');
             const content = document.getElementById('display-content');
+            document.getElementById('memory-visuals').classList.add('hidden');
+            document.getElementById('standard-visuals').classList.remove('hidden');
             if (currentType === 'brain') {
                 title.innerText = item.q;
                 content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-xl mb-1 border border-slate-600 font-bold'>${o}</div>`).join('');
@@ -443,7 +439,7 @@
         function listenForAnswers() {
             onValue(answersRef, (snap) => {
                 const count = snap.val() ? Object.keys(snap.val()).length : 0;
-                document.getElementById('answer-counter').innerText = `تمت الإجابة: ${count} / ${playersList.length}`;
+                document.getElementById('answer-counter').innerText = `المشاركات: ${count} / ${playersList.length}`;
             });
         }
 
@@ -453,13 +449,14 @@
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
             const winner = sorted[0] ? sorted[0][0] : "---";
             set(liveRef, { status: 'finished', winner: winner });
-            document.getElementById('display-title').innerText = "🏆 بطل الجلسة 🏆";
+            document.getElementById('display-title').innerText = "بطل الجلسة الحالية";
             document.getElementById('display-content').innerHTML = `<h1 class='text-5xl text-yellow-400 font-black mb-4'>${winner}</h1>`;
             document.getElementById('post-game-controls').classList.remove('hidden');
             document.getElementById('action-btn').classList.add('hidden');
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         }
 
+        // PLAYER LOGIC
         function listenForGame() {
             onValue(liveRef, (snap) => {
                 const data = snap.val(); if(!data) return;
@@ -467,7 +464,7 @@
 
                 if(data.status === 'finished') {
                     const isWin = (data.winner === myName);
-                    document.getElementById('player-q-text').innerText = isWin ? "👑 مبروك الفوز! 👑" : "حظاً أوفر";
+                    document.getElementById('player-q-text').innerText = isWin ? "أنت البطل!" : "حظاً أوفر";
                     document.getElementById('player-input-area').innerHTML = `<div class='text-center'><div class='text-yellow-400 text-3xl font-black mb-2'>الفائز: ${data.winner}</div></div>`;
                     if(isWin) confetti();
                     return;
@@ -525,15 +522,15 @@
 
         function handlePlayerStandard(data) {
             if(data.status === 'scoring') {
-                document.getElementById('p-status').innerText = "تحقق من المضيف";
-                document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400'>انتهت الجولة</div>";
+                document.getElementById('p-status').innerText = "انتهت الجولة";
+                document.getElementById('player-input-area').innerHTML = "";
                 return;
             }
             if(data.type === 'brain') {
                 document.getElementById('p-status').innerText = "أجب الآن!";
                 document.getElementById('player-q-text').innerText = data.content.q;
                 document.getElementById('player-input-area').innerHTML = data.content.options.map((o, i) => 
-                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900 active:scale-95 transition-all text-white">${o}</button>`
+                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900 text-white">${o}</button>`
                 ).join('');
             } else {
                 document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
@@ -551,18 +548,12 @@
             document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 text-2xl font-black mt-5'>تم ✓</div>";
         };
 
+        // NEW ROUND / RESTART
         window.restartSameCategory = () => {
-            playersList.forEach(p => set(ref(db, `scores/${p}`), 0));
+            // Load fresh set of random questions
             if(lastGameConfig.type === 'memory') startMemory(lastGameConfig.diff);
             else if(lastGameConfig.type === 'brain') setupQuestions(lastGameConfig.pool);
             else setupTwisters();
-        };
-
-        window.backToGameList = () => {
-            playersList.forEach(p => set(ref(db, `scores/${p}`), 0));
-            remove(liveRef);
-            document.getElementById('host-view').classList.add('hidden');
-            document.getElementById('type-select').classList.remove('hidden');
         };
 
         function shuffleArray(arr) { return arr.sort(() => Math.random() - 0.5); }
