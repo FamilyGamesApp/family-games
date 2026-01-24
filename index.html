@@ -1,4 +1,69 @@
-// =========  COMPLETE TV HOST FLOW  =========
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ألعاب العائلة Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- =========  ORIGINAL  (PHONE / DESKTOP)  ========= -->
+    <style>
+        :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
+        body { font-family: 'Tajawal', sans-serif; color: #f8fafc; padding: env(safe-area-inset-top, 24px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 15px); display: flex; flex-direction: column; }
+        #app { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 800px; margin: 0 auto; }
+        .bg-slate-card { background-color: #1e293b; }
+        .btn-teal { background-color: #14b8a6; }
+        .btn-purple { background-color: #a855f7; }
+        .hidden { display: none !important; }
+
+        #digit-boxes { display: flex; flex-direction: row-reverse; justify-content: center; gap: 8px; }
+        .digit-box { width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); border: 2px solid #475569; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; background: #1e293b; direction: ltr; }
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; direction: ltr; }
+        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border-bottom: 4px solid #0f172a; }
+        .key-btn.disabled { opacity: 0.1; pointer-events: none; }
+        .score-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; font-size: 1.2rem; }
+        .score-row:last-child { border: none; }
+        .hand-container { position: relative; width: clamp(180px, 40vw, 400px); height: clamp(100px, 20vw, 250px); margin: 10px auto; perspective: 1000px; }
+        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 3px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
+        .hand-left { left: 0; transform-origin: left; border-radius: 15px 0 0 15px; }
+        .hand-right { right: 0; transform-origin: right; border-radius: 0 15px 15px 0; }
+        .open .hand-left { transform: rotateY(-110deg); }
+        .open .hand-right { transform: rotateY(110deg); }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
+        .open .number-reveal { opacity: 1; }
+    </style>
+
+    <!-- =========  TV-ONLY  (injected when TV detected)  ========= -->
+    <style>
+        [data-tv] { background: #0f172a; color: #f8fafc; font-family: 'Tajawal', sans-serif; overflow: hidden; }
+        .tv-host { height: 100vh; display: flex; flex-direction: column; padding: 5vh 8%; }
+        .tv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4vh; }
+        .tv-header h1 { font-size: 5vh; color: #14b8a6; font-weight: 900; }
+        .tv-home { font-size: 3vh; background: #1e293b; border: none; color: #fff; padding: 2vh 3vh; border-radius: 2vh; cursor: pointer; }
+        .tv-auth { position: fixed; inset: 0; background: rgba(0,0,0,.95); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .tv-auth-box { background: #1e293b; border: 2px solid #475569; border-radius: 3vh; padding: 4vh; width: 90%; max-width: 400px; text-align: center; }
+        .tv-section, .tv-type, .tv-mem-diff { padding: 0 4vw; }
+        .tv-section button, .tv-type button, .tv-mem-diff button { width: 100%; margin-bottom: 3vh; padding: 3vh; font-size: 3vh; font-weight: 900; border-radius: 3vh; border: none; cursor: pointer; }
+        .tv-section button { background: #475569; border-bottom: 1vh solid #1e293b; }
+        .tv-type button { background: #334155; border-bottom: 1vh solid #1e293b; }
+        .tv-mem-diff button { background: #334155; border-bottom: 1vh solid #1e293b; }
+        .tv-game-play { padding: 0 4vw; }
+        .tv-top-bar { background: #1e293b; border: 2px solid #475569; border-radius: 2vh; padding: 2vh; display: flex; justify-content: space-between; font-size: 2.5vh; margin-bottom: 2vh; }
+        .tv-game-container { background: #1e293b; border: 3px solid #475569; border-radius: 4vh; padding: 4vh; flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .tv-controls { margin-top: 4vh; display: flex; flex-direction: column; gap: 3vh; }
+        .tv-btn { background: #a855f7; color: #fff; font-size: 4vh; font-weight: 900; padding: 3vh; border: none; border-radius: 3vh; cursor: pointer; }
+        .tv-score-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2vh; }
+        .tv-leader { background: #1e293b; border: 2px solid #14b8a6; border-radius: 2vh; padding: 2vh; margin-top: 3vh; max-height: 15vh; overflow-y: auto; font-size: 2.5vh; }
+    </style>
+</head>
+<body>
+
+<!-- =========  TV detector + FULL host flow injector  ========= -->
+<script>
 (function(){
     const ua = navigator.userAgent||'';
     const isTV = /\b(Smart-TV|Web0S|Tizen|AppleTV|TV|CrKey|AFB_|LG Browser)\b/i.test(ua);
@@ -101,12 +166,499 @@
 })();
 </script>
 
-<!-- original phone markup stays as-is -->
+<!-- =========  PHONE / DESKTOP MARKUP (unchanged)  ========= -->
     <div id="app">
-        <!-- everything you already had -->
+        <header class="flex justify-between items-center py-2 shrink-0">
+            <button onclick="goHome()" id="global-home-btn" class="hidden text-white bg-slate-800 p-3 rounded-full"><i class="fa-solid fa-house"></i></button>
+            <h1 class="font-black text-teal-400 mx-auto" style="font-size: var(--font-title);">ألعاب العائلة</h1>
+            <button onclick="backToGameMenu()" id="host-back-btn" class="hidden text-white bg-red-900 p-3 rounded-full"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+        </header>
+        
+        <main class="flex-1 flex flex-col justify-center overflow-hidden">
+            <div id="setup-screen" class="space-y-6 w-full px-4">
+                <div class="bg-slate-card p-6 rounded-[2rem] shadow-2xl border border-slate-700">
+                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-xl font-bold">
+                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black">دخول</button>
+                </div>
+                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
+            </div>
+
+            <div id="host-auth" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
+                <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
+                    <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl outline-none border border-teal-500">
+                    <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black">تأكيد</button>
+                </div>
+            </div>
+
+            <div id="section-select" class="hidden space-y-4 px-4 w-full">
+                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
+                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
+                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
+            </div>
+
+            <div id="type-select" class="hidden scroll-container px-4 w-full">
+                <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700 mb-4">
+                    <span class="font-bold">المؤقت</span>
+                    <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
+                </div>
+                <div id="brain-sub-menu" class="space-y-3"></div>
+                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i></button>
+            </div>
+
+            <div id="memory-difficulty" class="hidden space-y-4 px-4 w-full">
+                <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-xl font-bold">سهل</button>
+                <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-xl font-bold">متوسط</button>
+                <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-xl font-bold">صعب</button>
+            </div>
+
+            <div id="game-play" class="hidden flex-1 flex flex-col px-2">
+                <div id="host-view" class="hidden flex flex-col h-full">
+                    <div id="host-top-bar" class="bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700 shrink-0">
+                        <span id="answer-counter">...</span>
+                        <span id="host-timer-text" class="text-red-400 font-black"></span>
+                    </div>
+
+                    <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
+                        <div id="memory-visuals" class="hidden text-center">
+                            <div id="hand-wrapper" class="hand-container">
+                                <div class="hand hand-left"></div>
+                                <div class="number-reveal" id="target-number-display">0000</div>
+                                <div class="hand hand-right"></div>
+                            </div>
+                            <h3 id="host-status-msg" class="font-bold text-lg text-teal-400 mt-2">...</h3>
+                        </div>
+
+                        <div id="standard-visuals" class="text-center">
+                            <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور: <span id="current-player-name" class="bg-orange-600 text-white px-2 rounded">---</span></div>
+                            <h2 id="display-title" class="font-black text-xl leading-tight">...</h2>
+                            <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
+                        </div>
+                    </div>
+
+                    <div id="dedicated-scoreboard" class="hidden flex-1 bg-slate-900 rounded-[2rem] p-6 border-2 border-amber-500 overflow-y-auto">
+                        <h2 class="text-2xl font-black text-amber-400 text-center mb-6">ترتيب النقاط الحالي <i class="fa-solid fa-ranking-star"></i></h2>
+                        <div id="dedicated-list" class="divide-y divide-slate-800"></div>
+                    </div>
+
+                    <div id="host-controls" class="py-3 shrink-0">
+                        <div id="twister-scoring" class="hidden grid grid-cols-5 gap-1 mb-3">
+                            <button onclick="awardManual(2)" class="p-3 bg-red-900 rounded-lg">2</button>
+                            <button onclick="awardManual(4)" class="p-3 bg-orange-800 rounded-lg">4</button>
+                            <button onclick="awardManual(6)" class="p-3 bg-yellow-700 rounded-lg">6</button>
+                            <button onclick="awardManual(8)" class="p-3 bg-green-800 rounded-lg">8</button>
+                            <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
+                        </div>
+                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
+                        
+                        <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
+                            <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
+                            <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
+                        </div>
+                    </div>
+
+                    <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
+                        <div id="leaderboard-list" class="space-y-1 text-sm"></div>
+                    </div>
+                </div>
+
+                <div id="player-view" class="hidden flex flex-col h-full">
+                    <div class="bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700">
+                        <span id="p-status" class="text-teal-400 font-black italic">جاهز؟</span>
+                        <span id="p-score" class="font-black text-yellow-400 text-lg">0</span>
+                    </div>
+                    <div class="flex-1 flex flex-col justify-center">
+                        <div id="player-quiz-ui" class="w-full space-y-3">
+                            <div id="player-q-text" class="text-center font-black text-xl mb-4 px-2">...</div>
+                            <div id="player-input-area" class="px-2 space-y-3 scroll-container max-h-[40vh]"></div>
+                        </div>
+                        <div id="player-memory-ui" class="hidden w-full flex flex-col items-center">
+                            <div id="digit-boxes">
+                                <div class="digit-box" data-idx="0">-</div>
+                                <div class="digit-box" data-idx="1">-</div>
+                                <div class="digit-box" data-idx="2">-</div>
+                                <div class="digit-box" data-idx="3">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="keypad-container" class="hidden pb-2 shrink-0">
+                        <div class="keypad-grid">
+                            <button class="key-btn" onclick="pressKey('1')">1</button>
+                            <button class="key-btn" onclick="pressKey('2')">2</button>
+                            <button class="key-btn" onclick="pressKey('3')">3</button>
+                            <button class="key-btn" onclick="pressKey('4')">4</button>
+                            <button class="key-btn" onclick="pressKey('5')">5</button>
+                            <button class="key-btn" onclick="pressKey('6')">6</button>
+                            <button class="key-btn" onclick="pressKey('7')">7</button>
+                            <button class="key-btn" onclick="pressKey('8')">8</button>
+                            <button class="key-btn" onclick="pressKey('9')">9</button>
+                            <button class="key-btn text-red-500" onclick="pressKey('back')"><i class="fa-solid fa-delete-left"></i></button>
+                            <button class="key-btn" onclick="pressKey('0')">0</button>
+                            <button class="key-btn submit !bg-teal-600" id="mem-submit" onclick="submitMemory()">إرسال</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-<!-- original module stays as-is -->
-    <script type="module"> … </script>
+    <!-- =========  ORIGINAL MODULE (unchanged)  ========= -->
+    <script type="module">
+        import { gameData } from './questions.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
+            authDomain: "family-games-app.firebaseapp.com",
+            databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "family-games-app",
+            storageBucket: "family-games-app.firebasestorage.app",
+            messagingSenderId: "290150126558",
+            appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
+        };
+        const fbApp = initializeApp(firebaseConfig);
+        const db = getDatabase(fbApp);
+        const liveRef = ref(db, 'live_game');
+        const scoresRef = ref(db, 'scores');
+        const answersRef = ref(db, 'current_answers');
+
+        let myRole = '', myName = '', currentSection = '', currentType = '';
+        let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
+        let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
+
+        window.backToGameMenu = () => {
+            if(myRole !== 'host') return;
+            remove(liveRef); remove(answersRef);
+            document.getElementById('host-view').classList.add('hidden');
+            document.getElementById('game-play').classList.add('hidden');
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            document.getElementById('section-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
+            document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-top-bar').classList.remove('hidden');
+        };
+
+        window.goHome = () => { if(myRole === 'host') { remove(liveRef); remove(scoresRef); } location.reload(); };
+        window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
+        window.verifyHost = () => { if(document.getElementById('host-pin').value === '1234') { document.getElementById('host-auth').classList.add('hidden'); setRole('host'); } else { alert("خطأ!"); } };
+
+        window.setRole = (role) => {
+            myRole = role;
+            if (role === 'player') {
+                myName = document.getElementById('player-name-input').value.trim();
+                if (!myName) return;
+                set(ref(db, `scores/${myName}`), 0);
+            }
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('global-home-btn').classList.remove('hidden');
+            if (role === 'host') {
+                remove(liveRef); remove(answersRef);
+                document.getElementById('section-select').classList.remove('hidden');
+                onValue(scoresRef, (snap) => {
+                    if(snap.val()) {
+                        playersList = Object.keys(snap.val());
+                        updateLeaderboardUI(snap.val());
+                    }
+                });
+            } else {
+                document.getElementById('game-play').classList.remove('hidden');
+                document.getElementById('player-view').classList.remove('hidden');
+                listenForGame();
+            }
+        };
+
+        window.toggleScoreboardOnly = () => {
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('host-game-container').classList.add('hidden');
+            document.getElementById('host-top-bar').classList.add('hidden');
+            document.getElementById('leaderboard-ui').classList.add('hidden');
+            document.getElementById('action-btn').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            const scoreArea = document.getElementById('dedicated-scoreboard');
+            scoreArea.classList.remove('hidden');
+            get(scoresRef).then(snap => {
+                const scores = snap.val() || {};
+                const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+                document.getElementById('dedicated-list').innerHTML = sorted.map(([n,v]) => `
+                    <div class="score-row">
+                        <span class="font-bold text-slate-300">${n}</span>
+                        <span class="font-black text-amber-400">${Math.round(v)}</span>
+                    </div>
+                `).join('');
+            });
+        };
+
+        window.chooseSection = (s) => {
+            currentSection = s;
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('type-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            const menu = document.getElementById('brain-sub-menu');
+            menu.innerHTML = (s === 'adults') ? 
+                `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">ثقافة عامة <i class="fa-solid fa-earth-africa"></i></button>
+                 <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">إسلاميات <i class="fa-solid fa-kaaba"></i></button>
+                 <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">الذاكرة <i class="fa-solid fa-brain"></i></button>` :
+                `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black text-lg text-white">ذكاء الأطفال <i class="fa-solid fa-lightbulb"></i></button>`;
+        };
+
+        window.showMemoryDiff = () => {
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.remove('hidden');
+        };
+
+        function getRandomSet(arr, size) {
+            let shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, size);
+        }
+
+        window.setupQuestions = (type) => {
+            currentType = 'brain'; currentIndex = -1;
+            lastGameConfig = { section: currentSection, type: 'brain', pool: type };
+            currentQuestions = getRandomSet(gameData[currentSection][type], 7);
+            showHostUI();
+        };
+
+        window.setupTwisters = () => {
+            currentType = 'twister'; currentIndex = -1;
+            lastGameConfig = { section: 'adults', type: 'twister' };
+            currentQuestions = getRandomSet(gameData.adults.twisters, 7);
+            showHostUI();
+        };
+
+        window.startMemory = (diff) => {
+            currentType = 'memory'; currentIndex = -1;
+            lastGameConfig = { type: 'memory', diff: diff };
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            currentQuestions = Array.from({length: 7}, () => Math.floor(1000 + Math.random() * 9000).toString());
+            showHostUI();
+        };
+
+        function showHostUI() {
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('display-title').innerText = "الجولة القادمة";
+            document.getElementById('display-content').innerText = "استعدوا للبدء!";
+            document.getElementById('action-btn').classList.remove('hidden');
+            document.getElementById('post-game-controls').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
+            document.getElementById('host-top-bar').classList.remove('hidden');
+        }
+
+        window.triggerNext = () => {
+            if (currentIndex >= 6) return announceWinner();
+            currentIndex++;
+            clearInterval(timerInterval);
+            remove(answersRef);
+            if (currentIndex >= currentQuestions.length) return announceWinner();
+            const item = currentQuestions[currentIndex];
+            if (currentType === 'memory') {
+                handleMemoryRound(item);
+            } else {
+                let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
+                set(liveRef, { type: currentType, content: item, round: currentIndex + 1, status: 'playing', activePlayer: pSpot, startTime: Date.now() });
+                renderHostStandard(item, pSpot);
+                if (document.getElementById('timer-enabled').checked) startTimer(15);
+            }
+        };
+
+        async function handleMemoryRound(target) {
+            const diff = lastGameConfig.diff;
+            const config = { easy: [2500, 10], medium: [1800, 8], hard: [1100, 5] }[diff];
+            document.getElementById('standard-visuals').classList.add('hidden');
+            document.getElementById('memory-visuals').classList.remove('hidden');
+            document.getElementById('target-number-display').innerText = target;
+            let cd = 3;
+            set(liveRef, { type: 'memory', status: 'countdown', round: currentIndex + 1 });
+            const countInt = setInterval(() => {
+                document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
+                if(cd-- === 0) {
+                    clearInterval(countInt);
+                    document.getElementById('hand-wrapper').classList.add('open');
+                    set(liveRef, { type: 'memory', status: 'reveal', target: target, duration: config[0] });
+                    setTimeout(() => {
+                        document.getElementById('hand-wrapper').classList.remove('open');
+                        document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
+                        set(liveRef, { type: 'memory', status: 'input', target: target, duration: config[1], startTime: Date.now() });
+                        startTimer(config[1], true);
+                    }, config[0]);
+                }
+            }, 1000);
+        }
+
+        function startTimer(sec, isMemory = false) {
+            let remain = sec;
+            timerInterval = setInterval(() => {
+                document.getElementById('host-timer-text').innerText = remain + "ث";
+                if (remain-- <= 0) {
+                    clearInterval(timerInterval);
+                    if (isMemory) showMemoryResults();
+                    if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
+                }
+            }, 1000);
+        }
+
+        async function showMemoryResults() {
+            set(liveRef, { status: 'scoring' });
+            const target = currentQuestions[currentIndex];
+            const ansSnap = await get(answersRef);
+            const answers = ansSnap.val() || {};
+            let displayHtml = `<div class='space-y-1 text-sm'>`;
+            for(let pName of playersList) {
+                const pData = answers[pName] || { val: "----" };
+                let score = 0, coloredDigits = "";
+                for(let i=0; i<4; i++) {
+                    const char = pData.val[i] || "-";
+                    if(char === target[i]) { score += 2; coloredDigits += `<span class="text-green-500 mx-0.5">${char}</span>`; }
+                    else { coloredDigits += `<span class="text-red-500 line-through mx-0.5">${char}</span>`; }
+                }
+                if(score === 8) score = 10;
+                get(ref(db, `scores/${pName}`)).then(s => set(ref(db, `scores/${pName}`), (s.val() || 0) + score));
+                displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span style="direction:ltr;">${coloredDigits}</span></div>`;
+            }
+            document.getElementById('display-content').innerHTML = displayHtml;
+            if (currentIndex >= 6) announceWinner();
+        }
+
+        function updateLeaderboardUI(scores) {
+            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+            document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between'><span>${n}</span><span class='font-bold'>${Math.round(v)}</span></div>`).join('');
+        }
+
+        function renderHostStandard(item, pSpot) {
+            const title = document.getElementById('display-title');
+            const content = document.getElementById('display-content');
+            document.getElementById('memory-visuals').classList.add('hidden');
+            document.getElementById('standard-visuals').classList.remove('hidden');
+            if (currentType === 'brain') {
+                title.innerText = item.q;
+                content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-xl mb-1 border border-slate-600 font-bold'>${o}</div>`).join('');
+            } else {
+                title.innerText = "كررها 5 مرات بسرعة!";
+                content.innerHTML = `<p class='text-3xl text-teal-400 font-black'>${item}</p>`;
+                document.getElementById('current-player-name').innerText = pSpot;
+                document.getElementById('player-spotlight').classList.remove('hidden');
+            }
+        }
+
+        onValue(answersRef, (snap) => {
+            const count = snap.val() ? Object.keys(snap.val()).length : 0;
+            document.getElementById('answer-counter').innerText = `المشاركات: ${count} / ${playersList.length}`;
+        });
+
+        async function announceWinner() {
+            const snap = await get(scoresRef);
+            const scores = snap.val() || {};
+            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+            const winner = sorted[0] ? sorted[0][0] : "---";
+            set(liveRef, { status: 'finished', winner: winner });
+            document.getElementById('display-title').innerText = "بطل الجلسة الحالية";
+            document.getElementById('display-content').innerHTML = `<h1 class='text-5xl text-yellow-400 font-black mb-4'>${winner}</h1>`;
+            document.getElementById('post-game-controls').classList.remove('hidden');
+            document.getElementById('action-btn').classList.add('hidden');
+            confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
+        }
+
+        function listenForGame() {
+            onValue(liveRef, (snap) => {
+                const data = snap.val(); if(!data) return;
+                get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = Math.round(s.val() || 0));
+                if(data.status === 'finished') {
+                    const isWin = (data.winner === myName);
+                    document.getElementById('player-q-text').innerText = isWin ? "أنت البطل!" : "حظاً أوفر";
+                    document.getElementById('player-input-area').innerHTML = `<div class='text-center'><div class='text-yellow-400 text-3xl font-black mb-2'>الفائز: ${data.winner}</div></div>`;
+                    if(isWin) confetti();
+                    return;
+                }
+                if(data.type === 'memory') {
+                    document.getElementById('keypad-container').classList.remove('hidden');
+                    document.getElementById('player-memory-ui').classList.remove('hidden');
+                    document.getElementById('player-quiz-ui').classList.add('hidden');
+                    handlePlayerMemory(data);
+                } else {
+                    document.getElementById('keypad-container').classList.add('hidden');
+                    document.getElementById('player-memory-ui').classList.add('hidden');
+                    document.getElementById('player-quiz-ui').classList.remove('hidden');
+                    handlePlayerStandard(data);
+                }
+            });
+        }
+
+        function handlePlayerMemory(data) {
+            const kbtns = document.querySelectorAll('.key-btn');
+            if(data.status === 'input') {
+                document.getElementById('p-status').innerText = "أدخل الرقم!";
+                kbtns.forEach(b => b.classList.remove('disabled'));
+                if(!roundStartTime) roundStartTime = Date.now();
+            } else {
+                document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتهى" : "راقب...";
+                kbtns.forEach(b => b.classList.add('disabled'));
+                if(data.status === 'countdown') { resetMemoryUI(); roundStartTime = 0; }
+            }
+        }
+
+        window.pressKey = (key) => {
+            if(key === 'back') memoryInput = memoryInput.slice(0, -1);
+            else if(memoryInput.length < 4) memoryInput += key;
+            const boxes = document.querySelectorAll('.digit-box');
+            boxes.forEach((box, i) => box.innerText = memoryInput[i] || "-");
+            document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
+        };
+
+        window.submitMemory = () => {
+            set(ref(db, `current_answers/${myName}`), { val: memoryInput, time: Date.now() - roundStartTime });
+            document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
+            document.getElementById('p-status').innerText = "تم ✓";
+        };
+
+        function resetMemoryUI() {
+            memoryInput = ""; document.querySelectorAll('.digit-box').forEach(b => { b.innerText = "-"; });
+        }
+
+        function handlePlayerStandard(data) {
+            if(data.status === 'scoring') {
+                document.getElementById('p-status').innerText = "النتيجة...";
+                document.getElementById('player-input-area').innerHTML = ""; return;
+            }
+            if(data.type === 'brain') {
+                document.getElementById('p-status').innerText = "أجب الآن!";
+                document.getElementById('player-q-text').innerText = data.content.q;
+                document.getElementById('player-input-area').innerHTML = data.content.options.map((o, i) => 
+                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900">${o}</button>`
+                ).join('');
+            } else {
+                document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
+                document.getElementById('player-q-text').innerText = (data.activePlayer === myName) ? data.content : "---";
+                document.getElementById('player-input-area').innerHTML = "";
+            }
+        }
+
+        window.submitQuiz = (idx, correct, start) => {
+            set(ref(db, `current_answers/${myName}`), true);
+            if(idx === correct) {
+                const pts = 10 + Math.max(0, 10 - (Date.now() - start)/1000);
+                get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + pts));
+            }
+            document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 text-2xl font-black mt-5'>تم ✓</div>";
+        };
+
+        window.restartSameCategory = () => {
+            if(lastGameConfig.type === 'memory') startMemory(lastGameConfig.diff);
+            else if(lastGameConfig.type === 'brain') setupQuestions(lastGameConfig.pool);
+            else setupTwisters();
+        };
+
+        window.awardManual = (pts) => {
+            const name = document.getElementById('current-player-name').innerText;
+            get(ref(db, `scores/${name}`)).then(s => set(ref(db, `scores/${name}`), (s.val() || 0) + pts));
+            document.getElementById('twister-scoring').classList.add('hidden');
+        };
+    </script>
 </body>
 </html>
