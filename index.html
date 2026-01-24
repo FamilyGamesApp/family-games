@@ -8,8 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-    <!-- =========  ORIGINAL  (PHONE / DESKTOP)  ========= -->
     <style>
         :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); }
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
@@ -36,137 +34,31 @@
         .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
     </style>
-
-    <!-- =========  TV-ONLY  (injected when TV detected)  ========= -->
-    <style>
-        [data-tv] { background: #0f172a; color: #f8fafc; font-family: 'Tajawal', sans-serif; overflow: hidden; }
-        .tv-host { height: 100vh; display: flex; flex-direction: column; padding: 5vh 8%; }
-        .tv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4vh; }
-        .tv-header h1 { font-size: 5vh; color: #14b8a6; font-weight: 900; }
-        .tv-home { font-size: 3vh; background: #1e293b; border: none; color: #fff; padding: 2vh 3vh; border-radius: 2vh; cursor: pointer; }
-        .tv-auth { position: fixed; inset: 0; background: rgba(0,0,0,.95); display: flex; align-items: center; justify-content: center; z-index: 50; }
-        .tv-auth-box { background: #1e293b; border: 2px solid #475569; border-radius: 3vh; padding: 4vh; width: 90%; max-width: 400px; text-align: center; }
-        .tv-section, .tv-type, .tv-mem-diff { padding: 0 4vw; }
-        .tv-section button, .tv-type button, .tv-mem-diff button { width: 100%; margin-bottom: 3vh; padding: 3vh; font-size: 3vh; font-weight: 900; border-radius: 3vh; border: none; cursor: pointer; }
-        .tv-section button { background: #475569; border-bottom: 1vh solid #1e293b; }
-        .tv-type button { background: #334155; border-bottom: 1vh solid #1e293b; }
-        .tv-mem-diff button { background: #334155; border-bottom: 1vh solid #1e293b; }
-        .tv-game-play { padding: 0 4vw; }
-        .tv-top-bar { background: #1e293b; border: 2px solid #475569; border-radius: 2vh; padding: 2vh; display: flex; justify-content: space-between; font-size: 2.5vh; margin-bottom: 2vh; }
-        .tv-game-container { background: #1e293b; border: 3px solid #475569; border-radius: 4vh; padding: 4vh; flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; }
-        .tv-controls { margin-top: 4vh; display: flex; flex-direction: column; gap: 3vh; }
-        .tv-btn { background: #a855f7; color: #fff; font-size: 4vh; font-weight: 900; padding: 3vh; border: none; border-radius: 3vh; cursor: pointer; }
-        .tv-score-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2vh; }
-        .tv-leader { background: #1e293b; border: 2px solid #14b8a6; border-radius: 2vh; padding: 2vh; margin-top: 3vh; max-height: 15vh; overflow-y: auto; font-size: 2.5vh; }
-    </style>
 </head>
 <body>
 
-<!-- =========  TV detector + FULL host flow injector  ========= -->
+<!-- =========  TV : whole-page zoom  ========= -->
 <script>
 (function(){
     const ua = navigator.userAgent||'';
     const isTV = /\b(Smart-TV|Web0S|Tizen|AppleTV|TV|CrKey|AFB_|LG Browser)\b/i.test(ua);
-    if (!isTV) return;                                       // phone/desktop → do nothing
-    document.documentElement.setAttribute('data-tv','');     // flag for CSS
-
-    const tmpl = document.createElement('template');
-    tmpl.innerHTML = `
-<div id="app" class="tv-host">
-
-  <!-- 1. PIN overlay -->
-  <div id="host-auth" class="tv-auth hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
-    <div class="tv-auth-box bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
-      <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl outline-none border border-teal-500">
-      <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black">تأكيد</button>
-    </div>
-  </div>
-
-  <!-- 2. Section picker -->
-  <div id="section-select" class="tv-section hidden space-y-4 px-4 w-full">
-    <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
-    <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
-    <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
-  </div>
-
-  <!-- 3. Game-type picker -->
-  <div id="type-select" class="tv-type hidden scroll-container px-4 w-full">
-    <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700 mb-4">
-      <span class="font-bold">المؤقت</span>
-      <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
-    </div>
-    <div id="brain-sub-menu" class="space-y-3"></div>
-    <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i></button>
-  </div>
-
-  <!-- 4. Memory-difficulty picker -->
-  <div id="memory-difficulty" class="tv-mem-diff hidden space-y-4 px-4 w-full">
-    <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-xl font-bold">سهل</button>
-    <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-xl font-bold">متوسط</button>
-    <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-xl font-bold">صعب</button>
-  </div>
-
-  <!-- 5. Main host game view -->
-  <div id="game-play" class="tv-game-play hidden flex-1 flex flex-col px-2">
-    <div id="host-view" class="tv-host-view flex flex-col h-full">
-      <div id="host-top-bar" class="tv-top-bar bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700 shrink-0">
-        <span id="answer-counter">...</span>
-        <span id="host-timer-text" class="text-red-400 font-black"></span>
-      </div>
-
-      <div id="host-game-container" class="tv-game-container bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
-        <!-- memory hand -->
-        <div id="memory-visuals" class="hidden text-center">
-          <div id="hand-wrapper" class="hand-container">
-            <div class="hand hand-left"></div>
-            <div class="number-reveal" id="target-number-display">0000</div>
-            <div class="hand hand-right"></div>
-          </div>
-          <h3 id="host-status-msg" class="font-bold text-lg text-teal-400 mt-2">...</h3>
-        </div>
-        <!-- standard question -->
-        <div id="standard-visuals" class="text-center">
-          <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور: <span id="current-player-name" class="bg-orange-600 text-white px-2 rounded">---</span></div>
-          <h2 id="display-title" class="font-black text-xl leading-tight">...</h2>
-          <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
-        </div>
-      </div>
-
-      <div id="dedicated-scoreboard" class="hidden flex-1 bg-slate-900 rounded-[2rem] p-6 border-2 border-amber-500 overflow-y-auto">
-        <h2 class="text-2xl font-black text-amber-400 text-center mb-6">ترتيب النقاط الحالي <i class="fa-solid fa-ranking-star"></i></h2>
-        <div id="dedicated-list" class="divide-y divide-slate-800"></div>
-      </div>
-
-      <div id="host-controls" class="py-3 shrink-0">
-        <div id="twister-scoring" class="hidden grid grid-cols-5 gap-1 mb-3">
-          <button onclick="awardManual(2)" class="p-3 bg-red-900 rounded-lg">2</button>
-          <button onclick="awardManual(4)" class="p-3 bg-orange-800 rounded-lg">4</button>
-          <button onclick="awardManual(6)" class="p-3 bg-yellow-700 rounded-lg">6</button>
-          <button onclick="awardManual(8)" class="p-3 bg-green-800 rounded-lg">8</button>
-          <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
-        </div>
-        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
-        <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
-          <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
-          <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
-        </div>
-      </div>
-
-      <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
-        <div id="leaderboard-list" class="space-y-1 text-sm"></div>
-      </div>
-    </div>
-  </div>
-
-</div>`;
-    document.body.appendChild(tmpl.content.cloneNode(true));
-    // remove phone markup so it never flashes
-    const phoneApp = document.querySelector('#app:not(.tv-host)');
-    if (phoneApp) phoneApp.remove();
+    if (!isTV) return;                                    // phone/desktop → do nothing
+    // ❶ tell browser we are Full-HD
+    const meta = document.createElement('meta');
+    meta.name = 'viewport';
+    meta.content = 'width=1920, height=1080, user-scalable=no';
+    document.head.appendChild(meta);
+    // ❷ blow everything up 1.55× (tweak this number until it fits your sofa)
+    document.documentElement.style.zoom = '1.55';
+    // ❸ centre the card on the huge canvas
+    document.documentElement.style.display = 'flex';
+    document.documentElement.style.alignItems = 'center';
+    document.documentElement.style.justifyContent = 'center';
+    document.body.style.width = '1920px';
+    document.body.style.minHeight = '1080px';
 })();
 </script>
 
-<!-- =========  PHONE / DESKTOP MARKUP (unchanged)  ========= -->
     <div id="app">
         <header class="flex justify-between items-center py-2 shrink-0">
             <button onclick="goHome()" id="global-home-btn" class="hidden text-white bg-slate-800 p-3 rounded-full"><i class="fa-solid fa-house"></i></button>
@@ -301,7 +193,6 @@
         </main>
     </div>
 
-    <!-- =========  ORIGINAL MODULE (unchanged)  ========= -->
     <script type="module">
         import { gameData } from './questions.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
