@@ -2,79 +2,119 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <!-- ①  force TV browsers to stop auto-shrink -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="tv-viewport" content="actual-width">
-
     <title>ألعاب العائلة Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-    <!-- ②  instant device class + TV full-width flag -->
-    <script>
-        (function(){
-            const ua = navigator.userAgent || '';
-            const isTV     = /\b(Smart-TV|Web0S|Tizen|AppleTV|TV|CrKey|AFB_|LG Browser)\b/i.test(ua);
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(ua) && !isTV;
-            const root = document.documentElement;
-            root.classList.add(isTV ? 'host-device--tv' : isMobile ? 'host-device--phone' : 'host-device--desktop');
-            if (isTV) root.style.setProperty('--card-max', '100%');   /* edge-to-edge on TV */
-        })();
-    </script>
-
     <style>
-        :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); --card-max: 800px; }
+        :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); }
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
-        body { font-family: 'Tajawal', sans-serif; color: #f8fafc;
-               padding: env(safe-area-inset-top, 24px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 15px);
-               display: flex; flex-direction: column; }
-        #app { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: var(--card-max); margin: 0 auto; }
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            color: #f8fafc; 
+            padding: env(safe-area-inset-top, 24px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 15px);
+            display: flex; flex-direction: column;
+        }
+        #app { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 800px; margin: 0 auto; }
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
         .hidden { display: none !important; }
 
-        /* ---------- host-only device tweaks ---------- */
-        .host-device--tv #host-view { padding: 8% 10%; font-size: 1.25em; }
-        .host-device--tv .digit-box { width: clamp(90px, 12vh, 140px); height: clamp(90px, 12vh, 140px); font-size: 3.5rem; }
-        .host-device--tv .key-btn { height: clamp(100px, 11vh, 160px); font-size: 3rem; }
-        .host-device--tv #display-title { font-size: clamp(2.8rem, 7vh, 6rem); }
-
-        .host-device--phone #host-view { gap: 4px; }
-        .host-device--phone .key-btn { min-height: 56px; }
-
-        .host-device--desktop #host-view { max-width: 900px; margin: 0 auto; }
-        /* --------------------------------------------- */
-
+        /* FIX 1: Number Boxes LTR */
         #digit-boxes { display: flex; flex-direction: row-reverse; justify-content: center; gap: 8px; }
-        .digit-box { width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px);
-                     border: 2px solid #475569; border-radius: 12px; display: flex;
-                     align-items: center; justify-content: center; font-size: 1.8rem;
-                     font-weight: 900; background: #1e293b; direction: ltr; }
-        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-                       width: 100%; max-width: 450px; margin: 0 auto; direction: ltr; }
-        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center;
-                   background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold;
-                   border-bottom: 4px solid #0f172a; }
+        .digit-box { 
+            width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); 
+            border: 2px solid #475569; border-radius: 12px; display: flex; 
+            align-items: center; justify-content: center; font-size: 1.8rem; 
+            font-weight: 900; background: #1e293b; direction: ltr;
+        }
+
+        /* FIX 3: Keypad LTR Grid */
+        .keypad-grid { 
+            display: grid; grid-template-columns: repeat(3, 1fr); 
+            gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; 
+            direction: ltr; /* Forces 1-2-3 to start from left */
+        }
+        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border-bottom: 4px solid #0f172a; }
         .key-btn.disabled { opacity: 0.1; pointer-events: none; }
+
+        /* Scoreboard Specific Style */
         .score-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; font-size: 1.2rem; }
         .score-row:last-child { border: none; }
+
+        /* Host Layout */
         .hand-container { position: relative; width: clamp(180px, 40vw, 400px); height: clamp(100px, 20vw, 250px); margin: 10px auto; perspective: 1000px; }
-        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 3px solid #b45309;
-                transition: transform 0.6s ease-in-out; z-index: 10; }
+        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 3px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
         .hand-left { left: 0; transform-origin: left; border-radius: 15px 0 0 15px; }
         .hand-right { right: 0; transform-origin: right; border-radius: 0 15px 15px 0; }
         .open .hand-left { transform: rotateY(-110deg); }
         .open .hand-right { transform: rotateY(110deg); }
-        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-                         font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5;
-                         opacity: 0; transition: opacity 0.2s; direction: ltr; }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
     </style>
+    
+    <!-- ②  TV-only styles (only when data-tv exists) -->
+<style>
+[data-tv] { background:#0f172a; color:#f8fafc; font-family:'Tajawal',sans-serif; overflow:hidden; }
+.tv-host { height:100vh; display:flex; flex-direction:column; padding:5vh 8%; }
+.tv-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4vh; }
+.tv-header h1 { font-size:5vh; color:#14b8a6; font-weight:900; }
+.tv-home { font-size:3vh; background:#1e293b; border:none; color:#fff; padding:2vh 3vh; border-radius:2vh; cursor:pointer; }
+.tv-card { background:#1e293b; border:3px solid #475569; border-radius:4vh; padding:6vh; text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center; }
+.tv-title { font-size:6vh; font-weight:900; margin-bottom:4vh; color:#fbbf24; }
+.tv-content { font-size:4vh; color:#cbd5e1; }
+.tv-controls { margin-top:4vh; display:flex; flex-direction:column; gap:3vh; }
+.tv-btn { background:#a855f7; color:#fff; font-size:4vh; font-weight:900; padding:3vh; border:none; border-radius:3vh; cursor:pointer; }
+.tv-score-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:2vh; }
+.tv-leader { background:#1e293b; border:2px solid #14b8a6; border-radius:2vh; padding:2vh; margin-top:3vh; max-height:15vh; overflow-y:auto; font-size:2.5vh; }
+</style>
+
+    
 </head>
 <body>
+
+<!-- ①  TV detector + switcher -->
+<script>
+(function(){
+  const ua = navigator.userAgent||'';
+  const isTV = /\b(Smart-TV|Web0S|Tizen|AppleTV|TV|CrKey|AFB_|LG Browser)\b/i.test(ua);
+  if (isTV) {                          // inject TV layout immediately
+    document.documentElement.setAttribute('data-tv','');
+    const tmpl = document.createElement('template');
+    tmpl.innerHTML = `
+<div id="app" class="tv-host">
+  <header class="tv-header">
+    <h1>ألعاب العائلة</h1>
+    <button onclick="goHome()" class="tv-home"><i class="fa-solid fa-house"></i></button>
+  </header>
+  <main class="tv-main">
+    <section id="tv-card" class="tv-card">
+      <div id="tv-title" class="tv-title">الجولة القادمة</div>
+      <div id="tv-content" class="tv-content">استعدوا للبدء!</div>
+    </section>
+    <div class="tv-controls">
+      <button id="tv-next-btn" class="tv-btn tv-next" onclick="triggerNext()">التالي</button>
+      <div id="tv-score-grid" class="tv-score-grid" style="display:none">
+        <button onclick="awardManual(2)" class="tv-btn">2</button>
+        <button onclick="awardManual(4)" class="tv-btn">4</button>
+        <button onclick="awardManual(6)" class="tv-btn">6</button>
+        <button onclick="awardManual(8)" class="tv-btn">8</button>
+        <button onclick="awardManual(10)" class="tv-btn">10</button>
+      </div>
+    </div>
+    <div id="tv-leaderboard" class="tv-leader"></div>
+  </main>
+</div>`;
+    document.body.appendChild(tmpl.content.cloneNode(true));
+    document.querySelector('.phone-desktop').remove();   // drop phone markup
+  }
+})();
+</script>
+
+
     <div id="app">
         <header class="flex justify-between items-center py-2 shrink-0">
             <button onclick="goHome()" id="global-home-btn" class="hidden text-white bg-slate-800 p-3 rounded-full"><i class="fa-solid fa-house"></i></button>
@@ -209,19 +249,6 @@
         </main>
     </div>
 
-    <!-- double-tap-zoom blocker (player keypad only) -->
-    <script>
-        document.addEventListener('touchstart', function (e) {
-            const kp = e.target.closest('.keypad-grid');
-            if (!kp) return;
-            if (e.touches.length > 1) return;
-            const now = Date.now();
-            kp._lastTouch = kp._lastTouch || 0;
-            if (now - kp._lastTouch < 300) e.preventDefault();
-            kp._lastTouch = now;
-        }, { passive: false });
-    </script>
-
     <script type="module">
         import { gameData } from './questions.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -289,6 +316,7 @@
             }
         };
 
+        // FIX 2: Scoreboard-only view Logic
         window.toggleScoreboardOnly = () => {
             document.getElementById('section-select').classList.add('hidden');
             document.getElementById('game-play').classList.remove('hidden');
@@ -298,8 +326,10 @@
             document.getElementById('leaderboard-ui').classList.add('hidden');
             document.getElementById('action-btn').classList.add('hidden');
             document.getElementById('host-back-btn').classList.remove('hidden');
+            
             const scoreArea = document.getElementById('dedicated-scoreboard');
             scoreArea.classList.remove('hidden');
+            
             get(scoresRef).then(snap => {
                 const scores = snap.val() || {};
                 const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
@@ -372,7 +402,9 @@
         }
 
         window.triggerNext = () => {
+            /* NEW: hard-cap at 7 rounds for every mode */
             if (currentIndex >= 6) return announceWinner();
+
             currentIndex++;
             clearInterval(timerInterval);
             remove(answersRef);
@@ -443,6 +475,8 @@
                 displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span style="direction:ltr;">${coloredDigits}</span></div>`;
             }
             document.getElementById('display-content').innerHTML = displayHtml;
+
+            /* NEW: instant celebration after the 7th memory round */
             if (currentIndex >= 6) announceWinner();
         }
 
