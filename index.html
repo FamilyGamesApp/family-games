@@ -2,32 +2,35 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <!-- ①  force TV browsers to stop auto-shrink -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="tv-viewport" content="actual-width">
+
     <title>ألعاب العائلة Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- ① INSTANT device-class for host-only styling -->
+    <!-- ②  instant device class + TV full-width flag -->
     <script>
         (function(){
             const ua = navigator.userAgent || '';
             const isTV     = /\b(Smart-TV|Web0S|Tizen|AppleTV|TV|CrKey|AFB_|LG Browser)\b/i.test(ua);
             const isMobile = /Android|iPhone|iPad|iPod/i.test(ua) && !isTV;
-            document.documentElement.classList.add(
-                isTV ? 'host-device--tv' : isMobile ? 'host-device--phone' : 'host-device--desktop'
-            );
+            const root = document.documentElement;
+            root.classList.add(isTV ? 'host-device--tv' : isMobile ? 'host-device--phone' : 'host-device--desktop');
+            if (isTV) root.style.setProperty('--card-max', '100%');   /* edge-to-edge on TV */
         })();
     </script>
 
     <style>
-        :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); }
+        :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); --card-max: 800px; }
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
         body { font-family: 'Tajawal', sans-serif; color: #f8fafc;
                padding: env(safe-area-inset-top, 24px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 15px);
                display: flex; flex-direction: column; }
-        #app { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 800px; margin: 0 auto; }
+        #app { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: var(--card-max); margin: 0 auto; }
         .bg-slate-card { background-color: #1e293b; }
         .btn-teal { background-color: #14b8a6; }
         .btn-purple { background-color: #a855f7; }
@@ -206,15 +209,15 @@
         </main>
     </div>
 
-    <!-- ③ double-tap-zoom blocker (player keypad only) -->
+    <!-- double-tap-zoom blocker (player keypad only) -->
     <script>
         document.addEventListener('touchstart', function (e) {
             const kp = e.target.closest('.keypad-grid');
             if (!kp) return;
-            if (e.touches.length > 1) return;                 // allow pinch-zoom
+            if (e.touches.length > 1) return;
             const now = Date.now();
             kp._lastTouch = kp._lastTouch || 0;
-            if (now - kp._lastTouch < 300) e.preventDefault(); // kill double-tap
+            if (now - kp._lastTouch < 300) e.preventDefault();
             kp._lastTouch = now;
         }, { passive: false });
     </script>
