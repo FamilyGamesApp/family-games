@@ -2,75 +2,89 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ألعاب العائلة - جوال</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ألعاب العائلة</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // TV Redirection
-        if (window.innerWidth > 1024) {
-            const urlParams = new URLSearchParams(window.location.search);
+        // توجيه تلقائي للشاشات الكبيرة فقط إذا لم يكن هناك بارامتر يحدد أنه لاعب
+        const urlParams = new URLSearchParams(window.location.search);
+        if (window.innerWidth > 1024 && !urlParams.get('role')) {
             let r = urlParams.get('r') || Math.random().toString(36).substring(2, 6).toUpperCase();
             window.location.href = `tv.html?r=${r}`;
         }
     </script>
 </head>
 <body>
-    <div id="app" class="p-5 flex flex-col h-screen">
-        <div id="setup-screen" class="my-auto space-y-6">
-            <h1 class="text-4xl font-black text-center text-teal-400">الدخول للعبة</h1>
-            <div class="bg-slate-800 p-6 rounded-3xl shadow-xl">
-                <input id="player-name-input" type="text" placeholder="اسمك..." class="w-full p-4 rounded-xl bg-slate-900 text-white text-center text-xl mb-4 outline-none border-2 border-slate-700">
-                <button onclick="joinGame()" class="w-full bg-teal-500 p-5 rounded-xl text-2xl font-black">انضمام الآن</button>
+    <div id="app" class="p-5 flex flex-col min-h-screen">
+        <div id="setup-screen" class="my-auto space-y-8">
+            <div class="text-center">
+                <h1 class="text-5xl font-black text-teal-400 mb-2">ألعاب العائلة</h1>
+                <p id="room-id-display" class="text-slate-400 font-bold text-xl"></p>
             </div>
-            <p id="room-id-display" class="text-center text-slate-500 font-bold"></p>
+
+            <div class="bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-700">
+                <input id="player-name-input" type="text" placeholder="أدخل اسمك..." 
+                    class="w-full p-5 rounded-2xl bg-slate-900 text-white text-center text-2xl mb-6 outline-none border-2 border-slate-700 focus:border-teal-500 transition-all">
+                
+                <button onclick="joinGame()" class="w-full bg-teal-500 hover:bg-teal-400 text-white p-6 rounded-2xl text-3xl font-black shadow-lg transition-transform active:scale-95">
+                    دخول كلاعب
+                </button>
+            </div>
+            
+            <div class="flex flex-col items-center gap-4">
+                <button onclick="createHostRoom()" class="text-teal-400 text-lg font-bold underline decoration-2 underline-offset-8">
+                    <i class="fas fa-tv ml-2"></i>فتح غرفة جديدة (كمضيف)
+                </button>
+            </div>
         </div>
 
         <div id="player-view" class="hidden flex-1 flex flex-col">
-            <div class="flex justify-between items-center bg-slate-800 p-3 rounded-2xl mb-4">
-                <span id="p-status" class="text-teal-400 font-bold">انتظار...</span>
-                <span id="p-score" class="text-yellow-400 font-black text-xl">0</span>
+            <div class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl mb-6 border border-slate-700">
+                <span id="p-status" class="text-teal-400 font-black text-lg">انتظار المضيف...</span>
+                <span id="p-score" class="text-yellow-400 font-black text-3xl">0</span>
             </div>
-            
-            <div id="player-input-area" class="flex-1 flex flex-col justify-center space-y-4">
+            <div id="player-input-area" class="flex-1 flex flex-col justify-center items-center">
                 </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
+        const firebaseConfig = { /* إعداداتك هنا */ };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
         const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('r');
-        const roomRef = roomId ? `rooms/${roomId}` : null;
+        let roomId = urlParams.get('r');
 
-        if(roomId) document.getElementById('room-id-display').innerText = `غرفة: ${roomId}`;
+        if(roomId) document.getElementById('room-id-display').innerText = `رقم الغرفة: ${roomId}`;
+
+        window.createHostRoom = () => {
+            const newRoom = Math.random().toString(36).substring(2, 6).toUpperCase();
+            window.location.href = `tv.html?r=${newRoom}`;
+        };
 
         window.joinGame = async () => {
             const name = document.getElementById('player-name-input').value.trim();
-            if(!name || !roomId) return alert("الاسم أو الغرفة ناقصة");
+            if(!name || !roomId) return alert("تأكد من الاسم ورقم الغرفة");
             
-            await set(ref(db, `${roomRef}/scores/${name}`), 0);
+            await set(ref(db, `rooms/${roomId}/scores/${name}`), 0);
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('player-view').classList.remove('hidden');
             
-            // Listen for game state
-            onValue(ref(db, `${roomRef}/live_game`), (snap) => {
+            onValue(ref(db, `rooms/${roomId}/live_game`), (snap) => {
                 const game = snap.val();
-                if(!game) return;
-                updateControllerUI(game, name);
+                if(game) renderController(game, name);
             });
         };
 
-        function updateControllerUI(game, myName) {
+        function renderController(game, myName) {
             const area = document.getElementById('player-input-area');
-            // Logic to render buttons based on game.type (trivia/memory) 
-            // Reuse the original logic from index.html here
+            area.innerHTML = '';
+            // هنا تضع منطق عرض أزرار الإجابة أو الكيبورد بناءً على نوع اللعبة
         }
     </script>
 </body>
