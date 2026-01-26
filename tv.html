@@ -2,37 +2,35 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Family Games TV - شاشة العرض</title>
+    <title>Family Games TV</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body class="p-10">
-    <div class="tv-layout">
-        <div class="tv-main-card">
-            <div id="game-stage">
-                <h1 id="tv-title" class="tv-title">استعدوا للبدء!</h1>
-                <div id="tv-display-main" class="tv-question text-white"></div>
-                <div id="tv-options" class="tv-option-grid"></div>
+<body class="bg-[#0f172a] p-10 overflow-hidden text-white">
+    <div class="flex gap-10 h-[90vh]">
+        
+        <div class="flex-1 bg-slate-900/50 border-4 border-slate-800 rounded-[3.5rem] p-12 flex flex-col shadow-2xl">
+            <div class="text-center flex-1 flex flex-col justify-center">
+                <h1 id="tv-cat" class="text-teal-400 text-5xl font-black mb-6 italic">جاهزون؟</h1>
+                <div id="tv-q" class="text-6xl font-extrabold leading-tight text-slate-100 mb-12">امسح الكود للانضمام للعبة</div>
+                <div id="tv-opts" class="grid grid-cols-2 gap-6"></div>
             </div>
 
-            <div class="mt-auto pt-10 border-t border-slate-800">
-                <button onclick="triggerNextRound()" class="w-full bg-purple-600 hover:bg-purple-500 p-10 rounded-[2rem] text-5xl font-black shadow-2xl transition-all active:scale-95">
-                    الجولة التالية <i class="fas fa-forward mr-4"></i>
-                </button>
-            </div>
+            <button onclick="nextRound()" class="w-full bg-purple-600 p-10 rounded-[2rem] text-5xl font-black hover:bg-purple-500 shadow-2xl active:scale-95 transition-all">
+                الجولة التالية
+            </button>
         </div>
 
         <div class="w-1/3 flex flex-col gap-8">
-            <div class="bg-white p-10 rounded-[3rem] shadow-2xl flex flex-col items-center">
-                <div id="qrcode"></div>
-                <h2 id="room-code-display" class="text-4xl font-black text-slate-900 mt-6 tracking-widest">----</h2>
-                <p class="text-slate-500 font-bold text-xl mt-2">امسح الكود للانضمام</p>
+            <div class="bg-white p-10 rounded-[3rem] flex flex-col items-center shadow-inner">
+                <div id="qrcode-container"></div>
+                <h2 id="room-id" class="text-6xl font-black text-slate-900 mt-6 tracking-tighter">----</h2>
             </div>
             
-            <div class="flex-1 bg-slate-800/50 backdrop-blur-md rounded-[3.5rem] p-10 border-4 border-amber-500 shadow-2xl overflow-hidden">
-                <h3 class="text-4xl font-black text-amber-500 text-center mb-8 italic">لوحة الصدارة</h3>
-                <div id="tv-leaderboard" class="space-y-6"></div>
+            <div class="flex-1 bg-slate-800/80 rounded-[3rem] p-8 border-4 border-amber-500 shadow-2xl">
+                <h3 class="text-3xl font-black text-amber-500 text-center mb-6">لوحة النقاط</h3>
+                <div id="leaderboard" class="space-y-4"></div>
             </div>
         </div>
     </div>
@@ -40,45 +38,64 @@
     <script type="module">
         import { gameData } from './questions.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, get, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('r');
-        const roomRef = `rooms/${roomId}`;
+        const roomPath = `rooms/${roomId}`;
 
-        const firebaseConfig = { /* إعداداتك هنا */ };
+        const firebaseConfig = { /* ضع إعدادات Firebase هنا */ };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // توليد الـ QR Code
-        const joinLink = `${window.location.origin}/index.html?r=${roomId}`;
-        new QRCode(document.getElementById("qrcode"), { text: joinLink, width: 280, height: 280 });
-        document.getElementById('room-code-display').innerText = roomId;
+        document.getElementById('room-id').innerText = roomId;
 
-        // وظيفة التنظيف التلقائي
-        (async function cleanup() {
-            const snap = await get(ref(db, 'rooms'));
-            if(snap.exists()) {
-                const now = Date.now();
-                Object.keys(snap.val()).forEach(id => {
-                    if(snap.val()[id].createdAt && (now - snap.val()[id].createdAt > 86400000)) remove(ref(db, `rooms/${id}`));
-                });
-            }
-            set(ref(db, `${roomRef}/createdAt`), Date.now());
-        })();
+        // توليد الـ QR Code مع التأكد من وجود المكتبة
+        function generateQR() {
+            const container = document.getElementById("qrcode-container");
+            container.innerHTML = ''; 
+            // الرابط يوجه إلى index.html ويخبره بوضوح أن المستخدم هو لاعب (role=player)
+            const joinLink = `${window.location.origin}${window.location.pathname.replace('tv.html', 'index.html')}?r=${roomId}&role=player`;
+            
+            new QRCode(container, {
+                text: joinLink,
+                width: 250,
+                height: 250,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
 
-        window.triggerNextRound = () => {
-            // منطق اختيار السؤال من questions.js وتحديث live_game
+        // انتظر ثانية لضمان تحميل المكتبة ثم ارسم الكود
+        setTimeout(generateQR, 1000);
+
+        window.nextRound = async () => {
+            const categories = Object.keys(gameData.adults).filter(k => Array.isArray(gameData.adults[k]));
+            const randomCat = categories[Math.floor(Math.random() * categories.length)];
+            const questions = gameData.adults[randomCat];
+            const q = questions[Math.floor(Math.random() * questions.length)];
+
+            document.getElementById('tv-cat').innerText = randomCat.toUpperCase();
+            document.getElementById('tv-q').innerText = q.q;
+            document.getElementById('tv-opts').innerHTML = q.options.map(o => `<div class="bg-slate-800 p-6 rounded-2xl text-3xl border border-slate-700 font-bold">${o}</div>`).join('');
+
+            await set(ref(db, `${roomPath}/live_game`), {
+                type: 'quiz',
+                q: q.q,
+                options: q.options,
+                correct: q.correct,
+                ts: Date.now()
+            });
         };
 
-        // تحديث الصدارة
-        onValue(ref(db, `${roomRef}/scores`), (snap) => {
+        onValue(ref(db, `${roomPath}/scores`), (snap) => {
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-            document.getElementById('tv-leaderboard').innerHTML = sorted.map(([n, v]) => `
-                <div class="flex justify-between items-center text-4xl font-bold border-b border-slate-700 pb-4">
-                    <span class="text-slate-200">${n}</span>
-                    <span class="text-yellow-400 bg-yellow-400/10 px-4 py-1 rounded-xl">${Math.round(v)}</span>
+            document.getElementById('leaderboard').innerHTML = sorted.map(([n,v]) => `
+                <div class="flex justify-between text-3xl font-bold border-b border-slate-700 pb-3">
+                    <span class="text-white">${n}</span>
+                    <span class="text-yellow-400">${v}</span>
                 </div>
             `).join('');
         });
