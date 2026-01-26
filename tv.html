@@ -6,22 +6,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; }
-        
-        /* Forces elements marked hidden on the phone to be hidden on TV */
         .hidden { display: none !important; }
-
         .bg-slate-card { background-color: #1e293b; }
         
-        /* TV Scale Adjustments for Questions */
-        #display-title { font-size: 5rem !important; line-height: 1.2; margin-bottom: 2rem; color: #14b8a6; }
-        #display-content { font-size: 4rem !important; color: #cbd5e1; }
+        #display-title { font-size: 5rem !important; line-height: 1.2; margin-bottom: 2rem; color: #14b8a6; font-weight: 900; }
+        #display-content { font-size: 4rem !important; color: #cbd5e1; font-weight: 700; }
         #display-content div { padding: 20px; margin: 10px; background: #334155; border-radius: 20px; border: 2px solid #475569; }
-        #current-player-name { font-size: 3rem; padding: 0 20px; }
-        #player-spotlight { font-size: 2.5rem; margin-bottom: 20px; }
+        #display-content h1 { font-size: 8rem !important; } /* Winner Name size */
 
-        /* Memory Scale Adjustments */
         .hand-container { position: relative; width: 700px; height: 400px; margin: 20px auto; perspective: 2000px; }
         .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 8px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
         .hand-left { left: 0; transform-origin: left; border-radius: 40px 0 0 40px; }
@@ -30,9 +25,7 @@
         .open .hand-right { transform: rotateY(110deg); }
         .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12rem; font-weight: 900; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
-        #host-status-msg { font-size: 3.5rem; margin-top: 30px; }
         
-        /* Scoreboard Scale */
         .score-row { display: flex; justify-content: space-between; padding: 25px; border-bottom: 3px solid #334155; font-size: 3.5rem; }
     </style>
 </head>
@@ -65,16 +58,23 @@
 
         onValue(ref(db, 'tv_mirror'), (snap) => {
             const data = snap.val();
+            if(!data) return;
+
+            // HANDLE CONFETTI SIGNAL
+            if (data.trigger_confetti) {
+                // We check the timestamp to ensure we don't fire twice for the same event
+                const lastFired = window.lastConfettiTime || 0;
+                if (data.trigger_confetti > lastFired) {
+                    confetti({ particleCount: 400, spread: 120, origin: { y: 0.6 } });
+                    window.lastConfettiTime = data.trigger_confetti;
+                }
+            }
+
             const main = document.getElementById('tv-main-container');
             const scores = document.getElementById('tv-score-container');
             const top = document.getElementById('tv-top-bar');
 
-            if(!data || !data.mainHTML || data.mainHTML.trim() === "") {
-                main.innerHTML = `<div id="welcome-screen"><h1 class="text-8xl font-black text-teal-400 mb-10">بانتظار المضيف...</h1><p class="text-4xl text-slate-400">ابدأ اللعبة من جوالك للمشاهدة هنا</p></div>`;
-                top.classList.add('hidden');
-                scores.classList.add('hidden');
-                return;
-            }
+            if(!data.mainHTML || data.mainHTML.trim() === "") return;
 
             top.classList.remove('hidden');
             top.innerHTML = data.topBarHTML;
@@ -86,11 +86,8 @@
             } else {
                 scores.classList.add('hidden');
                 main.classList.remove('hidden');
-                
-                // SYNC CONTENT AND STATE
                 main.innerHTML = data.mainHTML;
-                // This captures whether 'memory-visuals' or 'standard-visuals' is hidden on the phone
-                main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden";
+                main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden bg-slate-card";
             }
         });
     </script>
