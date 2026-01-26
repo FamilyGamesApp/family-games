@@ -318,7 +318,7 @@
         window.setupTwisters = () => {
             currentType = 'twister'; currentIndex = -1;
             lastGameConfig = { section: 'adults', type: 'twister' };
-            currentQuestions = getRandomSet(gameData.adults.twisters, 5);
+            currentQuestions = getRandomSet(gameData.adults.twisters, 7);
             showHostUI();
         };
 
@@ -326,7 +326,7 @@
             currentType = 'memory'; currentIndex = -1;
             lastGameConfig = { type: 'memory', diff: diff };
             document.getElementById('memory-difficulty').classList.add('hidden');
-            currentQuestions = Array.from({length: 5}, () => Math.floor(1000 + Math.random() * 9000).toString());
+            currentQuestions = Array.from({length: 7}, () => Math.floor(1000 + Math.random() * 9000).toString());
             showHostUI();
         };
 
@@ -345,6 +345,9 @@
         }
 
         window.triggerNext = () => {
+            /* NEW: hard-cap at 7 rounds for every mode */
+            if (currentIndex >= 6) return announceWinner();
+
             currentIndex++;
             clearInterval(timerInterval);
             remove(answersRef);
@@ -415,6 +418,9 @@
                 displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span style="direction:ltr;">${coloredDigits}</span></div>`;
             }
             document.getElementById('display-content').innerHTML = displayHtml;
+
+            /* NEW: instant celebration after the 7th memory round */
+            if (currentIndex >= 6) announceWinner();
         }
 
         function updateLeaderboardUI(scores) {
@@ -498,7 +504,6 @@
             if(key === 'back') memoryInput = memoryInput.slice(0, -1);
             else if(memoryInput.length < 4) memoryInput += key;
             const boxes = document.querySelectorAll('.digit-box');
-            // FILL LTR Logic
             boxes.forEach((box, i) => box.innerText = memoryInput[i] || "-");
             document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
         };
