@@ -7,30 +7,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Shared Colors and Hand Animations from index.html */
         body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; }
+        
+        /* Forces elements marked hidden on the phone to be hidden on TV */
+        .hidden { display: none !important; }
+
         .bg-slate-card { background-color: #1e293b; }
-        .hand-container { position: relative; width: 600px; height: 400px; margin: 20px auto; perspective: 1500px; }
-        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 6px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
-        .hand-left { left: 0; transform-origin: left; border-radius: 30px 0 0 30px; }
-        .hand-right { right: 0; transform-origin: right; border-radius: 0 30px 30px 0; }
+        
+        /* TV Scale Adjustments for Questions */
+        #display-title { font-size: 5rem !important; line-height: 1.2; margin-bottom: 2rem; color: #14b8a6; }
+        #display-content { font-size: 4rem !important; color: #cbd5e1; }
+        #display-content div { padding: 20px; margin: 10px; background: #334155; border-radius: 20px; border: 2px solid #475569; }
+        #current-player-name { font-size: 3rem; padding: 0 20px; }
+        #player-spotlight { font-size: 2.5rem; margin-bottom: 20px; }
+
+        /* Memory Scale Adjustments */
+        .hand-container { position: relative; width: 700px; height: 400px; margin: 20px auto; perspective: 2000px; }
+        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 8px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
+        .hand-left { left: 0; transform-origin: left; border-radius: 40px 0 0 40px; }
+        .hand-right { right: 0; transform-origin: right; border-radius: 0 40px 40px 0; }
         .open .hand-left { transform: rotateY(-110deg); }
         .open .hand-right { transform: rotateY(110deg); }
-        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 8rem; font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12rem; font-weight: 900; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
-        .score-row { display: flex; justify-content: space-between; padding: 20px; border-bottom: 2px solid #334155; font-size: 2.5rem; }
+        #host-status-msg { font-size: 3.5rem; margin-top: 30px; }
+        
+        /* Scoreboard Scale */
+        .score-row { display: flex; justify-content: space-between; padding: 25px; border-bottom: 3px solid #334155; font-size: 3.5rem; }
     </style>
 </head>
 <body>
 
-    <div class="w-full h-full flex flex-col gap-10">
-        <div id="tv-top-bar" class="bg-slate-800 p-6 rounded-3xl text-4xl flex justify-between border-4 border-slate-700"></div>
+    <div id="tv-root" class="w-full h-full flex flex-col gap-10">
+        <div id="tv-top-bar" class="bg-slate-800 p-8 rounded-[2rem] text-5xl flex justify-between border-4 border-slate-700 hidden"></div>
 
-        <div id="tv-main-container" class="flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-20 relative overflow-hidden">
+        <div id="tv-main-container" class="flex-1 rounded-[4rem] border-8 border-slate-700 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden bg-slate-card">
+            <div id="welcome-screen">
+                <h1 class="text-8xl font-black text-teal-400 mb-10">بانتظار المضيف...</h1>
+                <p class="text-4xl text-slate-400">ابدأ اللعبة من جوالك للمشاهدة هنا</p>
             </div>
-
-        <div id="tv-score-container" class="hidden flex-1 bg-slate-900 rounded-[4rem] p-10 border-8 border-amber-500 overflow-y-auto text-right">
         </div>
+
+        <div id="tv-score-container" class="hidden flex-1 bg-slate-900 rounded-[4rem] p-12 border-8 border-amber-500 overflow-y-auto text-right"></div>
     </div>
 
     <script type="module">
@@ -47,16 +65,18 @@
 
         onValue(ref(db, 'tv_mirror'), (snap) => {
             const data = snap.val();
-            if(!data) return;
-
             const main = document.getElementById('tv-main-container');
             const scores = document.getElementById('tv-score-container');
             const top = document.getElementById('tv-top-bar');
 
-            // Inject exact HTML and classes from Host
-            main.innerHTML = data.mainHTML;
-            main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-20 relative overflow-hidden";
-            
+            if(!data || !data.mainHTML || data.mainHTML.trim() === "") {
+                main.innerHTML = `<div id="welcome-screen"><h1 class="text-8xl font-black text-teal-400 mb-10">بانتظار المضيف...</h1><p class="text-4xl text-slate-400">ابدأ اللعبة من جوالك للمشاهدة هنا</p></div>`;
+                top.classList.add('hidden');
+                scores.classList.add('hidden');
+                return;
+            }
+
+            top.classList.remove('hidden');
             top.innerHTML = data.topBarHTML;
 
             if(data.scoreVisible) {
@@ -64,8 +84,13 @@
                 scores.classList.remove('hidden');
                 scores.innerHTML = data.scoreHTML;
             } else {
-                main.classList.remove('hidden');
                 scores.classList.add('hidden');
+                main.classList.remove('hidden');
+                
+                // SYNC CONTENT AND STATE
+                main.innerHTML = data.mainHTML;
+                // This captures whether 'memory-visuals' or 'standard-visuals' is hidden on the phone
+                main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden";
             }
         });
     </script>
