@@ -2,102 +2,71 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Family Games TV</title>
-    <link rel="stylesheet" href="style.css">
+    <title>شاشة العرض - ألعاب العائلة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Shared Colors and Hand Animations from index.html */
+        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; }
+        .bg-slate-card { background-color: #1e293b; }
+        .hand-container { position: relative; width: 600px; height: 400px; margin: 20px auto; perspective: 1500px; }
+        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 6px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
+        .hand-left { left: 0; transform-origin: left; border-radius: 30px 0 0 30px; }
+        .hand-right { right: 0; transform-origin: right; border-radius: 0 30px 30px 0; }
+        .open .hand-left { transform: rotateY(-110deg); }
+        .open .hand-right { transform: rotateY(110deg); }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 8rem; font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
+        .open .number-reveal { opacity: 1; }
+        .score-row { display: flex; justify-content: space-between; padding: 20px; border-bottom: 2px solid #334155; font-size: 2.5rem; }
+    </style>
 </head>
-<body class="bg-[#0f172a] p-10 overflow-hidden text-white">
-    <div class="flex gap-10 h-[90vh]">
-        
-        <div class="flex-1 bg-slate-900/50 border-4 border-slate-800 rounded-[3.5rem] p-12 flex flex-col shadow-2xl">
-            <div class="text-center flex-1 flex flex-col justify-center">
-                <h1 id="tv-cat" class="text-teal-400 text-5xl font-black mb-6 italic">جاهزون؟</h1>
-                <div id="tv-q" class="text-6xl font-extrabold leading-tight text-slate-100 mb-12">امسح الكود للانضمام للعبة</div>
-                <div id="tv-opts" class="grid grid-cols-2 gap-6"></div>
+<body>
+
+    <div class="w-full h-full flex flex-col gap-10">
+        <div id="tv-top-bar" class="bg-slate-800 p-6 rounded-3xl text-4xl flex justify-between border-4 border-slate-700"></div>
+
+        <div id="tv-main-container" class="flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-20 relative overflow-hidden">
             </div>
 
-            <button onclick="nextRound()" class="w-full bg-purple-600 p-10 rounded-[2rem] text-5xl font-black hover:bg-purple-500 shadow-2xl active:scale-95 transition-all">
-                الجولة التالية
-            </button>
-        </div>
-
-        <div class="w-1/3 flex flex-col gap-8">
-            <div class="bg-white p-10 rounded-[3rem] flex flex-col items-center shadow-inner">
-                <div id="qrcode-container"></div>
-                <h2 id="room-id" class="text-6xl font-black text-slate-900 mt-6 tracking-tighter">----</h2>
-            </div>
-            
-            <div class="flex-1 bg-slate-800/80 rounded-[3rem] p-8 border-4 border-amber-500 shadow-2xl">
-                <h3 class="text-3xl font-black text-amber-500 text-center mb-6">لوحة النقاط</h3>
-                <div id="leaderboard" class="space-y-4"></div>
-            </div>
+        <div id="tv-score-container" class="hidden flex-1 bg-slate-900 rounded-[4rem] p-10 border-8 border-amber-500 overflow-y-auto text-right">
         </div>
     </div>
 
     <script type="module">
-        import { gameData } from './questions.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('r');
-        const roomPath = `rooms/${roomId}`;
-
-        const firebaseConfig = { /* ضع إعدادات Firebase هنا */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
+            databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "family-games-app"
+        };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        document.getElementById('room-id').innerText = roomId;
+        onValue(ref(db, 'tv_mirror'), (snap) => {
+            const data = snap.val();
+            if(!data) return;
 
-        // توليد الـ QR Code مع التأكد من وجود المكتبة
-        function generateQR() {
-            const container = document.getElementById("qrcode-container");
-            container.innerHTML = ''; 
-            // الرابط يوجه إلى index.html ويخبره بوضوح أن المستخدم هو لاعب (role=player)
-            const joinLink = `${window.location.origin}${window.location.pathname.replace('tv.html', 'index.html')}?r=${roomId}&role=player`;
+            const main = document.getElementById('tv-main-container');
+            const scores = document.getElementById('tv-score-container');
+            const top = document.getElementById('tv-top-bar');
+
+            // Inject exact HTML and classes from Host
+            main.innerHTML = data.mainHTML;
+            main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-20 relative overflow-hidden";
             
-            new QRCode(container, {
-                text: joinLink,
-                width: 250,
-                height: 250,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-        }
+            top.innerHTML = data.topBarHTML;
 
-        // انتظر ثانية لضمان تحميل المكتبة ثم ارسم الكود
-        setTimeout(generateQR, 1000);
-
-        window.nextRound = async () => {
-            const categories = Object.keys(gameData.adults).filter(k => Array.isArray(gameData.adults[k]));
-            const randomCat = categories[Math.floor(Math.random() * categories.length)];
-            const questions = gameData.adults[randomCat];
-            const q = questions[Math.floor(Math.random() * questions.length)];
-
-            document.getElementById('tv-cat').innerText = randomCat.toUpperCase();
-            document.getElementById('tv-q').innerText = q.q;
-            document.getElementById('tv-opts').innerHTML = q.options.map(o => `<div class="bg-slate-800 p-6 rounded-2xl text-3xl border border-slate-700 font-bold">${o}</div>`).join('');
-
-            await set(ref(db, `${roomPath}/live_game`), {
-                type: 'quiz',
-                q: q.q,
-                options: q.options,
-                correct: q.correct,
-                ts: Date.now()
-            });
-        };
-
-        onValue(ref(db, `${roomPath}/scores`), (snap) => {
-            const scores = snap.val() || {};
-            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-            document.getElementById('leaderboard').innerHTML = sorted.map(([n,v]) => `
-                <div class="flex justify-between text-3xl font-bold border-b border-slate-700 pb-3">
-                    <span class="text-white">${n}</span>
-                    <span class="text-yellow-400">${v}</span>
-                </div>
-            `).join('');
+            if(data.scoreVisible) {
+                main.classList.add('hidden');
+                scores.classList.remove('hidden');
+                scores.innerHTML = data.scoreHTML;
+            } else {
+                main.classList.remove('hidden');
+                scores.classList.add('hidden');
+            }
         });
     </script>
 </body>
