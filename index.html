@@ -2,89 +2,102 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ألعاب العائلة</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ألعاب العائلة - الجوال</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // توجيه تلقائي للشاشات الكبيرة فقط إذا لم يكن هناك بارامتر يحدد أنه لاعب
+        // منع التحويل التلقائي إذا كان المستخدم "لاعباً" قادماً من QR Code
         const urlParams = new URLSearchParams(window.location.search);
-        if (window.innerWidth > 1024 && !urlParams.get('role')) {
+        const isPlayer = urlParams.get('role') === 'player';
+        
+        if (window.innerWidth > 1024 && !isPlayer) {
             let r = urlParams.get('r') || Math.random().toString(36).substring(2, 6).toUpperCase();
             window.location.href = `tv.html?r=${r}`;
         }
     </script>
 </head>
-<body>
-    <div id="app" class="p-5 flex flex-col min-h-screen">
-        <div id="setup-screen" class="my-auto space-y-8">
-            <div class="text-center">
-                <h1 class="text-5xl font-black text-teal-400 mb-2">ألعاب العائلة</h1>
-                <p id="room-id-display" class="text-slate-400 font-bold text-xl"></p>
-            </div>
+<body class="bg-[#0f172a] text-white">
+    <div id="app" class="p-6 flex flex-col min-h-screen">
+        <div id="setup-screen" class="my-auto space-y-8 text-center">
+            <h1 class="text-5xl font-black text-teal-400">ألعاب العائلة</h1>
+            <p id="room-info" class="text-slate-400 font-bold text-xl uppercase"></p>
 
-            <div class="bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-700">
-                <input id="player-name-input" type="text" placeholder="أدخل اسمك..." 
-                    class="w-full p-5 rounded-2xl bg-slate-900 text-white text-center text-2xl mb-6 outline-none border-2 border-slate-700 focus:border-teal-500 transition-all">
-                
-                <button onclick="joinGame()" class="w-full bg-teal-500 hover:bg-teal-400 text-white p-6 rounded-2xl text-3xl font-black shadow-lg transition-transform active:scale-95">
-                    دخول كلاعب
-                </button>
+            <div class="bg-slate-800 p-8 rounded-[2.5rem] border border-slate-700 shadow-2xl">
+                <input id="p-name" type="text" placeholder="اكتب اسمك هنا..." 
+                    class="w-full p-5 rounded-2xl bg-slate-900 text-white text-center text-2xl mb-6 outline-none border-2 border-slate-700 focus:border-teal-500">
+                <button onclick="join()" class="w-full bg-teal-500 p-6 rounded-2xl text-3xl font-black shadow-lg active:scale-95 transition-all">دخول كلاعب</button>
             </div>
             
-            <div class="flex flex-col items-center gap-4">
-                <button onclick="createHostRoom()" class="text-teal-400 text-lg font-bold underline decoration-2 underline-offset-8">
-                    <i class="fas fa-tv ml-2"></i>فتح غرفة جديدة (كمضيف)
-                </button>
-            </div>
+            <button onclick="host()" class="text-teal-400 text-lg font-bold underline underline-offset-8">فتح غرفة جديدة (كمضيف)</button>
         </div>
 
-        <div id="player-view" class="hidden flex-1 flex flex-col">
+        <div id="player-view" class="hidden flex-1 flex flex-col pt-4">
             <div class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl mb-6 border border-slate-700">
-                <span id="p-status" class="text-teal-400 font-black text-lg">انتظار المضيف...</span>
+                <span id="p-status" class="text-teal-400 font-bold">انتظار المضيف...</span>
                 <span id="p-score" class="text-yellow-400 font-black text-3xl">0</span>
             </div>
-            <div id="player-input-area" class="flex-1 flex flex-col justify-center items-center">
+            <div id="p-controls" class="flex-1 flex flex-col justify-center gap-4">
                 </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = { /* إعداداتك هنا */ };
+        const firebaseConfig = { /* ضع إعدادات Firebase هنا */ };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
         const urlParams = new URLSearchParams(window.location.search);
         let roomId = urlParams.get('r');
+        if(roomId) document.getElementById('room-info').innerText = `غرفة رقم: ${roomId}`;
 
-        if(roomId) document.getElementById('room-id-display').innerText = `رقم الغرفة: ${roomId}`;
-
-        window.createHostRoom = () => {
-            const newRoom = Math.random().toString(36).substring(2, 6).toUpperCase();
-            window.location.href = `tv.html?r=${newRoom}`;
+        window.host = () => {
+            const r = Math.random().toString(36).substring(2, 6).toUpperCase();
+            window.location.href = `tv.html?r=${r}`;
         };
 
-        window.joinGame = async () => {
-            const name = document.getElementById('player-name-input').value.trim();
-            if(!name || !roomId) return alert("تأكد من الاسم ورقم الغرفة");
+        window.join = async () => {
+            const name = document.getElementById('p-name').value.trim();
+            if(!name || !roomId) return alert("يرجى إدخال اسمك");
             
             await set(ref(db, `rooms/${roomId}/scores/${name}`), 0);
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('player-view').classList.remove('hidden');
-            
+
+            // الاستماع للسؤال الحالي
             onValue(ref(db, `rooms/${roomId}/live_game`), (snap) => {
                 const game = snap.val();
-                if(game) renderController(game, name);
+                if(!game) return;
+                renderButtons(game, name);
             });
         };
 
-        function renderController(game, myName) {
-            const area = document.getElementById('player-input-area');
+        function renderButtons(game, myName) {
+            const area = document.getElementById('p-controls');
             area.innerHTML = '';
-            // هنا تضع منطق عرض أزرار الإجابة أو الكيبورد بناءً على نوع اللعبة
+            document.getElementById('p-status').innerText = "أجب بسرعة!";
+
+            if(game.type === 'quiz') {
+                game.options.forEach((opt, idx) => {
+                    const b = document.createElement('button');
+                    b.className = "w-full bg-slate-700 p-6 rounded-2xl text-2xl font-bold active:bg-teal-600";
+                    b.innerText = opt;
+                    b.onclick = async () => {
+                        if(idx === game.correct) {
+                            const scoreRef = ref(db, `rooms/${roomId}/scores/${myName}`);
+                            const current = (await get(scoreRef)).val() || 0;
+                            set(scoreRef, current + 10);
+                            area.innerHTML = `<h2 class="text-4xl text-green-400 font-black">إجابة صحيحة! +10</h2>`;
+                        } else {
+                            area.innerHTML = `<h2 class="text-4xl text-red-400 font-black">إجابة خاطئة!</h2>`;
+                        }
+                    };
+                    area.appendChild(b);
+                });
+            }
         }
     </script>
 </body>
