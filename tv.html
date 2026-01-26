@@ -2,36 +2,37 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Family Games TV - المسرح</title>
+    <title>Family Games TV - شاشة العرض</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body>
+<body class="p-10">
     <div class="tv-layout">
         <div class="tv-main-card">
-            <div id="round-info" class="text-slate-500 font-bold text-2xl text-right"></div>
-            
-            <div id="content-box">
-                <h1 id="tv-title" class="tv-title">بانتظار اللاعبين...</h1>
-                <div id="tv-main-display" class="tv-question"></div>
+            <div id="game-stage">
+                <h1 id="tv-title" class="tv-title">استعدوا للبدء!</h1>
+                <div id="tv-display-main" class="tv-question text-white"></div>
                 <div id="tv-options" class="tv-option-grid"></div>
             </div>
 
-            <div class="mt-10">
-                <button id="next-btn" onclick="nextRound()" class="w-full bg-purple-600 p-8 rounded-3xl text-4xl font-black shadow-2xl hover:bg-purple-500 transition">الجولة التالية</button>
+            <div class="mt-auto pt-10 border-t border-slate-800">
+                <button onclick="triggerNextRound()" class="w-full bg-purple-600 hover:bg-purple-500 p-10 rounded-[2rem] text-5xl font-black shadow-2xl transition-all active:scale-95">
+                    الجولة التالية <i class="fas fa-forward mr-4"></i>
+                </button>
             </div>
         </div>
 
-        <div class="w-1/4 flex flex-col gap-6">
-            <div class="bg-white p-8 rounded-[40px] flex flex-col items-center">
+        <div class="w-1/3 flex flex-col gap-8">
+            <div class="bg-white p-10 rounded-[3rem] shadow-2xl flex flex-col items-center">
                 <div id="qrcode"></div>
-                <h2 id="room-code" class="text-3xl font-black text-black mt-4">----</h2>
+                <h2 id="room-code-display" class="text-4xl font-black text-slate-900 mt-6 tracking-widest">----</h2>
+                <p class="text-slate-500 font-bold text-xl mt-2">امسح الكود للانضمام</p>
             </div>
             
-            <div class="flex-1 bg-slate-800 rounded-[40px] p-8 border-4 border-amber-500">
-                <h3 class="text-3xl font-black text-amber-500 text-center mb-6">لوحة الصدارة</h3>
-                <div id="tv-leaderboard" class="space-y-4"></div>
+            <div class="flex-1 bg-slate-800/50 backdrop-blur-md rounded-[3.5rem] p-10 border-4 border-amber-500 shadow-2xl overflow-hidden">
+                <h3 class="text-4xl font-black text-amber-500 text-center mb-8 italic">لوحة الصدارة</h3>
+                <div id="tv-leaderboard" class="space-y-6"></div>
             </div>
         </div>
     </div>
@@ -39,48 +40,45 @@
     <script type="module">
         import { gameData } from './questions.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, get, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('r');
         const roomRef = `rooms/${roomId}`;
 
-        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
+        const firebaseConfig = { /* إعداداتك هنا */ };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Generate QR
+        // توليد الـ QR Code
         const joinLink = `${window.location.origin}/index.html?r=${roomId}`;
-        new QRCode(document.getElementById("qrcode"), { text: joinLink, width: 250, height: 250 });
-        document.getElementById('room-code').innerText = roomId;
+        new QRCode(document.getElementById("qrcode"), { text: joinLink, width: 280, height: 280 });
+        document.getElementById('room-code-display').innerText = roomId;
 
-        // Cleanup Logic
-        async function runCleanup() {
+        // وظيفة التنظيف التلقائي
+        (async function cleanup() {
             const snap = await get(ref(db, 'rooms'));
-            const now = Date.now();
-            if(snap.exists()){
+            if(snap.exists()) {
+                const now = Date.now();
                 Object.keys(snap.val()).forEach(id => {
-                    if(snap.val()[id].createdAt && (now - snap.val()[id].createdAt > 86400000)) {
-                        remove(ref(db, `rooms/${id}`));
-                    }
+                    if(snap.val()[id].createdAt && (now - snap.val()[id].createdAt > 86400000)) remove(ref(db, `rooms/${id}`));
                 });
             }
-            set(ref(db, `${roomRef}/createdAt`), now);
-        }
-        runCleanup();
+            set(ref(db, `${roomRef}/createdAt`), Date.now());
+        })();
 
-        // Game Loop Logic (Adapted from your original)
-        window.nextRound = () => {
-            // Trigger your nextRound logic here using roomRef as root
+        window.triggerNextRound = () => {
+            // منطق اختيار السؤال من questions.js وتحديث live_game
         };
 
+        // تحديث الصدارة
         onValue(ref(db, `${roomRef}/scores`), (snap) => {
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-            document.getElementById('tv-leaderboard').innerHTML = sorted.map(([name, val]) => `
-                <div class="flex justify-between text-3xl font-bold border-b border-slate-700 pb-2">
-                    <span>${name}</span>
-                    <span class="text-yellow-400">${Math.round(val)}</span>
+            document.getElementById('tv-leaderboard').innerHTML = sorted.map(([n, v]) => `
+                <div class="flex justify-between items-center text-4xl font-bold border-b border-slate-700 pb-4">
+                    <span class="text-slate-200">${n}</span>
+                    <span class="text-yellow-400 bg-yellow-400/10 px-4 py-1 rounded-xl">${Math.round(v)}</span>
                 </div>
             `).join('');
         });
