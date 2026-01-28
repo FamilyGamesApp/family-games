@@ -2,93 +2,316 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <!-- Critical: Disable user scaling, ensure proper viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>شاشة العرض - ألعاب العائلة</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        html, body { 
+            height: 100%; 
+            /* Fix for mobile/TV browsers that hide URL bar */
+            height: -webkit-fill-available;
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            font-family: 'Tajawal', sans-serif;
+            /* Prevent scroll but allow content to fit */
+            overflow: hidden;
+        }
+
+        body {
+            /* TV Safe Zone: Keep content 5% away from edges (TVs cut edges) */
+            padding: 5vh 5vw;
+            display: flex;
+            flex-direction: column;
+        }
+
         .hidden { display: none !important; }
         .bg-slate-card { background-color: #1e293b; }
-        
-        #display-title { font-size: 5rem !important; line-height: 1.2; margin-bottom: 2rem; color: #14b8a6; font-weight: 900; }
-        #display-content { font-size: 4rem !important; color: #cbd5e1; font-weight: 700; }
-        #display-content div { padding: 20px; margin: 10px; background: #334155; border-radius: 20px; border: 2px solid #475569; }
-        #display-content h1 { font-size: 8rem !important; } /* Winner Name size */
 
-        .hand-container { position: relative; width: 700px; height: 400px; margin: 20px auto; perspective: 2000px; }
-        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 8px solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
-        .hand-left { left: 0; transform-origin: left; border-radius: 40px 0 0 40px; }
-        .hand-right { right: 0; transform-origin: right; border-radius: 0 40px 40px 0; }
+        /* TV Root Layout */
+        #tv-root {
+            display: flex;
+            flex-direction: column;
+            gap: 2vh;
+            height: 90vh; /* 100 - 5 top - 5 bottom padding */
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* Top Bar - Compact */
+        #tv-top-bar {
+            background: #1e293b;
+            padding: 2vh 3vw;
+            border-radius: 2vh;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 3vh; /* Scales with viewport height */
+            border: 0.5vh solid #334155;
+            flex-shrink: 0; /* Don't shrink */
+            min-height: 8vh;
+        }
+
+        /* Main Game Container - Flexible */
+        #tv-main-container {
+            flex: 1;
+            background: #1e293b;
+            border-radius: 3vh;
+            border: 0.8vh solid #475569;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4vh;
+            position: relative;
+            overflow: hidden; /* Clip content gracefully */
+            min-height: 0; /* Critical for flex children */
+        }
+
+        /* Dynamic Typography based on viewport height */
+        #display-title { 
+            font-size: 6vh; /* Was 5rem, now scales with screen */
+            line-height: 1.3; 
+            margin-bottom: 3vh; 
+            color: #14b8a6; 
+            font-weight: 900;
+            text-align: center;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+
+        #display-content { 
+            font-size: 4.5vh; /* Was 4rem */
+            color: #cbd5e1; 
+            font-weight: 700;
+            line-height: 1.4;
+            width: 100%;
+            overflow: hidden; /* Prevent spillover */
+        }
+
+        /* Option boxes sizing fix */
+        #display-content div { 
+            padding: 2vh; 
+            margin: 1.5vh 0; 
+            background: #334155; 
+            border-radius: 2vh; 
+            border: 0.3vh solid #475569;
+            font-size: 3.5vh; /* Ensure options fit */
+            line-height: 1.3;
+        }
+
+        /* Winner specific - fluid sizing */
+        #display-content h1 { 
+            font-size: 10vh; /* Was 8rem */
+            color: #fbbf24;
+            line-height: 1.1;
+        }
+
+        /* Memory Game Hands - Responsive sizing */
+        .hand-container { 
+            position: relative; 
+            width: 60vh; /* Scale with viewport height */
+            height: 35vh; 
+            max-width: 90%;
+            margin: 2vh auto; 
+            perspective: 2000px;
+            flex-shrink: 0;
+        }
+
+        .hand { 
+            position: absolute; 
+            width: 50%; 
+            height: 100%; 
+            background: #fbbf24; 
+            border: 1vh solid #b45309; 
+            transition: transform 0.6s ease-in-out;
+            z-index: 10;
+        }
+
+        .hand-left { 
+            left: 0; 
+            transform-origin: left; 
+            border-radius: 4vh 0 0 4vh; 
+        }
+
+        .hand-right { 
+            right: 0; 
+            transform-origin: right; 
+            border-radius: 0 4vh 4vh 0; 
+        }
+
         .open .hand-left { transform: rotateY(-110deg); }
         .open .hand-right { transform: rotateY(110deg); }
-        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12rem; font-weight: 900; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
+
+        .number-reveal { 
+            position: absolute; 
+            inset: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 15vh; /* Was 12rem - scales with height */
+            font-weight: 900; 
+            color: #fff; 
+            z-index: 5; 
+            opacity: 0; 
+            transition: opacity 0.2s; 
+            direction: ltr; 
+        }
+
         .open .number-reveal { opacity: 1; }
-        
-        .score-row { display: flex; justify-content: space-between; padding: 25px; border-bottom: 3px solid #334155; font-size: 3.5rem; }
+
+        /* Scoreboard Layout */
+        #tv-score-container {
+            flex: 1;
+            background: #0f172a;
+            border-radius: 3vh;
+            padding: 3vh;
+            border: 0.8vh solid #f59e0b;
+            overflow-y: auto; /* Allow scroll only if absolutely necessary */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .score-row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 2vh; 
+            border-bottom: 0.4vh solid #334155; 
+            font-size: 4vh; /* Was 3.5rem */
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .score-row:last-child { border: none; }
+
+        /* Welcome Screen */
+        #welcome-screen {
+            text-align: center;
+        }
+
+        #welcome-screen h1 {
+            font-size: 8vh;
+            color: #14b8a6;
+            margin-bottom: 3vh;
+        }
+
+        #welcome-screen p {
+            font-size: 3.5vh;
+            color: #94a3b8;
+        }
+
+        /* Fallback for very small heights (landscape phones) */
+        @media (max-height: 500px) {
+            #display-title { font-size: 5vh; }
+            #display-content { font-size: 3.5vh; }
+            .hand-container { height: 25vh; width: 45vh; }
+            .number-reveal { font-size: 10vh; }
+        }
+
+        /* For extremely wide screens (ultrawide TVs) - limit content width */
+        @media (min-aspect-ratio: 21/9) {
+            #tv-main-container {
+                max-width: 80%;
+                margin: 0 auto;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div id="tv-root" class="w-full h-full flex flex-col gap-10">
-        <div id="tv-top-bar" class="bg-slate-800 p-8 rounded-[2rem] text-5xl flex justify-between border-4 border-slate-700 hidden"></div>
+    <div id="tv-root">
+        <div id="tv-top-bar" class="hidden">
+            <span id="conn-status" style="color: #64748b;">● متصل</span>
+            <span id="tv-timer-display"></span>
+        </div>
 
-        <div id="tv-main-container" class="flex-1 rounded-[4rem] border-8 border-slate-700 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden bg-slate-card">
+        <div id="tv-main-container" class="bg-slate-card">
             <div id="welcome-screen">
-                <h1 class="text-8xl font-black text-teal-400 mb-10">بانتظار المضيف...</h1>
-                <p class="text-4xl text-slate-400">ابدأ اللعبة من جوالك للمشاهدة هنا</p>
+                <h1>بانتظار المضيف...</h1>
+                <p>Connected to Firebase</p>
             </div>
         </div>
 
-        <div id="tv-score-container" class="hidden flex-1 bg-slate-900 rounded-[4rem] p-12 border-8 border-amber-500 overflow-y-auto text-right"></div>
+        <div id="tv-score-container" class="hidden"></div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = {
+    <script>
+        // Firebase Compat Mode (Better TV support)
+        var firebaseConfig = {
             apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
             databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "family-games-app"
         };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+        var mirrorRef = db.ref('tv_mirror');
 
-        onValue(ref(db, 'tv_mirror'), (snap) => {
-            const data = snap.val();
+        // Track last update to detect disconnections
+        var lastUpdate = Date.now();
+        
+        setInterval(function() {
+            if (Date.now() - lastUpdate > 10000) {
+                document.getElementById('conn-status').style.color = '#ef4444';
+                document.getElementById('conn-status').innerText = '● انقطع الاتقال';
+            }
+        }, 5000);
+
+        mirrorRef.on('value', function(snap) {
+            var data = snap.val();
+            lastUpdate = Date.now();
+            document.getElementById('conn-status').style.color = '#10b981';
+            document.getElementById('conn-status').innerText = '● متصل';
+            
             if(!data) return;
 
-            // HANDLE CONFETTI SIGNAL
+            // Confetti trigger
             if (data.trigger_confetti) {
-                // We check the timestamp to ensure we don't fire twice for the same event
-                const lastFired = window.lastConfettiTime || 0;
+                var lastFired = window.lastConfettiTime || 0;
                 if (data.trigger_confetti > lastFired) {
                     confetti({ particleCount: 400, spread: 120, origin: { y: 0.6 } });
                     window.lastConfettiTime = data.trigger_confetti;
                 }
             }
 
-            const main = document.getElementById('tv-main-container');
-            const scores = document.getElementById('tv-score-container');
-            const top = document.getElementById('tv-top-bar');
+            var main = document.getElementById('tv-main-container');
+            var scores = document.getElementById('tv-score-container');
+            var top = document.getElementById('tv-top-bar');
 
             if(!data.mainHTML || data.mainHTML.trim() === "") return;
 
             top.classList.remove('hidden');
-            top.innerHTML = data.topBarHTML;
 
             if(data.scoreVisible) {
                 main.classList.add('hidden');
                 scores.classList.remove('hidden');
-                scores.innerHTML = data.scoreHTML;
+                scores.innerHTML = data.scoreHTML || '';
             } else {
                 scores.classList.add('hidden');
                 main.classList.remove('hidden');
+                
+                // Inject content
                 main.innerHTML = data.mainHTML;
-                main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden bg-slate-card";
+                
+                // Force font size recalculation for injected content
+                var title = main.querySelector('#display-title');
+                var content = main.querySelector('#display-content');
+                
+                if(title) title.style.fontSize = '6vh';
+                if(content) content.style.fontSize = '4.5vh';
             }
+        });
+
+        // Handle window resize/orientation change
+        window.addEventListener('resize', function() {
+            // Force redraw to recalculate flex layouts
+            document.body.style.display = 'none';
+            document.body.offsetHeight; // Trigger reflow
+            document.body.style.display = 'flex';
         });
     </script>
 </body>
