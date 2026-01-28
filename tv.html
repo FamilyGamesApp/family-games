@@ -57,6 +57,7 @@
         #welcome-screen { text-align: center; }
         #welcome-screen h1 { font-size: 8vh; color: #14b8a6; margin-bottom: 3vh; }
         #welcome-screen p { font-size: 3.5vh; color: #94a3b8; }
+        #error-message { color: #ef4444; font-size: 3vh; text-align: center; margin-top: 2vh; }
         
         @media (max-height: 500px) {
             #display-title { font-size: 5vh; }
@@ -81,83 +82,111 @@
             <div id="welcome-screen">
                 <h1>بانتظار المضيف...</h1>
                 <p>Connected to Firebase</p>
+                <div id="error-message" class="hidden"></div>
             </div>
         </div>
 
         <div id="tv-score-container" class="hidden"></div>
     </div>
 
-    <script>
-        var firebaseConfig = {
-            apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
-            databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "family-games-app"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.database();
-        var mirrorRef = db.ref('tv_mirror');
-        var lastUpdate = Date.now();
-        
-        setInterval(function() {
-            if (Date.now() - lastUpdate > 10000) {
-                document.getElementById('conn-status').style.color = '#ef4444';
-                document.getElementById('conn-status').innerText = '● انقطع الاتصال';
-            }
-        }, 5000);
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        mirrorRef.on('value', function(snap) {
-            var data = snap.val();
-            lastUpdate = Date.now();
-            document.getElementById('conn-status').style.color = '#10b981';
-            document.getElementById('conn-status').innerText = '● متصل';
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
+                authDomain: "family-games-app.firebaseapp.com",
+                databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "family-games-app",
+                storageBucket: "family-games-app.firebasestorage.app",
+                messagingSenderId: "290150126558",
+                appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
+            };
             
-            if(!data) return;
-
-            if (data.trigger_confetti) {
-                var lastFired = window.lastConfettiTime || 0;
-                if (data.trigger_confetti > lastFired) {
-                    const isTV = window.innerWidth > 1024 || window.innerHeight > 800;
-                    
-                    confetti({ 
-                        particleCount: isTV ? 80 : 300,
-                        spread: 100,
-                        gravity: 1.2,
-                        ticks: 80,
-                        decay: 0.8,
-                        origin: { y: 0.6 },
-                        disableForReducedMotion: true
-                    });
-                    window.lastConfettiTime = data.trigger_confetti;
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+            const mirrorRef = ref(db, 'tv_mirror');
+            let lastUpdate = Date.now();
+            
+            // Connection monitor
+            setInterval(() => {
+                if (Date.now() - lastUpdate > 10000) {
+                    document.getElementById('conn-status').style.color = '#ef4444';
+                    document.getElementById('conn-status').innerText = '● انقطع الاتصال';
                 }
-            }
+            }, 5000);
 
-            var main = document.getElementById('tv-main-container');
-            var scores = document.getElementById('tv-score-container');
-            var top = document.getElementById('tv-top-bar');
+            onValue(mirrorRef, (snap) => {
+                try {
+                    const data = snap.val();
+                    lastUpdate = Date.now();
+                    document.getElementById('conn-status').style.color = '#10b981';
+                    document.getElementById('conn-status').innerText = '● متصل';
+                    
+                    if(!data) return;
 
-            if(!data.mainHTML || data.mainHTML.trim() === "") return;
+                    // Confetti with performance fix
+                    if (data.trigger_confetti) {
+                        const lastFired = window.lastConfettiTime || 0;
+                        if (data.trigger_confetti > lastFired) {
+                            // Detect TV/large screen and reduce particles
+                            const isTV = window.innerWidth > 1024 || window.innerHeight > 800;
+                            
+                            confetti({ 
+                                particleCount: isTV ? 80 : 300,
+                                spread: 100,
+                                gravity: 1.2,
+                                ticks: 80,
+                                decay: 0.8,
+                                origin: { y: 0.6 },
+                                disableForReducedMotion: true
+                            });
+                            window.lastConfettiTime = data.trigger_confetti;
+                        }
+                    }
 
-            top.classList.remove('hidden');
+                    const main = document.getElementById('tv-main-container');
+                    const scores = document.getElementById('tv-score-container');
+                    const top = document.getElementById('tv-top-bar');
 
-            if(data.scoreVisible) {
-                main.classList.add('hidden');
-                scores.classList.remove('hidden');
-                scores.innerHTML = data.scoreHTML || '';
-            } else {
-                scores.classList.add('hidden');
-                main.classList.remove('hidden');
-                main.innerHTML = data.mainHTML;
-                main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden bg-slate-card";
-                
-                var title = main.querySelector('#display-title');
-                var content = main.querySelector('#display-content');
-                if(title) title.style.fontSize = '6vh';
-                if(content) content.style.fontSize = '4.5vh';
-            }
-        });
+                    if(!data.mainHTML || data.mainHTML.trim() === "") return;
 
-        window.addEventListener('resize', function() {
+                    top.classList.remove('hidden');
+
+                    if(data.scoreVisible) {
+                        main.classList.add('hidden');
+                        scores.classList.remove('hidden');
+                        scores.innerHTML = data.scoreHTML || '';
+                    } else {
+                        scores.classList.add('hidden');
+                        main.classList.remove('hidden');
+                        main.innerHTML = data.mainHTML;
+                        main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden bg-slate-card";
+                        
+                        // Force font size recalculation
+                        const title = main.querySelector('#display-title');
+                        const content = main.querySelector('#display-content');
+                        if(title) title.style.fontSize = '6vh';
+                        if(content) content.style.fontSize = '4.5vh';
+                    }
+                } catch (err) {
+                    console.error("Error in onValue:", err);
+                    document.getElementById('error-message').textContent = "خطأ في تحميل البيانات: " + err.message;
+                    document.getElementById('error-message').classList.remove('hidden');
+                }
+            }, (error) => {
+                console.error("Firebase error:", error);
+                document.getElementById('error-message').textContent = "خطأ في الاتصال: " + error.message;
+                document.getElementById('error-message').classList.remove('hidden');
+            });
+            
+        } catch (initErr) {
+            console.error("Init error:", initErr);
+            document.getElementById('welcome-screen').innerHTML += `<div style="color:red; font-size:2vh; margin-top:2vh;">خطأ في التحميل: ${initErr.message}</div>`;
+        }
+
+        window.addEventListener('resize', () => {
             document.body.style.display = 'none';
             document.body.offsetHeight;
             document.body.style.display = 'flex';
