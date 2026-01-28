@@ -363,16 +363,23 @@
 
         function showHostUI() {
             document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.add('hidden');
             document.getElementById('game-play').classList.remove('hidden');
             document.getElementById('host-view').classList.remove('hidden');
             document.getElementById('display-title').innerText = "الجولة القادمة";
             document.getElementById('display-content').innerText = "استعدوا للبدء!";
             document.getElementById('action-btn').classList.remove('hidden');
             document.getElementById('post-game-controls').classList.add('hidden');
+            document.getElementById('twister-scoring').classList.add('hidden');
             document.getElementById('host-back-btn').classList.remove('hidden');
             document.getElementById('dedicated-scoreboard').classList.add('hidden');
             document.getElementById('host-game-container').classList.remove('hidden');
             document.getElementById('host-top-bar').classList.remove('hidden');
+            document.getElementById('standard-visuals').classList.remove('hidden');
+            document.getElementById('memory-visuals').classList.add('hidden');
+            document.getElementById('player-spotlight').classList.add('hidden');
+            
+            syncTV(); // CRITICAL FIX: Explicitly sync to TV immediately
         }
 
         window.triggerNext = () => {
@@ -409,6 +416,8 @@
                     renderHostStandard(item, pSpot);
                 }
             }
+            
+            syncTV(); // CRITICAL FIX: Explicitly sync to TV immediately
         };
 
         async function handleMemoryRound(target) {
@@ -418,18 +427,24 @@
             document.getElementById('memory-visuals').classList.remove('hidden');
             document.getElementById('target-number-display').innerText = target;
             let cd = 3;
-            set(liveRef, { type: 'memory', status: 'countdown', round: currentIndex + 1, totalRounds: 7 });
+            document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
+            syncTV(); // Sync countdown state
+            
             const countInt = setInterval(() => {
+                cd--;
                 document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
-                if(cd-- === 0) {
+                syncTV(); // Sync each countdown number
+                if(cd === 0) {
                     clearInterval(countInt);
                     document.getElementById('hand-wrapper').classList.add('open');
                     set(liveRef, { type: 'memory', status: 'reveal', target: target, duration: config[0], round: currentIndex + 1, totalRounds: 7 });
+                    syncTV(); // Sync reveal state
                     setTimeout(() => {
                         document.getElementById('hand-wrapper').classList.remove('open');
                         document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
                         set(liveRef, { type: 'memory', status: 'input', target: target, duration: config[1], startTime: Date.now(), endTime: Date.now() + (config[1] * 1000), round: currentIndex + 1, totalRounds: 7 });
                         startTimer(config[1], true);
+                        syncTV(); // Sync input state
                     }, config[0]);
                 }
             }, 1000);
@@ -466,6 +481,7 @@
                 displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span style="direction:ltr;">${coloredDigits}</span></div>`;
             }
             document.getElementById('display-content').innerHTML = displayHtml;
+            syncTV(); // Sync results to TV
             if (currentIndex >= 6) announceWinner();
         }
 
@@ -506,7 +522,9 @@
             document.getElementById('display-title').innerText = "بطل الجلسة الحالية";
             document.getElementById('display-content').innerHTML = `<h1 class='text-5xl text-yellow-400 font-black mb-4'>${winner}</h1>`;
             document.getElementById('post-game-controls').classList.remove('hidden');
+            document.getElementById('twister-scoring').classList.add('hidden');
             document.getElementById('action-btn').classList.add('hidden');
+            syncTV(); // Sync winner to TV
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         }
 
@@ -590,7 +608,11 @@
             } else {
                 document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتهى" : "راقب...";
                 kbtns.forEach(b => b.classList.add('disabled'));
-                if(data.status === 'countdown') { resetMemoryUI(); roundStartTime = 0; }
+                if(data.status === 'countdown') { 
+                    resetMemoryUI(); 
+                    roundStartTime = 0; 
+                    document.getElementById('p-status').innerText = "استعد...";
+                }
             }
         }
 
