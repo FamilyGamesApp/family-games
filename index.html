@@ -39,6 +39,9 @@
         .open .hand-right { transform: rotateY(110deg); }
         .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
+        /* Enhanced host timer visibility */
+        #host-timer-text { font-size: 1.5rem; font-weight: 900; }
+        #answer-counter { font-size: 1rem; font-weight: bold; color: #14b8a6; }
     </style>
 </head>
 <body>
@@ -83,9 +86,9 @@
             </div>
             <div id="game-play" class="hidden flex-1 flex flex-col px-2">
                 <div id="host-view" class="hidden flex flex-col h-full">
-                    <div id="host-top-bar" class="bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700 shrink-0">
-                        <span id="answer-counter">...</span>
-                        <span id="host-timer-text" class="text-red-400 font-black"></span>
+                    <div id="host-top-bar" class="bg-slate-800 p-3 rounded-xl flex justify-between mb-2 text-base border border-slate-700 shrink-0">
+                        <span id="answer-counter" class="text-teal-400 font-bold">...</span>
+                        <span id="host-timer-text" class="text-red-500 font-black text-xl"></span>
                     </div>
                     <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
                         <div id="memory-visuals" class="hidden text-center">
@@ -379,7 +382,11 @@
             document.getElementById('memory-visuals').classList.add('hidden');
             document.getElementById('player-spotlight').classList.add('hidden');
             
-            syncTV(); // CRITICAL FIX: Explicitly sync to TV immediately
+            // Initialize counter and timer display
+            document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
+            document.getElementById('host-timer-text').innerText = "";
+            
+            syncTV();
         }
 
         window.triggerNext = () => {
@@ -417,34 +424,60 @@
                 }
             }
             
-            syncTV(); // CRITICAL FIX: Explicitly sync to TV immediately
+            syncTV();
         };
 
         async function handleMemoryRound(target) {
             const diff = lastGameConfig.diff;
-            const config = { easy: [2500, 10], medium: [1800, 8], hard: [1100, 5] }[diff];
+            // FASTER TIMINGS: [revealDuration in ms, inputDuration in seconds]
+            const config = { 
+                easy: [1500, 8],     // 1.5s reveal, 8s input (was 2500, 10)
+                medium: [1000, 6],   // 1s reveal, 6s input (was 1800, 8)
+                hard: [600, 4]       // 0.6s reveal, 4s input (was 1100, 5)
+            }[diff];
+            
             document.getElementById('standard-visuals').classList.add('hidden');
             document.getElementById('memory-visuals').classList.remove('hidden');
             document.getElementById('target-number-display').innerText = target;
+            document.getElementById('answer-counter').innerText = `السؤال ${currentIndex + 1} من 7`;
+            
             let cd = 3;
             document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
-            syncTV(); // Sync countdown state
+            syncTV();
             
             const countInt = setInterval(() => {
                 cd--;
-                document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
-                syncTV(); // Sync each countdown number
-                if(cd === 0) {
+                if(cd > 0) {
+                    document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
+                    syncTV();
+                } else {
                     clearInterval(countInt);
                     document.getElementById('hand-wrapper').classList.add('open');
-                    set(liveRef, { type: 'memory', status: 'reveal', target: target, duration: config[0], round: currentIndex + 1, totalRounds: 7 });
-                    syncTV(); // Sync reveal state
+                    set(liveRef, { 
+                        type: 'memory', 
+                        status: 'reveal', 
+                        target: target, 
+                        duration: config[0], 
+                        round: currentIndex + 1, 
+                        totalRounds: 7 
+                    });
+                    syncTV();
+                    
                     setTimeout(() => {
                         document.getElementById('hand-wrapper').classList.remove('open');
                         document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
-                        set(liveRef, { type: 'memory', status: 'input', target: target, duration: config[1], startTime: Date.now(), endTime: Date.now() + (config[1] * 1000), round: currentIndex + 1, totalRounds: 7 });
+                        set(liveRef, { 
+                            type: 'memory', 
+                            status: 'input', 
+                            target: target, 
+                            duration: config[1], 
+                            startTime: Date.now(), 
+                            endTime: Date.now() + (config[1] * 1000), 
+                            round: currentIndex + 1, 
+                            totalRounds: 7 
+                        });
                         startTimer(config[1], true);
-                        syncTV(); // Sync input state
+                        syncTV();
                     }, config[0]);
                 }
             }, 1000);
@@ -452,10 +485,24 @@
 
         function startTimer(sec, isMemory = false) {
             let remain = sec;
+            const timerEl = document.getElementById('host-timer-text');
+            const counterEl = document.getElementById('answer-counter');
+            
+            // Update counter to show current question
+            if(currentIndex >= 0) {
+                counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
+            }
+            
+            timerEl.classList.remove('hidden');
+            
             timerInterval = setInterval(() => {
-                document.getElementById('host-timer-text').innerText = remain + "ث";
+                timerEl.innerText = remain + " ث";
+                if(remain <= 5) timerEl.style.color = '#ef4444';
+                else timerEl.style.color = '#f87171';
+                
                 if (remain-- <= 0) {
                     clearInterval(timerInterval);
+                    timerEl.innerText = "انتهى الوقت!";
                     if (isMemory) showMemoryResults();
                     if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                 }
@@ -481,7 +528,8 @@
                 displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span style="direction:ltr;">${coloredDigits}</span></div>`;
             }
             document.getElementById('display-content').innerHTML = displayHtml;
-            syncTV(); // Sync results to TV
+            document.getElementById('answer-counter').innerText = `النتائج - السؤال ${currentIndex + 1}`;
+            syncTV();
             if (currentIndex >= 6) announceWinner();
         }
 
@@ -493,8 +541,14 @@
         function renderHostStandard(item, pSpot) {
             const title = document.getElementById('display-title');
             const content = document.getElementById('display-content');
+            const counterEl = document.getElementById('answer-counter');
+            
+            // Show question counter on host/TV
+            counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
+            
             document.getElementById('memory-visuals').classList.add('hidden');
             document.getElementById('standard-visuals').classList.remove('hidden');
+            
             if (currentType === 'brain') {
                 title.innerText = item.q;
                 content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-xl mb-1 border border-slate-600 font-bold'>${o}</div>`).join('');
@@ -504,6 +558,7 @@
                 document.getElementById('current-player-name').innerText = pSpot;
                 document.getElementById('player-spotlight').classList.remove('hidden');
             }
+            syncTV();
         }
 
         onValue(answersRef, (snap) => {
@@ -524,7 +579,9 @@
             document.getElementById('post-game-controls').classList.remove('hidden');
             document.getElementById('twister-scoring').classList.add('hidden');
             document.getElementById('action-btn').classList.add('hidden');
-            syncTV(); // Sync winner to TV
+            document.getElementById('answer-counter').innerText = "انتهت اللعبة";
+            document.getElementById('host-timer-text').innerText = "";
+            syncTV();
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         }
 
