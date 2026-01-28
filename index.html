@@ -8,12 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script>
-        // TV Detection: If screen is very wide, suggest opening tv.html
-        if (window.innerWidth > 1024 && !window.location.href.includes('tv.html')) {
-            console.log("Desktop detected. Use tv.html for mirroring.");
-        }
-    </script>
     <style>
         :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); }
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
@@ -29,7 +23,38 @@
         .btn-purple { background-color: #a855f7; }
         .hidden { display: none !important; }
 
-        /* FIX 1: Number Boxes LTR */
+        /* Error States */
+        .input-error { color: #f87171; font-size: 0.9rem; margin-top: 0.5rem; font-weight: bold; }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Progress & Timer */
+        .progress-badge { 
+            background: #334155; padding: 4px 12px; border-radius: 20px; 
+            font-size: 0.85rem; font-weight: bold; color: #94a3b8; 
+        }
+        .timer-display { 
+            font-size: 1.2rem; font-weight: 900; color: #14b8a6; 
+            min-width: 80px; text-align: center;
+        }
+        .timer-display.urgent { color: #ef4444; animation: pulse 1s infinite; }
+
+        /* Feedback Overlays */
+        .feedback-correct { 
+            background: linear-gradient(135deg, #065f46 0%, #047857 100%); 
+            border: 3px solid #34d399; box-shadow: 0 10px 30px rgba(52, 211, 153, 0.3);
+        }
+        .feedback-wrong { 
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); 
+            border: 3px solid #f87171; box-shadow: 0 10px 30px rgba(248, 113, 113, 0.3);
+        }
+
+        /* Number Boxes & Keypad - Existing */
         #digit-boxes { display: flex; flex-direction: row-reverse; justify-content: center; gap: 8px; }
         .digit-box { 
             width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); 
@@ -37,8 +62,6 @@
             align-items: center; justify-content: center; font-size: 1.8rem; 
             font-weight: 900; background: #1e293b; direction: ltr;
         }
-
-        /* FIX 3: Keypad LTR Grid */
         .keypad-grid { 
             display: grid; grid-template-columns: repeat(3, 1fr); 
             gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; 
@@ -47,9 +70,8 @@
         .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border-bottom: 4px solid #0f172a; }
         .key-btn.disabled { opacity: 0.1; pointer-events: none; }
 
-        /* Scoreboard Specific Style */
+        /* Scoreboard Style */
         .score-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; font-size: 1.2rem; }
-        .score-row:last-child { border: none; }
 
         /* Host Layout */
         .hand-container { position: relative; width: clamp(180px, 40vw, 400px); height: clamp(100px, 20vw, 250px); margin: 10px auto; perspective: 1000px; }
@@ -72,10 +94,13 @@
         </header>
         
         <main class="flex-1 flex flex-col justify-center overflow-hidden">
+            <!-- Setup Screen with Error Handling -->
             <div id="setup-screen" class="space-y-6 w-full px-4">
                 <div class="bg-slate-card p-6 rounded-[2rem] shadow-2xl border border-slate-700">
-                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 border border-slate-600 outline-none text-xl font-bold">
-                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black">دخول</button>
+                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." 
+                        class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-2 border border-slate-600 outline-none text-xl font-bold transition-all">
+                    <div id="name-error" class="input-error hidden text-center"></div>
+                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black mt-4">دخول</button>
                 </div>
                 <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
             </div>
@@ -110,11 +135,11 @@
 
             <div id="game-play" class="hidden flex-1 flex flex-col px-2">
                 <div id="host-view" class="hidden flex flex-col h-full">
+                    <!-- Host view unchanged -->
                     <div id="host-top-bar" class="bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700 shrink-0">
                         <span id="answer-counter">...</span>
                         <span id="host-timer-text" class="text-red-400 font-black"></span>
                     </div>
-
                     <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
                         <div id="memory-visuals" class="hidden text-center">
                             <div id="hand-wrapper" class="hand-container">
@@ -124,19 +149,16 @@
                             </div>
                             <h3 id="host-status-msg" class="font-bold text-lg text-teal-400 mt-2">...</h3>
                         </div>
-
                         <div id="standard-visuals" class="text-center">
                             <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور: <span id="current-player-name" class="bg-orange-600 text-white px-2 rounded">---</span></div>
                             <h2 id="display-title" class="font-black text-xl leading-tight">...</h2>
                             <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
                         </div>
                     </div>
-
                     <div id="dedicated-scoreboard" class="hidden flex-1 bg-slate-900 rounded-[2rem] p-6 border-2 border-amber-500 overflow-y-auto">
                         <h2 class="text-2xl font-black text-amber-400 text-center mb-6">ترتيب النقاط الحالي <i class="fa-solid fa-ranking-star"></i></h2>
                         <div id="dedicated-list" class="divide-y divide-slate-800"></div>
                     </div>
-
                     <div id="host-controls" class="py-3 shrink-0">
                         <div id="twister-scoring" class="hidden grid grid-cols-5 gap-1 mb-3">
                             <button onclick="awardManual(2)" class="p-3 bg-red-900 rounded-lg">2</button>
@@ -146,23 +168,30 @@
                             <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
                         </div>
                         <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
-                        
                         <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
                             <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
                             <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
                         </div>
                     </div>
-
                     <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
                         <div id="leaderboard-list" class="space-y-1 text-sm"></div>
                     </div>
                 </div>
 
+                <!-- Enhanced Player View -->
                 <div id="player-view" class="hidden flex flex-col h-full">
-                    <div class="bg-slate-800 p-2 rounded-xl flex justify-between mb-2 text-sm border border-slate-700">
-                        <span id="p-status" class="text-teal-400 font-black italic">جاهز؟</span>
-                        <span id="p-score" class="font-black text-yellow-400 text-lg">0</span>
+                    <!-- Enhanced Header with Progress and Timer -->
+                    <div class="bg-slate-800 p-3 rounded-xl flex justify-between items-center mb-2 text-sm border border-slate-700">
+                        <div class="flex items-center gap-2">
+                            <span id="p-status" class="text-teal-400 font-black italic">جاهز؟</span>
+                            <span id="progress-indicator" class="progress-badge hidden"></span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="player-timer" class="timer-display hidden"></span>
+                            <span id="p-score" class="font-black text-yellow-400 text-lg">0</span>
+                        </div>
                     </div>
+                    
                     <div class="flex-1 flex flex-col justify-center">
                         <div id="player-quiz-ui" class="w-full space-y-3">
                             <div id="player-q-text" class="text-center font-black text-xl mb-4 px-2">...</div>
@@ -177,6 +206,7 @@
                             </div>
                         </div>
                     </div>
+                    
                     <div id="keypad-container" class="hidden pb-2 shrink-0">
                         <div class="keypad-grid">
                             <button class="key-btn" onclick="pressKey('1')">1</button>
@@ -222,64 +252,57 @@
         let myRole = '', myName = '', currentSection = '', currentType = '';
         let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
         let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
+        let gameActive = false; // For beforeunload handler
+        let playerTimerInterval = null; // For player countdown
 
-        // --- MIRRORING CORE FUNCTION ---
-        function syncTV() {
-            if (myRole !== 'host') return;
-            const container = document.getElementById('host-game-container');
-            const scoreboard = document.getElementById('dedicated-scoreboard');
-            const topBar = document.getElementById('host-top-bar');
-            
-            // Send snapshot to Firebase for TV
-            update(mirrorRef, {
-                mainHTML: container.innerHTML,
-                mainClasses: container.className,
-                scoreHTML: scoreboard.innerHTML,
-                scoreVisible: !scoreboard.classList.contains('hidden'),
-                topBarHTML: topBar.innerHTML,
-                ts: Date.now()
-            });
-        }
+        // --- 3. BEFOREUNLOAD HANDLER ---
+        window.addEventListener('beforeunload', (e) => {
+            if (gameActive && myRole === 'player') {
+                e.preventDefault();
+                e.returnValue = "هل أنت متأكد من مغادرة الصفحة؟ قد تفقد تقدمك في اللعبة.";
+                return "هل أنت متأكد من مغادرة الصفحة؟ قد تفقد تقدمك في اللعبة.";
+            }
+        });
 
-        // Automatic Sync on UI Changes
-        const observer = new MutationObserver(syncTV);
-        observer.observe(document.getElementById('host-view'), { childList: true, subtree: true, attributes: true });
+        // Clear input error on type
+        document.getElementById('player-name-input')?.addEventListener('input', function() {
+            document.getElementById('name-error').classList.add('hidden');
+            this.classList.remove('border-red-500');
+        });
 
-        window.backToGameMenu = () => {
-            if(myRole !== 'host') return;
-            remove(liveRef); remove(answersRef);
-            document.getElementById('host-view').classList.add('hidden');
-            document.getElementById('game-play').classList.add('hidden');
-            document.getElementById('type-select').classList.add('hidden');
-            document.getElementById('memory-difficulty').classList.add('hidden');
-            document.getElementById('section-select').classList.remove('hidden');
-            document.getElementById('host-back-btn').classList.add('hidden');
-            document.getElementById('host-game-container').classList.remove('hidden');
-            document.getElementById('dedicated-scoreboard').classList.add('hidden');
-            document.getElementById('host-top-bar').classList.remove('hidden');
-            set(mirrorRef, { mainHTML: "", ts: Date.now() }); // Clear TV
-        };
-
-        window.goHome = () => { 
-            if(myRole === 'host') { remove(liveRef); remove(scoresRef); remove(mirrorRef); } 
-            location.reload(); 
-        };
-
-        window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
-        window.verifyHost = () => { 
-            if(document.getElementById('host-pin').value === '1234') { 
-                document.getElementById('host-auth').classList.add('hidden'); 
-                setRole('host'); 
-            } else { alert("خطأ!"); } 
-        };
-
-        window.setRole = (role) => {
+        // --- 1. NAME VALIDATION (Empty + Taken) ---
+        window.setRole = async (role) => {
             myRole = role;
+            const errorDiv = document.getElementById('name-error');
+            const inputField = document.getElementById('player-name-input');
+            
             if (role === 'player') {
-                myName = document.getElementById('player-name-input').value.trim();
-                if (!myName) return;
+                myName = inputField.value.trim();
+                
+                if (!myName) {
+                    errorDiv.textContent = "يرجى إدخال اسمك أولاً";
+                    errorDiv.classList.remove('hidden');
+                    inputField.classList.add('border-red-500', 'shake');
+                    setTimeout(() => inputField.classList.remove('shake'), 500);
+                    return;
+                }
+                
+                // Check if name exists
+                const snapshot = await get(scoresRef);
+                const scores = snapshot.val() || {};
+                if (scores[myName] !== undefined) {
+                    errorDiv.textContent = "هذا الاسم مستخدم بالفعل، اختر اسماً آخر";
+                    errorDiv.classList.remove('hidden');
+                    inputField.classList.add('border-red-500', 'shake');
+                    setTimeout(() => inputField.classList.remove('shake'), 500);
+                    return;
+                }
+                
+                errorDiv.classList.add('hidden');
+                inputField.classList.remove('border-red-500');
                 set(ref(db, `scores/${myName}`), 0);
             }
+            
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('global-home-btn').classList.remove('hidden');
             if (role === 'host') {
@@ -296,6 +319,36 @@
                 document.getElementById('player-view').classList.remove('hidden');
                 listenForGame();
             }
+        };
+
+        window.backToGameMenu = () => {
+            if(myRole !== 'host') return;
+            gameActive = false; // Reset flag
+            remove(liveRef); remove(answersRef);
+            document.getElementById('host-view').classList.add('hidden');
+            document.getElementById('game-play').classList.add('hidden');
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            document.getElementById('section-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
+            document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-top-bar').classList.remove('hidden');
+            set(mirrorRef, { mainHTML: "", ts: Date.now() });
+        };
+
+        window.goHome = () => { 
+            gameActive = false; // Reset flag
+            if(myRole === 'host') { remove(liveRef); remove(scoresRef); remove(mirrorRef); } 
+            location.reload(); 
+        };
+
+        window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
+        window.verifyHost = () => { 
+            if(document.getElementById('host-pin').value === '1234') { 
+                document.getElementById('host-auth').classList.add('hidden'); 
+                setRole('host'); 
+            } else { alert("خطأ!"); } 
         };
 
         window.toggleScoreboardOnly = () => {
@@ -390,13 +443,35 @@
             remove(answersRef);
             if (currentIndex >= currentQuestions.length) return announceWinner();
             const item = currentQuestions[currentIndex];
+            
+            // 5. ADD TIMER DATA FOR PLAYERS
+            const duration = document.getElementById('timer-enabled').checked ? 15 : 0;
+            const baseData = {
+                type: currentType,
+                content: item,
+                round: currentIndex + 1,
+                totalRounds: 7, // 2. PROGRESS INDICATOR DATA
+                status: 'playing',
+                startTime: Date.now()
+            };
+            
             if (currentType === 'memory') {
                 handleMemoryRound(item);
             } else {
                 let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
-                set(liveRef, { type: currentType, content: item, round: currentIndex + 1, status: 'playing', activePlayer: pSpot, startTime: Date.now() });
-                renderHostStandard(item, pSpot);
-                if (document.getElementById('timer-enabled').checked) startTimer(15);
+                
+                if (duration > 0) {
+                    baseData.endTime = Date.now() + (duration * 1000); // 5. TIMER END TIME
+                    baseData.activePlayer = pSpot;
+                    set(liveRef, baseData);
+                    renderHostStandard(item, pSpot);
+                    startTimer(duration);
+                } else {
+                    baseData.timerEnabled = false;
+                    baseData.activePlayer = pSpot;
+                    set(liveRef, baseData);
+                    renderHostStandard(item, pSpot);
+                }
             }
         };
 
@@ -407,17 +482,41 @@
             document.getElementById('memory-visuals').classList.remove('hidden');
             document.getElementById('target-number-display').innerText = target;
             let cd = 3;
-            set(liveRef, { type: 'memory', status: 'countdown', round: currentIndex + 1 });
+            
+            // Set initial data with total rounds
+            set(liveRef, { 
+                type: 'memory', 
+                status: 'countdown', 
+                round: currentIndex + 1,
+                totalRounds: 7
+            });
+            
             const countInt = setInterval(() => {
                 document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
                 if(cd-- === 0) {
                     clearInterval(countInt);
                     document.getElementById('hand-wrapper').classList.add('open');
-                    set(liveRef, { type: 'memory', status: 'reveal', target: target, duration: config[0] });
+                    set(liveRef, { 
+                        type: 'memory', 
+                        status: 'reveal', 
+                        target: target, 
+                        duration: config[0],
+                        round: currentIndex + 1,
+                        totalRounds: 7
+                    });
                     setTimeout(() => {
                         document.getElementById('hand-wrapper').classList.remove('open');
                         document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
-                        set(liveRef, { type: 'memory', status: 'input', target: target, duration: config[1], startTime: Date.now() });
+                        set(liveRef, { 
+                            type: 'memory', 
+                            status: 'input', 
+                            target: target, 
+                            duration: config[1], 
+                            startTime: Date.now(),
+                            endTime: Date.now() + (config[1] * 1000), // 5. TIMER FOR MEMORY
+                            round: currentIndex + 1,
+                            totalRounds: 7
+                        });
                         startTimer(config[1], true);
                     }, config[0]);
                 }
@@ -485,15 +584,13 @@
         });
 
         async function announceWinner() {
+            gameActive = false; // Game ended
             const snap = await get(scoresRef);
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
             const winner = sorted[0] ? sorted[0][0] : "---";
             
-            // Set live status
             set(liveRef, { status: 'finished', winner: winner });
-            
-            // TRIGGER TV CONFETTI
             update(mirrorRef, { trigger_confetti: Date.now() });
 
             document.getElementById('display-title').innerText = "بطل الجلسة الحالية";
@@ -507,14 +604,55 @@
         function listenForGame() {
             onValue(liveRef, (snap) => {
                 const data = snap.val(); if(!data) return;
+                
+                gameActive = true; // Mark game as active for beforeunload
                 get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = Math.round(s.val() || 0));
+                
+                // 2. UPDATE PROGRESS INDICATOR
+                const progressEl = document.getElementById('progress-indicator');
+                if(data.round && data.totalRounds) {
+                    progressEl.textContent = `السؤال ${data.round} من ${data.totalRounds}`;
+                    progressEl.classList.remove('hidden');
+                }
+                
+                // 5. HANDLE COUNTDOWN TIMER
+                const timerEl = document.getElementById('player-timer');
+                if(playerTimerInterval) clearInterval(playerTimerInterval);
+                
+                if(data.endTime && data.status !== 'finished' && data.status !== 'scoring') {
+                    timerEl.classList.remove('hidden');
+                    playerTimerInterval = setInterval(() => {
+                        const remain = Math.ceil((data.endTime - Date.now()) / 1000);
+                        if(remain <= 0) {
+                            timerEl.textContent = "انتهى الوقت!";
+                            timerEl.classList.add('urgent');
+                            clearInterval(playerTimerInterval);
+                        } else {
+                            timerEl.textContent = `${remain} ثانية`;
+                            if(remain <= 5) {
+                                timerEl.classList.add('urgent');
+                            } else {
+                                timerEl.classList.remove('urgent');
+                            }
+                        }
+                    }, 100);
+                } else {
+                    timerEl.classList.add('hidden');
+                    timerEl.classList.remove('urgent');
+                }
+                
                 if(data.status === 'finished') {
+                    gameActive = false; // Allow leaving
                     const isWin = (data.winner === myName);
+                    document.getElementById('p-status').innerText = isWin ? "فزت!" : "انتهت اللعبة";
                     document.getElementById('player-q-text').innerText = isWin ? "أنت البطل!" : "حظاً أوفر";
                     document.getElementById('player-input-area').innerHTML = `<div class='text-center'><div class='text-yellow-400 text-3xl font-black mb-2'>الفائز: ${data.winner}</div></div>`;
+                    document.getElementById('progress-indicator').classList.add('hidden');
+                    document.getElementById('player-timer').classList.add('hidden');
                     if(isWin) confetti();
                     return;
                 }
+                
                 if(data.type === 'memory') {
                     document.getElementById('keypad-container').classList.remove('hidden');
                     document.getElementById('player-memory-ui').classList.remove('hidden');
@@ -568,8 +706,14 @@
             if(data.type === 'brain') {
                 document.getElementById('p-status').innerText = "أجب الآن!";
                 document.getElementById('player-q-text').innerText = data.content.q;
-                document.getElementById('player-input-area').innerHTML = data.content.options.map((o, i) => 
-                    `<button onclick="submitQuiz(${i}, ${data.content.correct}, ${data.startTime})" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900">${o}</button>`
+                // 4. ANSWER FEEDBACK - Pass correct answer text for display
+                const options = data.content.options;
+                const correctIdx = data.content.correct;
+                const correctText = options[correctIdx];
+                
+                document.getElementById('player-input-area').innerHTML = options.map((o, i) => 
+                    `<button onclick="submitQuiz(${i}, ${correctIdx}, ${data.startTime}, '${correctText.replace(/'/g, "\\'")}')" 
+                     class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900 hover:bg-slate-600 transition-colors">${o}</button>`
                 ).join('');
             } else {
                 document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
@@ -578,13 +722,40 @@
             }
         }
 
-        window.submitQuiz = (idx, correct, start) => {
+        // 4. CORRECT/INCORRECT FEEDBACK IMPLEMENTATION
+        window.submitQuiz = (idx, correct, start, correctText) => {
             set(ref(db, `current_answers/${myName}`), true);
-            if(idx === correct) {
+            const inputArea = document.getElementById('player-input-area');
+            const isCorrect = idx === correct;
+            
+            if(isCorrect) {
                 const pts = 10 + Math.max(0, 10 - (Date.now() - start)/1000);
                 get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + pts));
+                
+                inputArea.innerHTML = `
+                    <div class="feedback-correct text-center p-6 rounded-2xl mb-4 animate-[bounce_0.5s_ease-out]">
+                        <div class="text-5xl mb-2">✓</div>
+                        <div class="text-2xl font-black text-white mb-2">إجابة صحيحة!</div>
+                        <div class="text-xl text-green-100">+${Math.round(pts)} نقطة</div>
+                    </div>
+                `;
+                // Haptic feedback if available
+                if(navigator.vibrate) navigator.vibrate([50, 100, 50]);
+            } else {
+                inputArea.innerHTML = `
+                    <div class="feedback-wrong text-center p-6 rounded-2xl mb-4">
+                        <div class="text-5xl mb-2">✗</div>
+                        <div class="text-2xl font-black text-white mb-2">إجابة خاطئة</div>
+                        <div class="text-lg text-red-100">الإجابة الصحيحة: <span class="font-bold text-white">${correctText}</span></div>
+                    </div>
+                `;
+                if(navigator.vibrate) navigator.vibrate(200);
             }
-            document.getElementById('player-input-area').innerHTML = "<div class='text-center text-teal-400 text-2xl font-black mt-5'>تم ✓</div>";
+            
+            // Clear after 2 seconds and show waiting
+            setTimeout(() => {
+                inputArea.innerHTML = "<div class='text-center text-slate-400 text-xl font-bold mt-5 p-4'>انتظر السؤال التالي...</div>";
+            }, 2000);
         };
 
         window.restartSameCategory = () => {
@@ -598,6 +769,25 @@
             get(ref(db, `scores/${name}`)).then(s => set(ref(db, `scores/${name}`), (s.val() || 0) + pts));
             document.getElementById('twister-scoring').classList.add('hidden');
         };
+        
+        function syncTV() {
+            if (myRole !== 'host') return;
+            const container = document.getElementById('host-game-container');
+            const scoreboard = document.getElementById('dedicated-scoreboard');
+            const topBar = document.getElementById('host-top-bar');
+            
+            update(mirrorRef, {
+                mainHTML: container.innerHTML,
+                mainClasses: container.className,
+                scoreHTML: scoreboard.innerHTML,
+                scoreVisible: !scoreboard.classList.contains('hidden'),
+                topBarHTML: topBar.innerHTML,
+                ts: Date.now()
+            });
+        }
+
+        const observer = new MutationObserver(syncTV);
+        observer.observe(document.getElementById('host-view'), { childList: true, subtree: true, attributes: true });
     </script>
 </body>
 </html>
