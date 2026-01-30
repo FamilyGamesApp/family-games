@@ -39,36 +39,9 @@
         .open .hand-right { transform: rotateY(110deg); }
         .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
+        /* Enhanced host timer visibility */
         #host-timer-text { font-size: 1.5rem; font-weight: 900; }
         #answer-counter { font-size: 1rem; font-weight: bold; color: #14b8a6; }
-        /* QR Code Styling */
-        .qr-container { 
-            position: absolute; 
-            top: 20px; 
-            left: 20px; 
-            background: white; 
-            padding: 10px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 50;
-            text-align: center;
-        }
-        .qr-container img { 
-            width: 100px; 
-            height: 100px; 
-            display: block;
-        }
-        .qr-container span {
-            font-size: 0.7rem;
-            color: #0f172a;
-            font-weight: bold;
-            margin-top: 5px;
-            display: block;
-        }
-        @media (min-width: 768px) {
-            .qr-container img { width: 120px; height: 120px; }
-            .qr-container span { font-size: 0.8rem; }
-        }
     </style>
 </head>
 <body>
@@ -118,12 +91,6 @@
                         <span id="host-timer-text" class="text-red-500 font-black text-xl"></span>
                     </div>
                     <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
-                        <!-- QR Code for TV -->
-                        <div id="qr-code-display" class="qr-container hidden">
-                            <img src="https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=https://familygamesapp.github.io/family-games" alt="QR Code">
-                            <span>امسح للدخول</span>
-                        </div>
-                        
                         <div id="memory-visuals" class="hidden text-center">
                             <div id="hand-wrapper" class="hand-container">
                                 <div class="hand hand-left"></div>
@@ -232,7 +199,6 @@
         let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
         let gameActive = false;
         let playerTimerInterval = null;
-        const GAME_URL = 'https://familygamesapp.github.io/family-games';
 
         window.addEventListener('beforeunload', (e) => {
             if (gameActive && myRole === 'player') {
@@ -303,7 +269,6 @@
             document.getElementById('post-game-controls').classList.add('hidden');
             document.getElementById('twister-scoring').classList.add('hidden');
             document.getElementById('host-back-btn').classList.remove('hidden');
-            document.getElementById('qr-code-display').classList.add('hidden');
             
             const scoreArea = document.getElementById('dedicated-scoreboard');
             scoreArea.classList.remove('hidden');
@@ -337,7 +302,6 @@
             document.getElementById('host-game-container').classList.remove('hidden');
             document.getElementById('dedicated-scoreboard').classList.add('hidden');
             document.getElementById('host-top-bar').classList.remove('hidden');
-            document.getElementById('qr-code-display').classList.add('hidden');
             set(mirrorRef, { mainHTML: "", ts: Date.now() });
         };
 
@@ -417,9 +381,8 @@
             document.getElementById('standard-visuals').classList.remove('hidden');
             document.getElementById('memory-visuals').classList.add('hidden');
             document.getElementById('player-spotlight').classList.add('hidden');
-            // Show QR code when game starts
-            document.getElementById('qr-code-display').classList.remove('hidden');
             
+            // Initialize counter and timer display
             document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
             document.getElementById('host-timer-text').innerText = "";
             
@@ -473,9 +436,6 @@
                 hard: [600, 4]       // 0.6s reveal, 4s input (was 1100, 5)
             }[diff];
             
-            // Hide QR during memory game so it doesn't distract
-            document.getElementById('qr-code-display').classList.add('hidden');
-            
             document.getElementById('standard-visuals').classList.add('hidden');
             document.getElementById('memory-visuals').classList.remove('hidden');
             document.getElementById('target-number-display').innerText = target;
@@ -528,6 +488,7 @@
             const timerEl = document.getElementById('host-timer-text');
             const counterEl = document.getElementById('answer-counter');
             
+            // Update counter to show current question
             if(currentIndex >= 0) {
                 counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
             }
@@ -542,11 +503,7 @@
                 if (remain-- <= 0) {
                     clearInterval(timerInterval);
                     timerEl.innerText = "انتهى الوقت!";
-                    if (isMemory) {
-                        // Show QR again after memory round ends
-                        document.getElementById('qr-code-display').classList.remove('hidden');
-                        showMemoryResults();
-                    }
+                    if (isMemory) showMemoryResults();
                     if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                 }
             }, 1000);
@@ -572,8 +529,6 @@
             }
             document.getElementById('display-content').innerHTML = displayHtml;
             document.getElementById('answer-counter').innerText = `النتائج - السؤال ${currentIndex + 1}`;
-            // Show QR again when showing results
-            document.getElementById('qr-code-display').classList.remove('hidden');
             syncTV();
             if (currentIndex >= 6) announceWinner();
         }
@@ -588,9 +543,7 @@
             const content = document.getElementById('display-content');
             const counterEl = document.getElementById('answer-counter');
             
-            // Show QR code for quiz and twister modes
-            document.getElementById('qr-code-display').classList.remove('hidden');
-            
+            // Show question counter on host/TV
             counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
             
             document.getElementById('memory-visuals').classList.add('hidden');
@@ -628,8 +581,6 @@
             document.getElementById('action-btn').classList.add('hidden');
             document.getElementById('answer-counter').innerText = "انتهت اللعبة";
             document.getElementById('host-timer-text').innerText = "";
-            // Keep QR visible so new players can join for next round
-            document.getElementById('qr-code-display').classList.remove('hidden');
             syncTV();
             confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         }
