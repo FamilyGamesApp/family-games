@@ -1,3 +1,4 @@
+<!-- tv.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { 
@@ -29,6 +31,9 @@
             display: flex; justify-content: space-between; align-items: center;
             font-size: 3vh; border: 0.5vh solid #334155; flex-shrink: 0; min-height: 8vh;
         }
+        
+        #tv-timer-display { font-weight: 900; color: #ef4444; font-size: 3.5vh; }
+        #tv-counter-display { color: #14b8a6; font-weight: bold; font-size: 2.5vh; }
         
         #tv-main-container {
             flex: 1; background: #1e293b; border-radius: 3vh; border: 0.8vh solid #475569;
@@ -59,11 +64,35 @@
         #welcome-screen p { font-size: 3.5vh; color: #94a3b8; }
         #error-message { color: #ef4444; font-size: 3vh; text-align: center; margin-top: 2vh; }
         
+        /* QR Overlay Styles */
+        #tv-qr-overlay { 
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); 
+            z-index: 50; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+        }
+        #tv-qr-container { 
+            background: white; padding: 4vh; border-radius: 3vh; 
+            box-shadow: 0 0 50px rgba(20, 184, 166, 0.3);
+            margin-bottom: 4vh;
+        }
+        #tv-qr-overlay h2 { 
+            font-size: 6vh; color: #14b8a6; margin-bottom: 2vh; 
+            font-weight: 900; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        #tv-qr-overlay p { 
+            font-size: 3.5vh; color: #94a3b8; 
+        }
+        #tv-qr-url { 
+            font-size: 2.5vh; color: #64748b; margin-top: 2vh; 
+            direction: ltr; font-family: monospace;
+        }
+        
         @media (max-height: 500px) {
             #display-title { font-size: 5vh; }
             #display-content { font-size: 3.5vh; }
             .hand-container { height: 25vh; width: 45vh; }
             .number-reveal { font-size: 10vh; }
+            #tv-qr-overlay h2 { font-size: 5vh; }
         }
         @media (min-aspect-ratio: 21/9) {
             #tv-main-container { max-width: 80%; margin: 0 auto; }
@@ -75,7 +104,10 @@
     <div id="tv-root">
         <div id="tv-top-bar" class="hidden">
             <span id="conn-status" style="color: #64748b;">● متصل</span>
-            <span id="tv-timer-display"></span>
+            <div class="flex items-center gap-6">
+                <span id="tv-counter-display"></span>
+                <span id="tv-timer-display"></span>
+            </div>
         </div>
 
         <div id="tv-main-container" class="bg-slate-card">
@@ -87,6 +119,13 @@
         </div>
 
         <div id="tv-score-container" class="hidden"></div>
+    </div>
+
+    <div id="tv-qr-overlay" class="hidden">
+        <h2>انضم للعبة</h2>
+        <div id="tv-qr-container"></div>
+        <p>امسح الكود باستخدام هاتفك</p>
+        <div id="tv-qr-url"></div>
     </div>
 
     <script type="module">
@@ -108,8 +147,8 @@
             const db = getDatabase(app);
             const mirrorRef = ref(db, 'tv_mirror');
             let lastUpdate = Date.now();
+            let qrGenerated = false;
             
-            // Connection monitor
             setInterval(() => {
                 if (Date.now() - lastUpdate > 10000) {
                     document.getElementById('conn-status').style.color = '#ef4444';
@@ -126,13 +165,34 @@
                     
                     if(!data) return;
 
-                    // Confetti with performance fix
+                    // Handle QR Overlay
+                    const qrOverlay = document.getElementById('tv-qr-overlay');
+                    if (data.qrVisible) {
+                        qrOverlay.classList.remove('hidden');
+                        if (!qrGenerated && data.qrUrl) {
+                            const container = document.getElementById('tv-qr-container');
+                            container.innerHTML = '';
+                            new QRCode(container, {
+                                text: data.qrUrl,
+                                width: 300,
+                                height: 300,
+                                colorDark : "#000000",
+                                colorLight : "#ffffff",
+                                correctLevel : QRCode.CorrectLevel.M
+                            });
+                            document.getElementById('tv-qr-url').textContent = data.qrUrl;
+                            qrGenerated = true;
+                        }
+                    } else {
+                        qrOverlay.classList.add('hidden');
+                        qrGenerated = false;
+                        document.getElementById('tv-qr-container').innerHTML = '';
+                    }
+
                     if (data.trigger_confetti) {
                         const lastFired = window.lastConfettiTime || 0;
                         if (data.trigger_confetti > lastFired) {
-                            // Detect TV/large screen and reduce particles
                             const isTV = window.innerWidth > 1024 || window.innerHeight > 800;
-                            
                             confetti({ 
                                 particleCount: isTV ? 80 : 300,
                                 spread: 100,
@@ -154,6 +214,19 @@
 
                     top.classList.remove('hidden');
 
+                    // Timer Fix: Render top bar content
+                    if(data.topBarHTML) {
+                        // Extract timer and counter from topBarHTML if needed, or just render specific parts
+                        // Since we have structured data, let's parse it simply
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = data.topBarHTML;
+                        const timerText = tempDiv.querySelector('#host-timer-text')?.textContent || '';
+                        const counterText = tempDiv.querySelector('#answer-counter')?.textContent || '';
+                        
+                        document.getElementById('tv-timer-display').textContent = timerText;
+                        document.getElementById('tv-counter-display').textContent = counterText;
+                    }
+
                     if(data.scoreVisible) {
                         main.classList.add('hidden');
                         scores.classList.remove('hidden');
@@ -162,9 +235,8 @@
                         scores.classList.add('hidden');
                         main.classList.remove('hidden');
                         main.innerHTML = data.mainHTML;
-                        main.className = data.mainClasses + " flex-1 rounded-[4rem] border-8 shadow-2xl flex flex-col justify-center text-center p-12 relative overflow-hidden bg-slate-card";
+                        main.className = "flex-1 bg-slate-card rounded-[3vh] border-[0.8vh] border-solid border-[#475569] flex flex-col justify-center items-center p-[4vh] relative overflow-hidden";
                         
-                        // Force font size recalculation
                         const title = main.querySelector('#display-title');
                         const content = main.querySelector('#display-content');
                         if(title) title.style.fontSize = '6vh';
