@@ -26,7 +26,6 @@
         
         #tv-root { display: flex; flex-direction: column; gap: 2vh; height: 94vh; width: 100%; }
         
-        /* ENHANCED: Timer Styles - Much bigger and clearer */
         #tv-top-bar {
             background: #1e293b; 
             padding: 3vh 4vw; 
@@ -48,6 +47,8 @@
             text-shadow: 0 2px 10px rgba(239, 68, 68, 0.5);
             font-family: 'Courier New', monospace;
             letter-spacing: 2px;
+            min-width: 10vw;
+            text-align: center;
         }
         
         #tv-timer-display.urgent { 
@@ -64,16 +65,6 @@
             color: #14b8a6; 
             font-weight: bold; 
             font-size: 3.5vh; 
-        }
-        
-        #tv-progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 1vh;
-            background: linear-gradient(90deg, #14b8a6, #3b82f6);
-            transition: width 1s linear;
-            border-radius: 0 0.5vh 0.5vh 0;
         }
         
         #tv-main-container {
@@ -115,7 +106,6 @@
         #welcome-screen p { font-size: 3.5vh; color: #94a3b8; }
         #error-message { color: #ef4444; font-size: 3vh; text-align: center; margin-top: 2vh; }
         
-        /* QR Overlay Styles */
         #tv-qr-overlay { 
             position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); 
             z-index: 50; display: flex; flex-direction: column; 
@@ -158,12 +148,7 @@
             <span id="conn-status" style="color: #64748b;">● متصل</span>
             <div class="flex items-center gap-6">
                 <span id="tv-counter-display"></span>
-                <div class="flex flex-col items-center">
-                    <span id="tv-timer-display"></span>
-                    <div id="tv-progress-container" style="width: 20vw; height: 1vh; background: #334155; border-radius: 0.5vh; margin-top: 1vh; position: relative; overflow: hidden;">
-                        <div id="tv-progress-bar" style="width: 100%;"></div>
-                    </div>
-                </div>
+                <span id="tv-timer-display"></span>
             </div>
         </div>
 
@@ -205,7 +190,6 @@
             const mirrorRef = ref(db, 'tv_mirror');
             let lastUpdate = Date.now();
             let qrGenerated = false;
-            let timerInterval = null;
             
             setInterval(() => {
                 if (Date.now() - lastUpdate > 10000) {
@@ -247,6 +231,21 @@
                         document.getElementById('tv-qr-container').innerHTML = '';
                     }
 
+                    // FIX 1: Handle Welcome Screen (Host went back to menu)
+                    if(data.showWelcome) {
+                        document.getElementById('tv-top-bar').classList.add('hidden');
+                        document.getElementById('tv-score-container').classList.add('hidden');
+                        document.getElementById('tv-main-container').classList.remove('hidden');
+                        document.getElementById('tv-main-container').innerHTML = `
+                            <div id="welcome-screen">
+                                <h1>بانتظار المضيف...</h1>
+                                <p>Connected to Firebase</p>
+                                <div id="error-message" class="hidden"></div>
+                            </div>
+                        `;
+                        return;
+                    }
+
                     if (data.trigger_confetti) {
                         const lastFired = window.lastConfettiTime || 0;
                         if (data.trigger_confetti > lastFired) {
@@ -272,40 +271,24 @@
 
                     top.classList.remove('hidden');
 
-                    // ENHANCED: Timer display with progress bar
-                    if(data.timerText !== undefined) {
-                        const timerEl = document.getElementById('tv-timer-display');
+                    // FIX 2 & 3: Timer display - numbers only, blank when empty
+                    const timerEl = document.getElementById('tv-timer-display');
+                    if(data.timerText && data.timerText !== "") {
                         timerEl.textContent = data.timerText;
-                        
-                        // Add urgent animation for last 5 seconds
-                        if(data.timerText && (data.timerText.includes('5') || data.timerText.includes('4') || data.timerText.includes('3') || data.timerText.includes('2') || data.timerText.includes('1')) && data.timerText.includes('ث')) {
+                        // Add urgent animation for single digits or "انتهى"
+                        if((data.timerText.length === 1 && !isNaN(data.timerText)) || data.timerText === "انتهى") {
                             timerEl.classList.add('urgent');
                         } else {
                             timerEl.classList.remove('urgent');
                         }
+                    } else {
+                        // Blank/empty when no timer
+                        timerEl.textContent = "";
+                        timerEl.classList.remove('urgent');
                     }
+                    
                     if(data.counterText !== undefined) {
                         document.getElementById('tv-counter-display').textContent = data.counterText;
-                    }
-
-                    // Progress bar for timer
-                    if(data.endTime && data.startTime) {
-                        const now = Date.now();
-                        const total = data.endTime - data.startTime;
-                        const elapsed = now - data.startTime;
-                        const remaining = Math.max(0, total - elapsed);
-                        const pct = (remaining / total) * 100;
-                        
-                        const bar = document.getElementById('tv-progress-bar');
-                        bar.style.width = pct + '%';
-                        
-                        if(pct < 30) {
-                            bar.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
-                        } else if (pct < 60) {
-                            bar.style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
-                        } else {
-                            bar.style.background = 'linear-gradient(90deg, #14b8a6, #3b82f6)';
-                        }
                     }
 
                     if(data.scoreVisible) {
