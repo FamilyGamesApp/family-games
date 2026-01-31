@@ -231,8 +231,8 @@
                         document.getElementById('tv-qr-container').innerHTML = '';
                     }
 
-                    // FIX 1: Handle Welcome Screen (Host went back to menu)
-                    if(data.showWelcome) {
+                    // FIX: Check showWelcome FIRST - if true, show welcome screen immediately
+                    if(data.showWelcome === true) {
                         document.getElementById('tv-top-bar').classList.add('hidden');
                         document.getElementById('tv-score-container').classList.add('hidden');
                         document.getElementById('tv-main-container').classList.remove('hidden');
@@ -243,7 +243,50 @@
                                 <div id="error-message" class="hidden"></div>
                             </div>
                         `;
-                        return;
+                        return; // Exit early - don't process game data
+                    }
+
+                    // Only show game if we have mainHTML AND showWelcome is false/undefined
+                    if(data.mainHTML) {
+                        const main = document.getElementById('tv-main-container');
+                        const scores = document.getElementById('tv-score-container');
+                        const top = document.getElementById('tv-top-bar');
+                        
+                        top.classList.remove('hidden');
+                        
+                        // Timer display logic
+                        const timerEl = document.getElementById('tv-timer-display');
+                        if(data.timerText && data.timerText !== "") {
+                            timerEl.textContent = data.timerText;
+                            if((data.timerText.length === 1 && !isNaN(data.timerText)) || data.timerText === "انتهى") {
+                                timerEl.classList.add('urgent');
+                            } else {
+                                timerEl.classList.remove('urgent');
+                            }
+                        } else {
+                            timerEl.textContent = "";
+                            timerEl.classList.remove('urgent');
+                        }
+                        
+                        if(data.counterText !== undefined) {
+                            document.getElementById('tv-counter-display').textContent = data.counterText;
+                        }
+
+                        if(data.scoreVisible) {
+                            main.classList.add('hidden');
+                            scores.classList.remove('hidden');
+                            scores.innerHTML = data.scoreHTML || '';
+                        } else {
+                            scores.classList.add('hidden');
+                            main.classList.remove('hidden');
+                            main.innerHTML = data.mainHTML;
+                            main.className = "flex-1 bg-slate-card rounded-[3vh] border-[0.8vh] border-solid border-[#475569] flex flex-col justify-center items-center p-[4vh] relative overflow-hidden";
+                            
+                            const title = main.querySelector('#display-title');
+                            const content = main.querySelector('#display-content');
+                            if(title) title.style.fontSize = '6vh';
+                            if(content) content.style.fontSize = '4.5vh';
+                        }
                     }
 
                     if (data.trigger_confetti) {
@@ -261,50 +304,6 @@
                             });
                             window.lastConfettiTime = data.trigger_confetti;
                         }
-                    }
-
-                    const main = document.getElementById('tv-main-container');
-                    const scores = document.getElementById('tv-score-container');
-                    const top = document.getElementById('tv-top-bar');
-
-                    if(!data.mainHTML || data.mainHTML.trim() === "") return;
-
-                    top.classList.remove('hidden');
-
-                    // FIX 2 & 3: Timer display - numbers only, blank when empty
-                    const timerEl = document.getElementById('tv-timer-display');
-                    if(data.timerText && data.timerText !== "") {
-                        timerEl.textContent = data.timerText;
-                        // Add urgent animation for single digits or "انتهى"
-                        if((data.timerText.length === 1 && !isNaN(data.timerText)) || data.timerText === "انتهى") {
-                            timerEl.classList.add('urgent');
-                        } else {
-                            timerEl.classList.remove('urgent');
-                        }
-                    } else {
-                        // Blank/empty when no timer
-                        timerEl.textContent = "";
-                        timerEl.classList.remove('urgent');
-                    }
-                    
-                    if(data.counterText !== undefined) {
-                        document.getElementById('tv-counter-display').textContent = data.counterText;
-                    }
-
-                    if(data.scoreVisible) {
-                        main.classList.add('hidden');
-                        scores.classList.remove('hidden');
-                        scores.innerHTML = data.scoreHTML || '';
-                    } else {
-                        scores.classList.add('hidden');
-                        main.classList.remove('hidden');
-                        main.innerHTML = data.mainHTML;
-                        main.className = "flex-1 bg-slate-card rounded-[3vh] border-[0.8vh] border-solid border-[#475569] flex flex-col justify-center items-center p-[4vh] relative overflow-hidden";
-                        
-                        const title = main.querySelector('#display-title');
-                        const content = main.querySelector('#display-content');
-                        if(title) title.style.fontSize = '6vh';
-                        if(content) content.style.fontSize = '4.5vh';
                     }
                 } catch (err) {
                     console.error("Error in onValue:", err);
