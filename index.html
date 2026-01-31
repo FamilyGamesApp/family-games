@@ -43,8 +43,13 @@
         .open .number-reveal { opacity: 1; }
         #host-timer-text { font-size: 1.5rem; font-weight: 900; }
         #answer-counter { font-size: 1rem; font-weight: bold; color: #14b8a6; }
-        /* QR Modal Styles */
         #qr-modal { backdrop-filter: blur(5px); }
+        
+        /* Player Result Modal */
+        #player-result-modal { backdrop-filter: blur(10px); }
+        .result-digit-box { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; margin: 0 4px; }
+        .result-correct { background: #065f46; color: #34d399; border: 2px solid #34d399; }
+        .result-wrong { background: #7f1d1d; color: #f87171; border: 2px solid #f87171; text-decoration: line-through; }
     </style>
 </head>
 <body>
@@ -77,15 +82,27 @@
             </div>
             <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
                 <div class="bg-slate-900 p-8 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center relative shadow-2xl">
-                    <button onclick="dismissQR()" class="absolute top-4 left-4 text-slate-400 hover:text-white text-3xl p-2 transition-colors">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
+                    <button onclick="dismissQR()" class="absolute top-4 left-4 text-slate-400 hover:text-white text-3xl p-2 transition-colors"><i class="fa-solid fa-xmark"></i></button>
                     <h3 class="text-2xl font-bold text-teal-400 mb-6">انضم للعبة</h3>
-                    <div class="bg-white p-4 rounded-xl inline-block mb-4 shadow-lg">
-                        <div id="qrcode-container"></div>
-                    </div>
+                    <div class="bg-white p-4 rounded-xl inline-block mb-4 shadow-lg"><div id="qrcode-container"></div></div>
                     <p class="text-slate-300 text-lg mb-2">امسح الكود للانضمام</p>
                     <p class="text-slate-500 text-sm" id="qr-url-display"></p>
+                </div>
+            </div>
+            <!-- Player Result Modal -->
+            <div id="player-result-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
+                <div class="bg-slate-900 p-6 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center shadow-2xl">
+                    <h3 class="text-2xl font-bold text-teal-400 mb-4">النتيجة</h3>
+                    <div class="mb-4">
+                        <p class="text-slate-400 mb-2">الرقم الصحيح:</p>
+                        <div id="result-correct-number" class="flex justify-center flex-row-reverse mb-4"></div>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-slate-400 mb-2">إجابتك:</p>
+                        <div id="result-player-number" class="flex justify-center flex-row-reverse mb-4"></div>
+                    </div>
+                    <div id="result-points" class="text-3xl font-black text-yellow-400 mb-4"></div>
+                    <button onclick="closePlayerResult()" class="w-full p-4 bg-teal-600 rounded-xl font-bold text-lg">استمر</button>
                 </div>
             </div>
             <div id="type-select" class="hidden scroll-container px-4 w-full">
@@ -217,6 +234,8 @@
         let gameActive = false;
         let playerTimerInterval = null;
         let qrGenerated = false;
+        let hasSubmittedMemory = false;
+        let currentTargetNumber = '';
 
         window.addEventListener('beforeunload', (e) => {
             if (gameActive && myRole === 'player') {
@@ -283,7 +302,6 @@
             
             modal.classList.remove('hidden');
             
-            // Generate QR only once per session
             if (!qrGenerated) {
                 container.innerHTML = '';
                 const url = window.location.href.split('?')[0];
@@ -300,7 +318,6 @@
                 qrGenerated = true;
             }
             
-            // Sync to TV
             update(mirrorRef, { 
                 qrVisible: true, 
                 qrUrl: window.location.href.split('?')[0],
@@ -347,7 +364,6 @@
         window.backToGameMenu = () => {
             if(myRole !== 'host') return;
             gameActive = false;
-            // Dismiss QR if open
             dismissQR();
             remove(liveRef); remove(answersRef);
             document.getElementById('host-view').classList.add('hidden');
@@ -449,11 +465,18 @@
             syncTV();
         }
 
-        window.triggerNext = () => {
+        window.triggerNext = async () => {
             if (currentIndex >= 6) return announceWinner();
             currentIndex++;
+            
+            // FIX: Clear previous answers and reset state
+            await remove(answersRef);
+            hasSubmittedMemory = false;
+            memoryInput = "";
+            resetMemoryUI();
+            
             clearInterval(timerInterval);
-            remove(answersRef);
+            
             if (currentIndex >= currentQuestions.length) return announceWinner();
             const item = currentQuestions[currentIndex];
             const duration = document.getElementById('timer-enabled').checked ? 15 : 0;
@@ -467,19 +490,19 @@
             };
             
             if (currentType === 'memory') {
-                handleMemoryRound(item);
+                await handleMemoryRound(item);
             } else {
                 let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
                 if (duration > 0) {
                     baseData.endTime = Date.now() + (duration * 1000);
                     baseData.activePlayer = pSpot;
-                    set(liveRef, baseData);
+                    await set(liveRef, baseData);
                     renderHostStandard(item, pSpot);
                     startTimer(duration);
                 } else {
                     baseData.timerEnabled = false;
                     baseData.activePlayer = pSpot;
-                    set(liveRef, baseData);
+                    await set(liveRef, baseData);
                     renderHostStandard(item, pSpot);
                 }
             }
@@ -490,10 +513,12 @@
         async function handleMemoryRound(target) {
             const diff = lastGameConfig.diff;
             const config = { 
-                easy: [1500, 8],
-                medium: [1000, 6],
-                hard: [600, 4]
+                easy: [3000, 10],     // Increased from [1500, 8]
+                medium: [2000, 8],    // Increased from [1000, 6]
+                hard: [1500, 6]       // Increased from [600, 4]
             }[diff];
+            
+            currentTargetNumber = target; // Store for player feedback
             
             document.getElementById('standard-visuals').classList.add('hidden');
             document.getElementById('memory-visuals').classList.remove('hidden');
@@ -504,7 +529,16 @@
             document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
             syncTV();
             
-            const countInt = setInterval(() => {
+            // FIX: Set countdown status so players can prepare
+            await set(liveRef, { 
+                type: 'memory', 
+                status: 'countdown', 
+                target: target,
+                round: currentIndex + 1, 
+                totalRounds: 7 
+            });
+            
+            const countInt = setInterval(async () => {
                 cd--;
                 if(cd > 0) {
                     document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
@@ -512,7 +546,7 @@
                 } else {
                     clearInterval(countInt);
                     document.getElementById('hand-wrapper').classList.add('open');
-                    set(liveRef, { 
+                    await set(liveRef, { 
                         type: 'memory', 
                         status: 'reveal', 
                         target: target, 
@@ -522,16 +556,18 @@
                     });
                     syncTV();
                     
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         document.getElementById('hand-wrapper').classList.remove('open');
                         document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
-                        set(liveRef, { 
+                        
+                        const endTime = Date.now() + (config[1] * 1000);
+                        await set(liveRef, { 
                             type: 'memory', 
                             status: 'input', 
                             target: target, 
                             duration: config[1], 
                             startTime: Date.now(), 
-                            endTime: Date.now() + (config[1] * 1000), 
+                            endTime: endTime, 
                             round: currentIndex + 1, 
                             totalRounds: 7 
                         });
@@ -552,44 +588,85 @@
             }
             
             timerEl.classList.remove('hidden');
+            timerEl.style.color = remain <= 5 ? '#ef4444' : '#f87171';
             
-            timerInterval = setInterval(() => {
+            timerInterval = setInterval(async () => {
                 timerEl.innerText = remain + " ث";
                 if(remain <= 5) timerEl.style.color = '#ef4444';
-                else timerEl.style.color = '#f87171';
                 
                 if (remain-- <= 0) {
                     clearInterval(timerInterval);
                     timerEl.innerText = "انتهى الوقت!";
-                    if (isMemory) showMemoryResults();
+                    
+                    if (isMemory) {
+                        // FIX: Set status to scoring first, wait 1.5s for auto-submissions, then calculate
+                        await set(liveRef, { status: 'scoring' });
+                        document.getElementById('host-status-msg').innerText = "جاري جمع الإجابات...";
+                        syncTV();
+                        
+                        setTimeout(() => {
+                            showMemoryResults();
+                        }, 1500); // Wait for players to auto-submit
+                    }
                     if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                 }
-                syncTV(); // Keep TV timer synced
+                syncTV();
             }, 1000);
         }
 
         async function showMemoryResults() {
-            set(liveRef, { status: 'scoring' });
             const target = currentQuestions[currentIndex];
             const ansSnap = await get(answersRef);
             const answers = ansSnap.val() || {};
-            let displayHtml = `<div class='space-y-1 text-sm'>`;
+            
+            // FIX: Batch update all scores at once (N+1 fix)
+            const scoresSnap = await get(scoresRef);
+            const allScores = scoresSnap.val() || {};
+            const updates = {};
+            
+            let displayHtml = `<div class='space-y-2 text-lg'>`;
+            
             for(let pName of playersList) {
                 const pData = answers[pName] || { val: "----" };
                 let score = 0, coloredDigits = "";
+                
                 for(let i=0; i<4; i++) {
                     const char = pData.val[i] || "-";
-                    if(char === target[i]) { score += 2; coloredDigits += `<span class="text-green-500 mx-0.5">${char}</span>`; }
-                    else { coloredDigits += `<span class="text-red-500 line-through mx-0.5">${char}</span>`; }
+                    if(char === target[i]) { 
+                        score += 2; 
+                        coloredDigits += `<span class="text-green-400 mx-1 font-bold">${char}</span>`; 
+                    } else { 
+                        coloredDigits += `<span class="text-red-400 line-through mx-1">${char}</span>`; 
+                    }
                 }
                 if(score === 8) score = 10;
-                get(ref(db, `scores/${pName}`)).then(s => set(ref(db, `scores/${pName}`), (s.val() || 0) + score));
-                displayHtml += `<div class="flex justify-between border-b border-slate-700"><span>${pName}</span><span style="direction:ltr;">${coloredDigits}</span></div>`;
+                
+                // FIX: Prepare batch update
+                const currentScore = allScores[pName] || 0;
+                updates[`scores/${pName}`] = currentScore + score;
+                
+                displayHtml += `
+                    <div class="flex justify-between items-center border-b border-slate-700 py-2">
+                        <span class="font-bold text-slate-300">${pName}</span>
+                        <div class="flex items-center gap-4">
+                            <span dir="ltr" class="font-mono text-xl">${coloredDigits}</span>
+                            <span class="text-yellow-400 font-black text-xl">+${score}</span>
+                        </div>
+                    </div>`;
             }
-            document.getElementById('display-content').innerHTML = displayHtml;
-            document.getElementById('answer-counter').innerText = `النتائج - السؤال ${currentIndex + 1}`;
+            
+            // FIX: Execute batch update
+            if (Object.keys(updates).length > 0) {
+                await update(ref(db), updates);
+            }
+            
+            document.getElementById('display-content').innerHTML = displayHtml + `</div>`;
+            document.getElementById('display-title').innerText = "النتائج";
+            document.getElementById('answer-counter').innerText = `انتهت الجولة ${currentIndex + 1}`;
+            document.getElementById('host-status-msg').innerText = "انتهى الوقت!";
+            
             syncTV();
-            if (currentIndex >= 6) announceWinner();
+            if (currentIndex >= 6) setTimeout(announceWinner, 3000);
         }
 
         function updateLeaderboardUI(scores) {
@@ -648,6 +725,12 @@
             onValue(liveRef, (snap) => {
                 const data = snap.val(); if(!data) return;
                 gameActive = true;
+                
+                // FIX: Handle scoring status - auto submit if not submitted
+                if(data.status === 'scoring' && currentType === 'memory' && !hasSubmittedMemory && myRole === 'player') {
+                    autoSubmitMemory();
+                }
+                
                 get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = Math.round(s.val() || 0));
                 
                 const progressEl = document.getElementById('progress-indicator');
@@ -668,7 +751,7 @@
                             timerEl.classList.add('urgent');
                             clearInterval(playerTimerInterval);
                         } else {
-                            timerEl.textContent = `${remain} ثانية`;
+                            timerEl.textContent = `${remain} ث`;
                             if(remain <= 5) {
                                 timerEl.classList.add('urgent');
                             } else {
@@ -718,6 +801,7 @@
         function handlePlayerMemory(data) {
             const kbtns = document.querySelectorAll('.key-btn');
             if(data.status === 'input') {
+                hasSubmittedMemory = false;
                 document.getElementById('p-status').innerText = "أدخل الرقم!";
                 kbtns.forEach(b => b.classList.remove('disabled'));
                 if(!roundStartTime) roundStartTime = Date.now();
@@ -727,12 +811,15 @@
                 if(data.status === 'countdown') { 
                     resetMemoryUI(); 
                     roundStartTime = 0; 
+                    memoryInput = "";
+                    hasSubmittedMemory = false;
                     document.getElementById('p-status').innerText = "استعد...";
                 }
             }
         }
 
         window.pressKey = (key) => {
+            if(hasSubmittedMemory) return;
             if(key === 'back') memoryInput = memoryInput.slice(0, -1);
             else if(memoryInput.length < 4) memoryInput += key;
             const boxes = document.querySelectorAll('.digit-box');
@@ -740,20 +827,92 @@
             document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
         };
 
+        function autoSubmitMemory() {
+            if(hasSubmittedMemory) return;
+            
+            // Submit whatever is in memoryInput (could be partial)
+            set(ref(db, `current_answers/${myName}`), { 
+                val: memoryInput.padEnd(4, '-'), // Pad with dashes if incomplete
+                time: Date.now() - roundStartTime,
+                auto: true // Flag to indicate auto-submit
+            });
+            hasSubmittedMemory = true;
+            document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
+            document.getElementById('p-status').innerText = "انتهى الوقت - تم الإرسال تلقائياً";
+            
+            // Show result after delay
+            setTimeout(() => {
+                showPlayerMemoryResult();
+            }, 2000);
+        }
+
         window.submitMemory = () => {
+            if(hasSubmittedMemory) return;
             if(playerTimerInterval) {
                 clearInterval(playerTimerInterval);
                 playerTimerInterval = null;
             }
             document.getElementById('player-timer').classList.add('hidden');
             
-            set(ref(db, `current_answers/${myName}`), { val: memoryInput, time: Date.now() - roundStartTime });
+            hasSubmittedMemory = true;
+            set(ref(db, `current_answers/${myName}`), { 
+                val: memoryInput, 
+                time: Date.now() - roundStartTime 
+            });
             document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
             document.getElementById('p-status').innerText = "تم ✓";
+            
+            // FIX: Show player their result
+            showPlayerMemoryResult();
+        };
+
+        function showPlayerMemoryResult() {
+            const modal = document.getElementById('player-result-modal');
+            const correctContainer = document.getElementById('result-correct-number');
+            const playerContainer = document.getElementById('result-player-number');
+            const pointsDiv = document.getElementById('result-points');
+            
+            correctContainer.innerHTML = '';
+            playerContainer.innerHTML = '';
+            
+            // Get current target from last game data
+            const target = currentTargetNumber || '0000';
+            let score = 0;
+            
+            // Build correct number display
+            for(let i=0; i<4; i++) {
+                const div = document.createElement('div');
+                div.className = 'result-digit-box result-correct';
+                div.textContent = target[i];
+                correctContainer.appendChild(div);
+            }
+            
+            // Build player answer display
+            const playerAnswer = memoryInput.padEnd(4, '-');
+            for(let i=0; i<4; i++) {
+                const div = document.createElement('div');
+                const isCorrect = playerAnswer[i] === target[i];
+                div.className = `result-digit-box ${isCorrect ? 'result-correct' : 'result-wrong'}`;
+                div.textContent = playerAnswer[i];
+                playerContainer.appendChild(div);
+                if(isCorrect) score += 2;
+            }
+            if(score === 8) score = 10;
+            
+            pointsDiv.textContent = `+${score} نقطة`;
+            pointsDiv.className = 'text-3xl font-black text-yellow-400 mb-4';
+            
+            modal.classList.remove('hidden');
+        }
+
+        window.closePlayerResult = () => {
+            document.getElementById('player-result-modal').classList.add('hidden');
         };
 
         function resetMemoryUI() {
-            memoryInput = ""; document.querySelectorAll('.digit-box').forEach(b => { b.innerText = "-"; });
+            memoryInput = ""; 
+            document.querySelectorAll('.digit-box').forEach(b => { b.innerText = "-"; });
+            document.getElementById('mem-submit').classList.add('disabled');
         }
 
         function handlePlayerStandard(data) {
@@ -819,7 +978,14 @@
             }, 2000);
         };
 
-        window.restartSameCategory = () => {
+        window.restartSameCategory = async () => {
+            // FIX: Clear all game state properly
+            await remove(answersRef);
+            currentIndex = -1;
+            hasSubmittedMemory = false;
+            memoryInput = "";
+            resetMemoryUI();
+            
             if(lastGameConfig.type === 'memory') startMemory(lastGameConfig.diff);
             else if(lastGameConfig.type === 'brain') setupQuestions(lastGameConfig.pool);
             else setupTwisters();
@@ -842,6 +1008,8 @@
                 scoreHTML: scoreboard.innerHTML,
                 scoreVisible: !scoreboard.classList.contains('hidden'),
                 topBarHTML: topBar.innerHTML,
+                timerText: document.getElementById('host-timer-text').innerText,
+                counterText: document.getElementById('answer-counter').innerText,
                 ts: Date.now()
             });
         }
