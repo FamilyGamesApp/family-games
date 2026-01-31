@@ -118,7 +118,7 @@
             <div id="game-play" class="hidden flex-1 flex flex-col px-2">
                 <div id="host-view" class="hidden flex flex-col h-full">
                     <div id="host-top-bar" class="bg-slate-800 p-3 rounded-xl flex justify-between mb-2 text-base border border-slate-700 shrink-0">
-                        <span id="answer-counter" class="text-teal-400 font-bold">somthing</span>
+                        <span id="answer-counter" class="text-teal-400 font-bold">...</span>
                         <span id="host-timer-text" class="text-red-500 font-black text-xl"></span>
                     </div>
                     <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
@@ -373,7 +373,6 @@
             document.getElementById('dedicated-scoreboard').classList.add('hidden');
             document.getElementById('host-top-bar').classList.remove('hidden');
             
-            // FIX: Reset TV to welcome screen
             set(mirrorRef, { 
                 showWelcome: true,
                 ts: Date.now(), 
@@ -384,7 +383,6 @@
         window.goHome = () => { 
             gameActive = false;
             if(myRole === 'host') { 
-                // FIX: Reset TV before leaving
                 set(mirrorRef, { 
                     showWelcome: true,
                     ts: Date.now()
@@ -470,14 +468,25 @@
             document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
             document.getElementById('host-timer-text').innerText = "";
             
-            syncTV();
+            // FIX: Force immediate sync with welcome cleared and fresh state
+            set(mirrorRef, {  
+                mainHTML: document.getElementById('host-game-container').innerHTML,
+                mainClasses: document.getElementById('host-game-container').className,
+                scoreHTML: "",
+                scoreVisible: false,
+                topBarHTML: document.getElementById('host-top-bar').innerHTML,
+                timerText: "",
+                counterText: "اضغط التالي للبدء",
+                showWelcome: false,  // Explicitly false to exit welcome mode
+                qrVisible: false,
+                ts: Date.now()
+            });
         }
 
         window.triggerNext = async () => {
             if (currentIndex >= 6) return announceWinner();
             currentIndex++;
             
-            // FIX: Clear timer immediately when moving to next question
             document.getElementById('host-timer-text').innerText = "";
             syncTV();
             
@@ -536,7 +545,6 @@
             document.getElementById('target-number-display').innerText = target;
             document.getElementById('answer-counter').innerText = `السؤال ${currentIndex + 1} من 7`;
             
-            // FIX: Clear timer during countdown (blank)
             document.getElementById('host-timer-text').innerText = "";
             syncTV();
             
@@ -605,7 +613,6 @@
             timerEl.style.color = remain <= 5 ? '#ef4444' : '#f87171';
             
             timerInterval = setInterval(async () => {
-                // FIX: Remove "ث" - show numbers only
                 timerEl.innerText = remain;
                 if(remain <= 5) timerEl.style.color = '#ef4444';
                 
@@ -1013,8 +1020,9 @@
                 scoreHTML: scoreboard.innerHTML,
                 scoreVisible: !scoreboard.classList.contains('hidden'),
                 topBarHTML: topBar.innerHTML,
-                timerText: timerText, // Send raw text (numbers only or "انتهى" or empty)
+                timerText: timerText,
                 counterText: document.getElementById('answer-counter').innerText,
+                showWelcome: false,  // FIX: Always set to false when syncing game content
                 ts: Date.now()
             });
         }
