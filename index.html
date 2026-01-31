@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --app-height: 100vh; --font-title: clamp(1.4rem, 5vw, 2.5rem); }
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }
@@ -39,9 +41,10 @@
         .open .hand-right { transform: rotateY(110deg); }
         .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 800; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
         .open .number-reveal { opacity: 1; }
-        /* Enhanced host timer visibility */
         #host-timer-text { font-size: 1.5rem; font-weight: 900; }
         #answer-counter { font-size: 1rem; font-weight: bold; color: #14b8a6; }
+        /* QR Modal Styles */
+        #qr-modal { backdrop-filter: blur(5px); }
     </style>
 </head>
 <body>
@@ -70,6 +73,20 @@
                 <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
                 <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
                 <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
+                <button onclick="showJoinQR()" class="w-full p-6 bg-blue-600 rounded-[1.5rem] font-black border-b-8 border-blue-800 text-xl">انضمام اللاعبين <i class="fa-solid fa-qrcode mr-2"></i></button>
+            </div>
+            <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
+                <div class="bg-slate-900 p-8 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center relative shadow-2xl">
+                    <button onclick="dismissQR()" class="absolute top-4 left-4 text-slate-400 hover:text-white text-3xl p-2 transition-colors">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <h3 class="text-2xl font-bold text-teal-400 mb-6">انضم للعبة</h3>
+                    <div class="bg-white p-4 rounded-xl inline-block mb-4 shadow-lg">
+                        <div id="qrcode-container"></div>
+                    </div>
+                    <p class="text-slate-300 text-lg mb-2">امسح الكود للانضمام</p>
+                    <p class="text-slate-500 text-sm" id="qr-url-display"></p>
+                </div>
             </div>
             <div id="type-select" class="hidden scroll-container px-4 w-full">
                 <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700 mb-4">
@@ -199,6 +216,7 @@
         let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
         let gameActive = false;
         let playerTimerInterval = null;
+        let qrGenerated = false;
 
         window.addEventListener('beforeunload', (e) => {
             if (gameActive && myRole === 'player') {
@@ -258,6 +276,43 @@
             }
         };
 
+        window.showJoinQR = () => {
+            const modal = document.getElementById('qr-modal');
+            const container = document.getElementById('qrcode-container');
+            const urlDisplay = document.getElementById('qr-url-display');
+            
+            modal.classList.remove('hidden');
+            
+            // Generate QR only once per session
+            if (!qrGenerated) {
+                container.innerHTML = '';
+                const url = window.location.href.split('?')[0];
+                urlDisplay.textContent = url;
+                
+                new QRCode(container, {
+                    text: url,
+                    width: 200,
+                    height: 200,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+                qrGenerated = true;
+            }
+            
+            // Sync to TV
+            update(mirrorRef, { 
+                qrVisible: true, 
+                qrUrl: window.location.href.split('?')[0],
+                ts: Date.now() 
+            });
+        };
+
+        window.dismissQR = () => {
+            document.getElementById('qr-modal').classList.add('hidden');
+            update(mirrorRef, { qrVisible: false, ts: Date.now() });
+        };
+
         window.toggleScoreboardOnly = () => {
             document.getElementById('section-select').classList.add('hidden');
             document.getElementById('game-play').classList.remove('hidden');
@@ -292,6 +347,8 @@
         window.backToGameMenu = () => {
             if(myRole !== 'host') return;
             gameActive = false;
+            // Dismiss QR if open
+            dismissQR();
             remove(liveRef); remove(answersRef);
             document.getElementById('host-view').classList.add('hidden');
             document.getElementById('game-play').classList.add('hidden');
@@ -302,12 +359,16 @@
             document.getElementById('host-game-container').classList.remove('hidden');
             document.getElementById('dedicated-scoreboard').classList.add('hidden');
             document.getElementById('host-top-bar').classList.remove('hidden');
-            set(mirrorRef, { mainHTML: "", ts: Date.now() });
+            set(mirrorRef, { mainHTML: "", ts: Date.now(), qrVisible: false });
         };
 
         window.goHome = () => { 
             gameActive = false;
-            if(myRole === 'host') { remove(liveRef); remove(scoresRef); remove(mirrorRef); } 
+            if(myRole === 'host') { 
+                remove(liveRef); 
+                remove(scoresRef); 
+                remove(mirrorRef); 
+            } 
             location.reload(); 
         };
 
@@ -382,7 +443,6 @@
             document.getElementById('memory-visuals').classList.add('hidden');
             document.getElementById('player-spotlight').classList.add('hidden');
             
-            // Initialize counter and timer display
             document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
             document.getElementById('host-timer-text').innerText = "";
             
@@ -429,11 +489,10 @@
 
         async function handleMemoryRound(target) {
             const diff = lastGameConfig.diff;
-            // FASTER TIMINGS: [revealDuration in ms, inputDuration in seconds]
             const config = { 
-                easy: [1500, 8],     // 1.5s reveal, 8s input (was 2500, 10)
-                medium: [1000, 6],   // 1s reveal, 6s input (was 1800, 8)
-                hard: [600, 4]       // 0.6s reveal, 4s input (was 1100, 5)
+                easy: [1500, 8],
+                medium: [1000, 6],
+                hard: [600, 4]
             }[diff];
             
             document.getElementById('standard-visuals').classList.add('hidden');
@@ -488,7 +547,6 @@
             const timerEl = document.getElementById('host-timer-text');
             const counterEl = document.getElementById('answer-counter');
             
-            // Update counter to show current question
             if(currentIndex >= 0) {
                 counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
             }
@@ -506,6 +564,7 @@
                     if (isMemory) showMemoryResults();
                     if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                 }
+                syncTV(); // Keep TV timer synced
             }, 1000);
         }
 
@@ -543,7 +602,6 @@
             const content = document.getElementById('display-content');
             const counterEl = document.getElementById('answer-counter');
             
-            // Show question counter on host/TV
             counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
             
             document.getElementById('memory-visuals').classList.add('hidden');
@@ -564,6 +622,7 @@
         onValue(answersRef, (snap) => {
             const count = snap.val() ? Object.keys(snap.val()).length : 0;
             document.getElementById('answer-counter').innerText = `المشاركات: ${count} / ${playersList.length}`;
+            syncTV();
         });
 
         async function announceWinner() {
