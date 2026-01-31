@@ -44,8 +44,6 @@
         #host-timer-text { font-size: 1.5rem; font-weight: 900; }
         #answer-counter { font-size: 1rem; font-weight: bold; color: #14b8a6; }
         #qr-modal { backdrop-filter: blur(5px); }
-        
-        /* Player Result Modal */
         #player-result-modal { backdrop-filter: blur(10px); }
         .result-digit-box { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; margin: 0 4px; }
         .result-correct { background: #065f46; color: #34d399; border: 2px solid #34d399; }
@@ -89,7 +87,6 @@
                     <p class="text-slate-500 text-sm" id="qr-url-display"></p>
                 </div>
             </div>
-            <!-- Player Result Modal -->
             <div id="player-result-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
                 <div class="bg-slate-900 p-6 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center shadow-2xl">
                     <h3 class="text-2xl font-bold text-teal-400 mb-4">النتيجة</h3>
@@ -375,12 +372,23 @@
             document.getElementById('host-game-container').classList.remove('hidden');
             document.getElementById('dedicated-scoreboard').classList.add('hidden');
             document.getElementById('host-top-bar').classList.remove('hidden');
-            set(mirrorRef, { mainHTML: "", ts: Date.now(), qrVisible: false });
+            
+            // FIX: Reset TV to welcome screen
+            set(mirrorRef, { 
+                showWelcome: true,
+                ts: Date.now(), 
+                qrVisible: false 
+            });
         };
 
         window.goHome = () => { 
             gameActive = false;
             if(myRole === 'host') { 
+                // FIX: Reset TV before leaving
+                set(mirrorRef, { 
+                    showWelcome: true,
+                    ts: Date.now()
+                });
                 remove(liveRef); 
                 remove(scoresRef); 
                 remove(mirrorRef); 
@@ -469,7 +477,10 @@
             if (currentIndex >= 6) return announceWinner();
             currentIndex++;
             
-            // FIX: Clear previous answers and reset state
+            // FIX: Clear timer immediately when moving to next question
+            document.getElementById('host-timer-text').innerText = "";
+            syncTV();
+            
             await remove(answersRef);
             hasSubmittedMemory = false;
             memoryInput = "";
@@ -513,23 +524,26 @@
         async function handleMemoryRound(target) {
             const diff = lastGameConfig.diff;
             const config = { 
-                easy: [3000, 10],     // Increased from [1500, 8]
-                medium: [2000, 8],    // Increased from [1000, 6]
-                hard: [1500, 6]       // Increased from [600, 4]
+                easy: [3000, 10],
+                medium: [2000, 8],
+                hard: [1500, 6]
             }[diff];
             
-            currentTargetNumber = target; // Store for player feedback
+            currentTargetNumber = target;
             
             document.getElementById('standard-visuals').classList.add('hidden');
             document.getElementById('memory-visuals').classList.remove('hidden');
             document.getElementById('target-number-display').innerText = target;
             document.getElementById('answer-counter').innerText = `السؤال ${currentIndex + 1} من 7`;
             
+            // FIX: Clear timer during countdown (blank)
+            document.getElementById('host-timer-text').innerText = "";
+            syncTV();
+            
             let cd = 3;
             document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
             syncTV();
             
-            // FIX: Set countdown status so players can prepare
             await set(liveRef, { 
                 type: 'memory', 
                 status: 'countdown', 
@@ -591,22 +605,22 @@
             timerEl.style.color = remain <= 5 ? '#ef4444' : '#f87171';
             
             timerInterval = setInterval(async () => {
-                timerEl.innerText = remain + " ث";
+                // FIX: Remove "ث" - show numbers only
+                timerEl.innerText = remain;
                 if(remain <= 5) timerEl.style.color = '#ef4444';
                 
                 if (remain-- <= 0) {
                     clearInterval(timerInterval);
-                    timerEl.innerText = "انتهى الوقت!";
+                    timerEl.innerText = "انتهى";
                     
                     if (isMemory) {
-                        // FIX: Set status to scoring first, wait 1.5s for auto-submissions, then calculate
                         await set(liveRef, { status: 'scoring' });
                         document.getElementById('host-status-msg').innerText = "جاري جمع الإجابات...";
                         syncTV();
                         
                         setTimeout(() => {
                             showMemoryResults();
-                        }, 1500); // Wait for players to auto-submit
+                        }, 1500);
                     }
                     if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
                 }
@@ -619,7 +633,6 @@
             const ansSnap = await get(answersRef);
             const answers = ansSnap.val() || {};
             
-            // FIX: Batch update all scores at once (N+1 fix)
             const scoresSnap = await get(scoresRef);
             const allScores = scoresSnap.val() || {};
             const updates = {};
@@ -641,7 +654,6 @@
                 }
                 if(score === 8) score = 10;
                 
-                // FIX: Prepare batch update
                 const currentScore = allScores[pName] || 0;
                 updates[`scores/${pName}`] = currentScore + score;
                 
@@ -655,7 +667,6 @@
                     </div>`;
             }
             
-            // FIX: Execute batch update
             if (Object.keys(updates).length > 0) {
                 await update(ref(db), updates);
             }
@@ -726,7 +737,6 @@
                 const data = snap.val(); if(!data) return;
                 gameActive = true;
                 
-                // FIX: Handle scoring status - auto submit if not submitted
                 if(data.status === 'scoring' && currentType === 'memory' && !hasSubmittedMemory && myRole === 'player') {
                     autoSubmitMemory();
                 }
@@ -747,11 +757,11 @@
                     playerTimerInterval = setInterval(() => {
                         const remain = Math.ceil((data.endTime - Date.now()) / 1000);
                         if(remain <= 0) {
-                            timerEl.textContent = "انتهى الوقت!";
+                            timerEl.textContent = "انتهى";
                             timerEl.classList.add('urgent');
                             clearInterval(playerTimerInterval);
                         } else {
-                            timerEl.textContent = `${remain} ث`;
+                            timerEl.textContent = remain;
                             if(remain <= 5) {
                                 timerEl.classList.add('urgent');
                             } else {
@@ -830,17 +840,15 @@
         function autoSubmitMemory() {
             if(hasSubmittedMemory) return;
             
-            // Submit whatever is in memoryInput (could be partial)
             set(ref(db, `current_answers/${myName}`), { 
-                val: memoryInput.padEnd(4, '-'), // Pad with dashes if incomplete
+                val: memoryInput.padEnd(4, '-'),
                 time: Date.now() - roundStartTime,
-                auto: true // Flag to indicate auto-submit
+                auto: true
             });
             hasSubmittedMemory = true;
             document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
             document.getElementById('p-status').innerText = "انتهى الوقت - تم الإرسال تلقائياً";
             
-            // Show result after delay
             setTimeout(() => {
                 showPlayerMemoryResult();
             }, 2000);
@@ -862,7 +870,6 @@
             document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
             document.getElementById('p-status').innerText = "تم ✓";
             
-            // FIX: Show player their result
             showPlayerMemoryResult();
         };
 
@@ -875,11 +882,9 @@
             correctContainer.innerHTML = '';
             playerContainer.innerHTML = '';
             
-            // Get current target from last game data
             const target = currentTargetNumber || '0000';
             let score = 0;
             
-            // Build correct number display
             for(let i=0; i<4; i++) {
                 const div = document.createElement('div');
                 div.className = 'result-digit-box result-correct';
@@ -887,7 +892,6 @@
                 correctContainer.appendChild(div);
             }
             
-            // Build player answer display
             const playerAnswer = memoryInput.padEnd(4, '-');
             for(let i=0; i<4; i++) {
                 const div = document.createElement('div');
@@ -979,7 +983,6 @@
         };
 
         window.restartSameCategory = async () => {
-            // FIX: Clear all game state properly
             await remove(answersRef);
             currentIndex = -1;
             hasSubmittedMemory = false;
@@ -1002,13 +1005,15 @@
             const container = document.getElementById('host-game-container');
             const scoreboard = document.getElementById('dedicated-scoreboard');
             const topBar = document.getElementById('host-top-bar');
+            const timerText = document.getElementById('host-timer-text').innerText;
+            
             update(mirrorRef, {
                 mainHTML: container.innerHTML,
                 mainClasses: container.className,
                 scoreHTML: scoreboard.innerHTML,
                 scoreVisible: !scoreboard.classList.contains('hidden'),
                 topBarHTML: topBar.innerHTML,
-                timerText: document.getElementById('host-timer-text').innerText,
+                timerText: timerText, // Send raw text (numbers only or "انتهى" or empty)
                 counterText: document.getElementById('answer-counter').innerText,
                 ts: Date.now()
             });
