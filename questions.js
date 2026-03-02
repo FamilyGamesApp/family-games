@@ -349,6 +349,53 @@ export const gameData = {
 ],
 
         movement: ["تمثيل دور طيار واجه عاصفة", "تحدي السكوات: 15 مرة", "قف كتمثال لـ 30 ثانية"]
+        
+hangman: [
+            // ── حيوانات ──
+            { word: "تمساح",    category: "حيوان" },
+            { word: "فيل",      category: "حيوان" },
+            { word: "زرافة",    category: "حيوان" },
+            { word: "دلفين",    category: "حيوان" },
+            { word: "قنفذ",     category: "حيوان" },
+            { word: "فهد",      category: "حيوان" },
+            // ── طعام ──
+            { word: "منسف",     category: "طعام" },
+            { word: "كبسة",     category: "طعام" },
+            { word: "مجبوس",    category: "طعام" },
+            { word: "هريسة",    category: "طعام" },
+            { word: "مضبي",     category: "طعام" },
+            { word: "ثريد",     category: "طعام" },
+            // ── بلدان ──
+            { word: "البرازيل", category: "بلد" },
+            { word: "اليابان",  category: "بلد" },
+            { word: "المغرب",   category: "بلد" },
+            { word: "اندونيسيا",category: "بلد" },
+            { word: "الارجنتين",category: "بلد" },
+            { word: "ايسلندا",  category: "بلد" },
+            // ── مهن ──
+            { word: "طيار",     category: "مهنة" },
+            { word: "جراح",     category: "مهنة" },
+            { word: "مهندس",    category: "مهنة" },
+            { word: "فلكي",     category: "مهنة" },
+            { word: "صيدلاني",  category: "مهنة" },
+            { word: "دبلوماسي", category: "مهنة" },
+            // ── رياضة ──
+            { word: "سباحة",    category: "رياضة" },
+            { word: "مصارعة",   category: "رياضة" },
+            { word: "جمباز",    category: "رياضة" },
+            { word: "تنس",      category: "رياضة" },
+            { word: "فروسية",   category: "رياضة" },
+            { word: "رماية",    category: "رياضة" },
+            // ── طبيعة ──
+            { word: "بركان",    category: "طبيعة" },
+            { word: "شلال",     category: "طبيعة" },
+            { word: "صحراء",    category: "طبيعة" },
+            { word: "مستنقع",   category: "طبيعة" },
+            { word: "جليد",     category: "طبيعة" },
+            { word: "شعاب",     category: "طبيعة" },
+        ]        
+        
+        
     },
     children: {
         brain: [
