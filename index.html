@@ -525,9 +525,10 @@
         async function handleMemoryRound(target) {
             const diff = lastGameConfig.diff;
             const config = { 
-                easy: [3000, 10],
-                medium: [2000, 8],
-                hard: [1500, 6]
+                // Harder overall timings: shorter reveal + shorter input
+                easy: [2500, 7],     // reveal 2.5s, input 7s
+                medium: [1500, 5],  // reveal 1.5s, input 5s
+                hard: [1000, 3]     // reveal 1.0s, input 3s
             }[diff];
             
             currentTargetNumber = target;
