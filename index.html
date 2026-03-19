@@ -233,6 +233,7 @@
         let qrGenerated = false;
         let hasSubmittedMemory = false;
         let currentTargetNumber = '';
+        let lastTvSyncAt = 0; // Prevent double mirror updates (MutationObserver + manual sync).
 
         window.addEventListener('beforeunload', (e) => {
             if (gameActive && myRole === 'player') {
@@ -1002,6 +1003,9 @@
         
         function syncTV() {
             if (myRole !== 'host') return;
+            const now = Date.now();
+            if (now - lastTvSyncAt < 150) return;
+            lastTvSyncAt = now;
             const container = document.getElementById('host-game-container');
             const scoreboard = document.getElementById('dedicated-scoreboard');
             const topBar = document.getElementById('host-top-bar');
