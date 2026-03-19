@@ -203,6 +203,11 @@
             const mirrorRef = ref(db, 'tv_mirror');
             let lastUpdate = Date.now();
             let qrGenerated = false;
+            // Avoid re-rendering the main HTML when it hasn't changed.
+            // Replacing `innerHTML` resets CSS animations, which causes the memory hand to replay.
+            let lastMainHTML = null;
+            let lastScoreHTML = null;
+            let lastScoreVisible = null;
             
             setInterval(() => {
                 if (Date.now() - lastUpdate > 10000) {
@@ -288,17 +293,28 @@
                         if(data.scoreVisible) {
                             main.classList.add('hidden');
                             scores.classList.remove('hidden');
-                            scores.innerHTML = data.scoreHTML || '';
+                        const nextScoreHTML = data.scoreHTML || '';
+                        if (lastScoreVisible !== true || lastScoreHTML !== nextScoreHTML) {
+                            scores.innerHTML = nextScoreHTML;
+                            lastScoreHTML = nextScoreHTML;
+                        }
+                        lastScoreVisible = true;
                         } else {
                             scores.classList.add('hidden');
                             main.classList.remove('hidden');
-                            main.innerHTML = data.mainHTML;
+                        const nextMainHTML = data.mainHTML || '';
+                        if (lastScoreVisible !== false || lastMainHTML !== nextMainHTML) {
+                            main.innerHTML = nextMainHTML;
                             main.className = "flex-1 bg-slate-card rounded-[3vh] border-[0.8vh] border-solid border-[#475569] flex flex-col justify-center items-center p-[4vh] relative overflow-hidden";
                             
                             const title = main.querySelector('#display-title');
                             const content = main.querySelector('#display-content');
                             if(title) title.style.fontSize = '6vh';
                             if(content) content.style.fontSize = '4.5vh';
+                            
+                            lastMainHTML = nextMainHTML;
+                        }
+                        lastScoreVisible = false;
                         }
                     }
 
