@@ -1,7 +1,5 @@
 <!-- index.html -->
-
 <!DOCTYPE html>
-
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -50,49 +48,7 @@
         .result-digit-box { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; margin: 0 4px; }
         .result-correct { background: #065f46; color: #34d399; border: 2px solid #34d399; }
         .result-wrong { background: #7f1d1d; color: #f87171; border: 2px solid #f87171; text-decoration: line-through; }
-
-```
-    /* ── Hangman Host Styles ── */
-    .hangman-letter-slot { 
-        display: inline-flex; align-items: center; justify-content: center;
-        width: clamp(28px, 8vw, 44px); height: clamp(28px, 8vw, 44px);
-        border-bottom: 3px solid #94a3b8; margin: 3px;
-        font-size: clamp(1rem, 4vw, 1.5rem); font-weight: 900; color: #14b8a6;
-        transition: all 0.3s;
-    }
-    .hangman-letter-slot.revealed { border-color: #14b8a6; }
-    .team-badge { padding: 6px 16px; border-radius: 999px; font-weight: 900; font-size: 0.95rem; }
-    .team-a-badge { background: #1e40af; color: #bfdbfe; border: 2px solid #3b82f6; }
-    .team-b-badge { background: #7c2d12; color: #fed7aa; border: 2px solid #f97316; }
-    .player-chip { 
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 6px 14px; border-radius: 999px; font-weight: bold; font-size: 0.9rem; margin: 4px;
-        cursor: grab; user-select: none;
-    }
-    .player-chip.active-guesser { 
-        animation: glow 1.5s infinite alternate;
-        box-shadow: 0 0 12px currentColor;
-    }
-    @keyframes glow { from { opacity: 0.8; } to { opacity: 1; } }
-    .hangman-svg-host { width: 120px; height: 110px; }
-    .arabic-keyboard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; direction: rtl; }
-    .ar-key { 
-        padding: 10px 4px; background: #334155; border-radius: 8px; 
-        font-size: 1rem; font-weight: bold; text-align: center;
-        border-bottom: 3px solid #0f172a; cursor: pointer;
-        transition: background 0.15s;
-    }
-    .ar-key:active { transform: translateY(1px); border-bottom-width: 1px; }
-    .ar-key.used-correct { background: #065f46; color: #34d399; pointer-events: none; }
-    .ar-key.used-wrong  { background: #450a0a; color: #f87171; pointer-events: none; text-decoration: line-through; }
-    .team-swap-btn { 
-        width: 32px; height: 32px; border-radius: 50%; background: #475569;
-        display: flex; align-items: center; justify-content: center; cursor: pointer;
-        font-size: 1rem; flex-shrink: 0;
-    }
-</style>
-```
-
+    </style>
 </head>
 <body>
     <div id="app">
@@ -102,1308 +58,977 @@
             <button onclick="backToGameMenu()" id="host-back-btn" class="hidden text-white bg-red-900 p-3 rounded-full"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
         </header>
         <main class="flex-1 flex flex-col justify-center overflow-hidden">
-
-```
-        <!-- Setup Screen -->
-        <div id="setup-screen" class="space-y-6 w-full px-4">
-            <div class="bg-slate-card p-6 rounded-[2rem] shadow-2xl border border-slate-700">
-                <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-2 border border-slate-600 outline-none text-xl font-bold transition-all">
-                <div id="name-error" class="input-error hidden text-center"></div>
-                <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black mt-4">دخول</button>
-            </div>
-            <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
-        </div>
-
-        <!-- Host Auth -->
-        <div id="host-auth" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
-            <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
-                <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl outline-none border border-teal-500">
-                <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black">تأكيد</button>
-            </div>
-        </div>
-
-        <!-- Section Select -->
-        <div id="section-select" class="hidden space-y-4 px-4 w-full">
-            <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
-            <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
-            <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
-            <button onclick="showJoinQR()" class="w-full p-6 bg-blue-600 rounded-[1.5rem] font-black border-b-8 border-blue-800 text-xl">انضمام اللاعبين <i class="fa-solid fa-qrcode mr-2"></i></button>
-        </div>
-
-        <!-- QR Modal -->
-        <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
-            <div class="bg-slate-900 p-8 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center relative shadow-2xl">
-                <button onclick="dismissQR()" class="absolute top-4 left-4 text-slate-400 hover:text-white text-3xl p-2 transition-colors"><i class="fa-solid fa-xmark"></i></button>
-                <h3 class="text-2xl font-bold text-teal-400 mb-6">انضم للعبة</h3>
-                <div class="bg-white p-4 rounded-xl inline-block mb-4 shadow-lg"><div id="qrcode-container"></div></div>
-                <p class="text-slate-300 text-lg mb-2">امسح الكود للانضمام</p>
-                <p class="text-slate-500 text-sm" id="qr-url-display"></p>
-            </div>
-        </div>
-
-        <!-- Player Result Modal -->
-        <div id="player-result-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
-            <div class="bg-slate-900 p-6 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center shadow-2xl">
-                <h3 class="text-2xl font-bold text-teal-400 mb-4">النتيجة</h3>
-                <div class="mb-4">
-                    <p class="text-slate-400 mb-2">الرقم الصحيح:</p>
-                    <div id="result-correct-number" class="flex justify-center flex-row-reverse mb-4"></div>
+            <div id="setup-screen" class="space-y-6 w-full px-4">
+                <div class="bg-slate-card p-6 rounded-[2rem] shadow-2xl border border-slate-700">
+                    <input id="player-name-input" type="text" placeholder="اسمك الكريم..." class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-2 border border-slate-600 outline-none text-xl font-bold transition-all">
+                    <div id="name-error" class="input-error hidden text-center"></div>
+                    <button onclick="setRole('player')" class="w-full btn-teal text-white p-5 rounded-xl text-2xl font-black mt-4">دخول</button>
                 </div>
-                <div class="mb-4">
-                    <p class="text-slate-400 mb-2">إجابتك:</p>
-                    <div id="result-player-number" class="flex justify-center flex-row-reverse mb-4"></div>
-                </div>
-                <div id="result-points" class="text-3xl font-black text-yellow-400 mb-4"></div>
-                <button onclick="closePlayerResult()" class="w-full p-4 bg-teal-600 rounded-xl font-bold text-lg">استمر</button>
+                <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
             </div>
-        </div>
-
-        <!-- Type Select -->
-        <div id="type-select" class="hidden scroll-container px-4 w-full">
-            <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700 mb-4">
-                <span class="font-bold">المؤقت</span>
-                <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
-            </div>
-            <div id="brain-sub-menu" class="space-y-3"></div>
-            <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i></button>
-        </div>
-
-        <!-- Memory Difficulty -->
-        <div id="memory-difficulty" class="hidden space-y-4 px-4 w-full">
-            <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-xl font-bold">سهل</button>
-            <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-xl font-bold">متوسط</button>
-            <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-xl font-bold">صعب</button>
-        </div>
-
-        <!-- ══════════════════════════════════════════
-             HANGMAN TEAM SETUP SCREEN
-        ══════════════════════════════════════════ -->
-        <div id="hangman-team-setup" class="hidden px-4 w-full overflow-y-auto">
-            <h2 class="text-xl font-black text-center text-teal-400 mb-4">تشكيل الفرق</h2>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <!-- Team A -->
-                <div class="bg-blue-950 border-2 border-blue-500 rounded-2xl p-3">
-                    <div class="text-center font-black text-blue-300 mb-3 text-lg">الفريق الأزرق 🔵</div>
-                    <div id="team-a-list" class="min-h-[60px] space-y-2"></div>
-                </div>
-                <!-- Team B -->
-                <div class="bg-orange-950 border-2 border-orange-500 rounded-2xl p-3">
-                    <div class="text-center font-black text-orange-300 mb-3 text-lg">الفريق البرتقالي 🟠</div>
-                    <div id="team-b-list" class="min-h-[60px] space-y-2"></div>
+            <div id="host-auth" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
+                <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
+                    <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl outline-none border border-teal-500">
+                    <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black">تأكيد</button>
                 </div>
             </div>
-            <p class="text-slate-400 text-center text-sm mb-4">اضغط على اللاعب لتبديل فريقه</p>
-            <button onclick="confirmTeamsAndStartHangman()" class="w-full p-5 bg-green-700 rounded-2xl font-black text-xl border-b-4 border-green-900">ابدأ اللعبة ✓</button>
-        </div>
-
-        <!-- Game Play -->
-        <div id="game-play" class="hidden flex-1 flex flex-col px-2">
-            <div id="host-view" class="hidden flex flex-col h-full">
-                <div id="host-top-bar" class="bg-slate-800 p-3 rounded-xl flex justify-between mb-2 text-base border border-slate-700 shrink-0">
-                    <span id="answer-counter" class="text-teal-400 font-bold">...</span>
-                    <span id="host-timer-text" class="text-red-500 font-black text-xl"></span>
+            <div id="section-select" class="hidden space-y-4 px-4 w-full">
+                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-slate-900 text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
+                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
+                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
+                <button onclick="showJoinQR()" class="w-full p-6 bg-blue-600 rounded-[1.5rem] font-black border-b-8 border-blue-800 text-xl">انضمام اللاعبين <i class="fa-solid fa-qrcode mr-2"></i></button>
+            </div>
+            <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
+                <div class="bg-slate-900 p-8 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center relative shadow-2xl">
+                    <button onclick="dismissQR()" class="absolute top-4 left-4 text-slate-400 hover:text-white text-3xl p-2 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+                    <h3 class="text-2xl font-bold text-teal-400 mb-6">انضم للعبة</h3>
+                    <div class="bg-white p-4 rounded-xl inline-block mb-4 shadow-lg"><div id="qrcode-container"></div></div>
+                    <p class="text-slate-300 text-lg mb-2">امسح الكود للانضمام</p>
+                    <p class="text-slate-500 text-sm" id="qr-url-display"></p>
                 </div>
-                <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
-                    <div id="memory-visuals" class="hidden text-center">
-                        <div id="hand-wrapper" class="hand-container">
-                            <div class="hand hand-left"></div>
-                            <div class="number-reveal" id="target-number-display">0000</div>
-                            <div class="hand hand-right"></div>
+            </div>
+            <div id="player-result-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
+                <div class="bg-slate-900 p-6 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center shadow-2xl">
+                    <h3 class="text-2xl font-bold text-teal-400 mb-4">النتيجة</h3>
+                    <div class="mb-4">
+                        <p class="text-slate-400 mb-2">الرقم الصحيح:</p>
+                        <div id="result-correct-number" class="flex justify-center flex-row-reverse mb-4"></div>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-slate-400 mb-2">إجابتك:</p>
+                        <div id="result-player-number" class="flex justify-center flex-row-reverse mb-4"></div>
+                    </div>
+                    <div id="result-points" class="text-3xl font-black text-yellow-400 mb-4"></div>
+                    <button onclick="closePlayerResult()" class="w-full p-4 bg-teal-600 rounded-xl font-bold text-lg">استمر</button>
+                </div>
+            </div>
+            <div id="type-select" class="hidden scroll-container px-4 w-full">
+                <div class="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700 mb-4">
+                    <span class="font-bold">المؤقت</span>
+                    <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
+                </div>
+                <div id="brain-sub-menu" class="space-y-3"></div>
+                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i></button>
+            </div>
+            <div id="memory-difficulty" class="hidden space-y-4 px-4 w-full">
+                <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-xl font-bold">سهل</button>
+                <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-xl font-bold">متوسط</button>
+                <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-xl font-bold">صعب</button>
+            </div>
+            <div id="game-play" class="hidden flex-1 flex flex-col px-2">
+                <div id="host-view" class="hidden flex flex-col h-full">
+                    <div id="host-top-bar" class="bg-slate-800 p-3 rounded-xl flex justify-between mb-2 text-base border border-slate-700 shrink-0">
+                        <span id="answer-counter" class="text-teal-400 font-bold">...</span>
+                        <span id="host-timer-text" class="text-red-500 font-black text-xl"></span>
+                    </div>
+                    <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
+                        <div id="memory-visuals" class="hidden text-center">
+                            <div id="hand-wrapper" class="hand-container">
+                                <div class="hand hand-left"></div>
+                                <div class="number-reveal" id="target-number-display">0000</div>
+                                <div class="hand hand-right"></div>
+                            </div>
+                            <h3 id="host-status-msg" class="font-bold text-lg text-teal-400 mt-2">...</h3>
                         </div>
-                        <h3 id="host-status-msg" class="font-bold text-lg text-teal-400 mt-2">...</h3>
-                    </div>
-                    <div id="standard-visuals" class="text-center">
-                        <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور: <span id="current-player-name" class="bg-orange-600 text-white px-2 rounded">---</span></div>
-                        <h2 id="display-title" class="font-black text-xl leading-tight">...</h2>
-                        <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
-                    </div>
-
-                    <!-- ══════════════════════════════════════════
-                         HANGMAN HOST GAME VIEW (inside host-game-container)
-                    ══════════════════════════════════════════ -->
-                    <div id="hangman-visuals" class="hidden flex flex-col items-center w-full">
-
-                        <!-- Round + Team indicator -->
-                        <div class="flex justify-between w-full mb-3">
-                            <span id="hm-round-label" class="text-slate-400 text-sm font-bold"></span>
-                            <span id="hm-active-team-badge" class="team-badge team-a-badge">الفريق الأزرق</span>
-                        </div>
-
-                        <!-- Category -->
-                        <div class="text-slate-400 text-sm mb-1">التصنيف: <span id="hm-category" class="text-yellow-400 font-black text-base"></span></div>
-
-                        <!-- Hangman SVG (small, host) -->
-                        <svg class="hangman-svg-host mb-2" viewBox="0 0 120 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Gallows - always visible -->
-                            <line x1="10" y1="105" x2="110" y2="105" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                            <line x1="30" y1="105" x2="30" y2="5"   stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                            <line x1="30" y1="5"   x2="75" y2="5"   stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                            <line x1="75" y1="5"   x2="75" y2="18"  stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                            <!-- Body parts - shown by JS toggling display -->
-                            <circle id="hm-h-head" cx="75" cy="27" r="9" stroke="#f87171" stroke-width="3" style="display:none"/>
-                            <line   id="hm-h-body" x1="75" y1="36" x2="75" y2="65" stroke="#f87171" stroke-width="3" stroke-linecap="round" style="display:none"/>
-                            <line   id="hm-h-larm" x1="75" y1="45" x2="58" y2="58" stroke="#f87171" stroke-width="3" stroke-linecap="round" style="display:none"/>
-                            <line   id="hm-h-rarm" x1="75" y1="45" x2="92" y2="58" stroke="#f87171" stroke-width="3" stroke-linecap="round" style="display:none"/>
-                            <line   id="hm-h-lleg" x1="75" y1="65" x2="60" y2="85" stroke="#f87171" stroke-width="3" stroke-linecap="round" style="display:none"/>
-                            <line   id="hm-h-rleg" x1="75" y1="65" x2="90" y2="85" stroke="#f87171" stroke-width="3" stroke-linecap="round" style="display:none"/>
-                        </svg>
-
-                        <!-- Word slots -->
-                        <div id="hm-word-slots" class="flex flex-wrap justify-center mb-3" dir="rtl"></div>
-
-                        <!-- Wrong letters -->
-                        <div class="text-sm text-slate-400 mb-2">الأخطاء: <span id="hm-wrong-letters" class="text-red-400 font-bold tracking-widest"></span></div>
-
-                        <!-- Arabic keyboard -->
-                        <div id="hm-keyboard" class="arabic-keyboard w-full mt-1"></div>
-
-                    </div>
-                    <!-- end hangman-visuals -->
-
-                </div>
-
-                <div id="dedicated-scoreboard" class="hidden flex-1 bg-slate-900 rounded-[2rem] p-6 border-2 border-amber-500 overflow-y-auto">
-                    <h2 class="text-2xl font-black text-amber-400 text-center mb-6">ترتيب النقاط الحالي <i class="fa-solid fa-ranking-star"></i></h2>
-                    <div id="dedicated-list" class="divide-y divide-slate-800"></div>
-                </div>
-
-                <div id="host-controls" class="py-3 shrink-0">
-                    <div id="twister-scoring" class="hidden grid grid-cols-5 gap-1 mb-3">
-                        <button onclick="awardManual(2)" class="p-3 bg-red-900 rounded-lg">2</button>
-                        <button onclick="awardManual(4)" class="p-3 bg-orange-800 rounded-lg">4</button>
-                        <button onclick="awardManual(6)" class="p-3 bg-yellow-700 rounded-lg">6</button>
-                        <button onclick="awardManual(8)" class="p-3 bg-green-800 rounded-lg">8</button>
-                        <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
-                    </div>
-                    <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
-                    <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
-                        <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
-                        <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
-                    </div>
-                </div>
-                <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
-                    <div id="leaderboard-list" class="space-y-1 text-sm"></div>
-                </div>
-            </div>
-
-            <!-- Player View -->
-            <div id="player-view" class="hidden flex flex-col h-full">
-                <div class="bg-slate-800 p-3 rounded-xl flex justify-between items-center mb-2 text-sm border border-slate-700">
-                    <div class="flex items-center gap-2">
-                        <span id="p-status" class="text-teal-400 font-black italic">جاهز؟</span>
-                        <span id="progress-indicator" class="progress-badge hidden"></span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span id="player-timer" class="timer-display hidden"></span>
-                        <span id="p-score" class="font-black text-yellow-400 text-lg">0</span>
-                    </div>
-                </div>
-                <div class="flex-1 flex flex-col justify-center">
-                    <div id="player-quiz-ui" class="w-full space-y-3">
-                        <div id="player-q-text" class="text-center font-black text-xl mb-4 px-2">...</div>
-                        <div id="player-input-area" class="px-2 space-y-3 scroll-container max-h-[40vh]"></div>
-                    </div>
-                    <div id="player-memory-ui" class="hidden w-full flex flex-col items-center">
-                        <div id="digit-boxes">
-                            <div class="digit-box" data-idx="0">-</div>
-                            <div class="digit-box" data-idx="1">-</div>
-                            <div class="digit-box" data-idx="2">-</div>
-                            <div class="digit-box" data-idx="3">-</div>
+                        <div id="standard-visuals" class="text-center">
+                            <div id="player-spotlight" class="hidden text-orange-400 font-bold mb-2">الدور: <span id="current-player-name" class="bg-orange-600 text-white px-2 rounded">---</span></div>
+                            <h2 id="display-title" class="font-black text-xl leading-tight">...</h2>
+                            <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
                         </div>
                     </div>
-                    <!-- Hangman Player View -->
-                    <div id="player-hangman-ui" class="hidden w-full flex flex-col items-center px-2 text-center">
-                        <div id="p-hm-team-badge" class="team-badge team-a-badge mb-3 text-lg"></div>
-                        <div id="p-hm-status" class="text-slate-300 font-bold text-lg mb-2"></div>
-                        <div id="p-hm-word-display" class="flex flex-wrap justify-center gap-2 mb-3 dir-rtl"></div>
-                        <div id="p-hm-wrong" class="text-red-400 text-sm font-bold mb-2"></div>
+                    <div id="dedicated-scoreboard" class="hidden flex-1 bg-slate-900 rounded-[2rem] p-6 border-2 border-amber-500 overflow-y-auto">
+                        <h2 class="text-2xl font-black text-amber-400 text-center mb-6">ترتيب النقاط الحالي <i class="fa-solid fa-ranking-star"></i></h2>
+                        <div id="dedicated-list" class="divide-y divide-slate-800"></div>
+                    </div>
+                    <div id="host-controls" class="py-3 shrink-0">
+                        <div id="twister-scoring" class="hidden grid grid-cols-5 gap-1 mb-3">
+                            <button onclick="awardManual(2)" class="p-3 bg-red-900 rounded-lg">2</button>
+                            <button onclick="awardManual(4)" class="p-3 bg-orange-800 rounded-lg">4</button>
+                            <button onclick="awardManual(6)" class="p-3 bg-yellow-700 rounded-lg">6</button>
+                            <button onclick="awardManual(8)" class="p-3 bg-green-800 rounded-lg">8</button>
+                            <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
+                        </div>
+                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
+                        <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
+                            <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
+                            <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
+                        </div>
+                    </div>
+                    <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
+                        <div id="leaderboard-list" class="space-y-1 text-sm"></div>
                     </div>
                 </div>
-                <div id="keypad-container" class="hidden pb-2 shrink-0">
-                    <div class="keypad-grid">
-                        <button class="key-btn" onclick="pressKey('1')">1</button>
-                        <button class="key-btn" onclick="pressKey('2')">2</button>
-                        <button class="key-btn" onclick="pressKey('3')">3</button>
-                        <button class="key-btn" onclick="pressKey('4')">4</button>
-                        <button class="key-btn" onclick="pressKey('5')">5</button>
-                        <button class="key-btn" onclick="pressKey('6')">6</button>
-                        <button class="key-btn" onclick="pressKey('7')">7</button>
-                        <button class="key-btn" onclick="pressKey('8')">8</button>
-                        <button class="key-btn" onclick="pressKey('9')">9</button>
-                        <button class="key-btn text-red-500" onclick="pressKey('back')"><i class="fa-solid fa-delete-left"></i></button>
-                        <button class="key-btn" onclick="pressKey('0')">0</button>
-                        <button class="key-btn submit !bg-teal-600" id="mem-submit" onclick="submitMemory()">إرسال</button>
+                <div id="player-view" class="hidden flex flex-col h-full">
+                    <div class="bg-slate-800 p-3 rounded-xl flex justify-between items-center mb-2 text-sm border border-slate-700">
+                        <div class="flex items-center gap-2">
+                            <span id="p-status" class="text-teal-400 font-black italic">جاهز؟</span>
+                            <span id="progress-indicator" class="progress-badge hidden"></span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="player-timer" class="timer-display hidden"></span>
+                            <span id="p-score" class="font-black text-yellow-400 text-lg">0</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex flex-col justify-center">
+                        <div id="player-quiz-ui" class="w-full space-y-3">
+                            <div id="player-q-text" class="text-center font-black text-xl mb-4 px-2">...</div>
+                            <div id="player-input-area" class="px-2 space-y-3 scroll-container max-h-[40vh]"></div>
+                        </div>
+                        <div id="player-memory-ui" class="hidden w-full flex flex-col items-center">
+                            <div id="digit-boxes">
+                                <div class="digit-box" data-idx="0">-</div>
+                                <div class="digit-box" data-idx="1">-</div>
+                                <div class="digit-box" data-idx="2">-</div>
+                                <div class="digit-box" data-idx="3">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="keypad-container" class="hidden pb-2 shrink-0">
+                        <div class="keypad-grid">
+                            <button class="key-btn" onclick="pressKey('1')">1</button>
+                            <button class="key-btn" onclick="pressKey('2')">2</button>
+                            <button class="key-btn" onclick="pressKey('3')">3</button>
+                            <button class="key-btn" onclick="pressKey('4')">4</button>
+                            <button class="key-btn" onclick="pressKey('5')">5</button>
+                            <button class="key-btn" onclick="pressKey('6')">6</button>
+                            <button class="key-btn" onclick="pressKey('7')">7</button>
+                            <button class="key-btn" onclick="pressKey('8')">8</button>
+                            <button class="key-btn" onclick="pressKey('9')">9</button>
+                            <button class="key-btn text-red-500" onclick="pressKey('back')"><i class="fa-solid fa-delete-left"></i></button>
+                            <button class="key-btn" onclick="pressKey('0')">0</button>
+                            <button class="key-btn submit !bg-teal-600" id="mem-submit" onclick="submitMemory()">إرسال</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
-</div>
+        </main>
+    </div>
 
-<script type="module">
-    import { gameData } from './questions.js';
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <script type="module">
+        import { gameData } from './questions.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
-        authDomain: "family-games-app.firebaseapp.com",
-        databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "family-games-app",
-        storageBucket: "family-games-app.firebasestorage.app",
-        messagingSenderId: "290150126558",
-        appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
-    };
-    const fbApp = initializeApp(firebaseConfig);
-    const db = getDatabase(fbApp);
-    const liveRef   = ref(db, 'live_game');
-    const scoresRef = ref(db, 'scores');
-    const answersRef= ref(db, 'current_answers');
-    const mirrorRef = ref(db, 'tv_mirror');
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
+            authDomain: "family-games-app.firebaseapp.com",
+            databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "family-games-app",
+            storageBucket: "family-games-app.firebasestorage.app",
+            messagingSenderId: "290150126558",
+            appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
+        };
+        const fbApp = initializeApp(firebaseConfig);
+        const db = getDatabase(fbApp);
+        const liveRef = ref(db, 'live_game');
+        const scoresRef = ref(db, 'scores');
+        const answersRef = ref(db, 'current_answers');
+        const mirrorRef = ref(db, 'tv_mirror');
 
-    let myRole = '', myName = '', currentSection = '', currentType = '';
-    let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
-    let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
-    let gameActive = false;
-    let playerTimerInterval = null;
-    let qrGenerated = false;
-    let hasSubmittedMemory = false;
-    let currentTargetNumber = '';
+        let myRole = '', myName = '', currentSection = '', currentType = '';
+        let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
+        let playersList = [], timerInterval = null, memoryInput = "", roundStartTime = 0;
+        let gameActive = false;
+        let playerTimerInterval = null;
+        let qrGenerated = false;
+        let hasSubmittedMemory = false;
+        let currentTargetNumber = '';
 
-    // ── Hangman State ──
-    let hmTeamA = [], hmTeamB = [];           // player name arrays
-    let hmCurrentRound = 0;                   // 0-5  (6 rounds total)
-    let hmCurrentWord = '';
-    let hmCurrentCategory = '';
-    let hmRevealedLetters = new Set();        // correctly guessed letters
-    let hmWrongLetters = [];                  // wrong guesses
-    let hmWords = [];                         // 6 randomly picked words for session
-    const HM_MAX_WRONG = 6;
-    const HM_TOTAL_ROUNDS = 6;
-    const HM_POINTS = 5;
-
-    // Arabic alphabet for keyboard
-    const ARABIC_LETTERS = [
-        'ا','ب','ت','ث','ج','ح','خ',
-        'د','ذ','ر','ز','س','ش','ص',
-        'ض','ط','ظ','ع','غ','ف','ق',
-        'ك','ل','م','ن','ه','و','ي'
-    ];
-
-    // Hangman SVG part IDs in order of wrong guesses
-    const HM_PARTS = ['hm-h-head','hm-h-body','hm-h-larm','hm-h-rarm','hm-h-lleg','hm-h-rleg'];
-
-    // ─────────────────────────────────────────────
-    //  EXISTING LOGIC (unchanged)
-    // ─────────────────────────────────────────────
-
-    window.addEventListener('beforeunload', (e) => {
-        if (gameActive && myRole === 'player') {
-            e.preventDefault();
-            e.returnValue = "هل أنت متأكد من مغادرة الصفحة؟ قد تفقد تقدمك في اللعبة.";
-        }
-    });
-
-    document.getElementById('player-name-input')?.addEventListener('input', function() {
-        document.getElementById('name-error').classList.add('hidden');
-        this.classList.remove('border-red-500');
-    });
-
-    window.setRole = async (role) => {
-        myRole = role;
-        const errorDiv   = document.getElementById('name-error');
-        const inputField = document.getElementById('player-name-input');
-        if (role === 'player') {
-            myName = inputField.value.trim();
-            if (!myName) {
-                errorDiv.textContent = "يرجى إدخال اسمك أولا";
-                errorDiv.classList.remove('hidden');
-                inputField.classList.add('border-red-500', 'shake');
-                setTimeout(() => inputField.classList.remove('shake'), 500);
-                return;
+        window.addEventListener('beforeunload', (e) => {
+            if (gameActive && myRole === 'player') {
+                e.preventDefault();
+                e.returnValue = "هل أنت متأكد من مغادرة الصفحة؟ قد تفقد تقدمك في اللعبة.";
+                return "هل أنت متأكد من مغادرة الصفحة؟ قد تفقد تقدمك في اللعبة.";
             }
-            const snapshot = await get(scoresRef);
-            const scores = snapshot.val() || {};
-            if (scores[myName] !== undefined) {
-                errorDiv.textContent = "هذا الاسم مستخدم بالفعل، اختر اسما آخر";
-                errorDiv.classList.remove('hidden');
-                inputField.classList.add('border-red-500', 'shake');
-                setTimeout(() => inputField.classList.remove('shake'), 500);
-                return;
-            }
-            errorDiv.classList.add('hidden');
-            inputField.classList.remove('border-red-500');
-            set(ref(db, `scores/${myName}`), 0);
-        }
-        document.getElementById('setup-screen').classList.add('hidden');
-        document.getElementById('global-home-btn').classList.remove('hidden');
-        if (role === 'host') {
-            remove(liveRef); remove(answersRef);
-            document.getElementById('section-select').classList.remove('hidden');
-            onValue(scoresRef, (snap) => {
-                if (snap.val()) {
-                    playersList = Object.keys(snap.val());
-                    updateLeaderboardUI(snap.val());
+        });
+
+        document.getElementById('player-name-input')?.addEventListener('input', function() {
+            document.getElementById('name-error').classList.add('hidden');
+            this.classList.remove('border-red-500');
+        });
+
+        window.setRole = async (role) => {
+            myRole = role;
+            const errorDiv = document.getElementById('name-error');
+            const inputField = document.getElementById('player-name-input');
+            
+            if (role === 'player') {
+                myName = inputField.value.trim();
+                if (!myName) {
+                    errorDiv.textContent = "يرجى إدخال اسمك أولا";
+                    errorDiv.classList.remove('hidden');
+                    inputField.classList.add('border-red-500', 'shake');
+                    setTimeout(() => inputField.classList.remove('shake'), 500);
+                    return;
                 }
+                const snapshot = await get(scoresRef);
+                const scores = snapshot.val() || {};
+                if (scores[myName] !== undefined) {
+                    errorDiv.textContent = "هذا الاسم مستخدم بالفعل، اختر اسما آخر";
+                    errorDiv.classList.remove('hidden');
+                    inputField.classList.add('border-red-500', 'shake');
+                    setTimeout(() => inputField.classList.remove('shake'), 500);
+                    return;
+                }
+                errorDiv.classList.add('hidden');
+                inputField.classList.remove('border-red-500');
+                set(ref(db, `scores/${myName}`), 0);
+            }
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('global-home-btn').classList.remove('hidden');
+            if (role === 'host') {
+                remove(liveRef); remove(answersRef);
+                document.getElementById('section-select').classList.remove('hidden');
+                onValue(scoresRef, (snap) => {
+                    if(snap.val()) {
+                        playersList = Object.keys(snap.val());
+                        updateLeaderboardUI(snap.val());
+                    }
+                });
+            } else {
+                document.getElementById('game-play').classList.remove('hidden');
+                document.getElementById('player-view').classList.remove('hidden');
+                listenForGame();
+            }
+        };
+
+        window.showJoinQR = () => {
+            const modal = document.getElementById('qr-modal');
+            const container = document.getElementById('qrcode-container');
+            const urlDisplay = document.getElementById('qr-url-display');
+            
+            modal.classList.remove('hidden');
+            
+            if (!qrGenerated) {
+                container.innerHTML = '';
+                const url = window.location.href.split('?')[0];
+                urlDisplay.textContent = url;
+                
+                new QRCode(container, {
+                    text: url,
+                    width: 200,
+                    height: 200,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+                qrGenerated = true;
+            }
+            
+            update(mirrorRef, { 
+                qrVisible: true, 
+                qrUrl: window.location.href.split('?')[0],
+                ts: Date.now() 
             });
-        } else {
+        };
+
+        window.dismissQR = () => {
+            document.getElementById('qr-modal').classList.add('hidden');
+            update(mirrorRef, { qrVisible: false, ts: Date.now() });
+        };
+
+        window.toggleScoreboardOnly = () => {
+            document.getElementById('section-select').classList.add('hidden');
             document.getElementById('game-play').classList.remove('hidden');
-            document.getElementById('player-view').classList.remove('hidden');
-            listenForGame();
+            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('host-game-container').classList.add('hidden');
+            document.getElementById('host-top-bar').classList.add('hidden');
+            document.getElementById('leaderboard-ui').classList.add('hidden');
+            document.getElementById('action-btn').classList.add('hidden');
+            document.getElementById('post-game-controls').classList.add('hidden');
+            document.getElementById('twister-scoring').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            
+            const scoreArea = document.getElementById('dedicated-scoreboard');
+            scoreArea.classList.remove('hidden');
+            
+            document.getElementById('display-title').innerText = "";
+            document.getElementById('display-content').innerHTML = "";
+            
+            get(scoresRef).then(snap => {
+                const scores = snap.val() || {};
+                const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+                document.getElementById('dedicated-list').innerHTML = sorted.map(([n,v]) => `
+                    <div class="score-row">
+                        <span class="font-bold text-slate-300">${n}</span>
+                        <span class="font-black text-amber-400">${Math.round(v)}</span>
+                    </div>
+                `).join('');
+                syncTV();
+            });
+        };
+
+        window.backToGameMenu = () => {
+            if(myRole !== 'host') return;
+            gameActive = false;
+            dismissQR();
+            remove(liveRef); remove(answersRef);
+            document.getElementById('host-view').classList.add('hidden');
+            document.getElementById('game-play').classList.add('hidden');
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            document.getElementById('section-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
+            document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-top-bar').classList.remove('hidden');
+            
+            set(mirrorRef, { 
+                showWelcome: true,
+                ts: Date.now(), 
+                qrVisible: false 
+            });
+        };
+
+        window.goHome = () => { 
+            gameActive = false;
+            if(myRole === 'host') { 
+                set(mirrorRef, { 
+                    showWelcome: true,
+                    ts: Date.now()
+                });
+                remove(liveRef); 
+                remove(scoresRef); 
+                remove(mirrorRef); 
+            } 
+            location.reload(); 
+        };
+
+        window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
+        window.verifyHost = () => { 
+            if(document.getElementById('host-pin').value === '1234') { 
+                document.getElementById('host-auth').classList.add('hidden'); 
+                setRole('host'); 
+            } else { alert("خطأ!"); } 
+        };
+
+        window.chooseSection = (s) => {
+            currentSection = s;
+            document.getElementById('section-select').classList.add('hidden');
+            document.getElementById('type-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            const menu = document.getElementById('brain-sub-menu');
+            menu.innerHTML = (s === 'adults') ? 
+                `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">ثقافة عامة <i class="fa-solid fa-earth-africa"></i></button>
+                 <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">إسلاميات <i class="fa-solid fa-kaaba"></i></button>
+                 <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">الذاكرة <i class="fa-solid fa-brain"></i></button>` :
+                `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black text-lg text-white">ذكاء الأطفال <i class="fa-solid fa-lightbulb"></i></button>`;
+        };
+
+        window.showMemoryDiff = () => {
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.remove('hidden');
+        };
+
+        function getRandomSet(arr, size) {
+            let shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, size);
         }
-    };
 
-    window.showJoinQR = () => {
-        const modal = document.getElementById('qr-modal');
-        const container = document.getElementById('qrcode-container');
-        const urlDisplay = document.getElementById('qr-url-display');
-        modal.classList.remove('hidden');
-        if (!qrGenerated) {
-            container.innerHTML = '';
-            const url = window.location.href.split('?')[0];
-            urlDisplay.textContent = url;
-            new QRCode(container, { text: url, width: 200, height: 200, colorDark:"#000000", colorLight:"#ffffff", correctLevel: QRCode.CorrectLevel.M });
-            qrGenerated = true;
+        window.setupQuestions = (type) => {
+            currentType = 'brain'; currentIndex = -1;
+            lastGameConfig = { section: currentSection, type: 'brain', pool: type };
+            currentQuestions = getRandomSet(gameData[currentSection][type], 7);
+            showHostUI();
+        };
+
+        window.setupTwisters = () => {
+            currentType = 'twister'; currentIndex = -1;
+            lastGameConfig = { section: 'adults', type: 'twister' };
+            currentQuestions = getRandomSet(gameData.adults.twisters, 7);
+            showHostUI();
+        };
+
+        window.startMemory = (diff) => {
+            currentType = 'memory'; currentIndex = -1;
+            lastGameConfig = { type: 'memory', diff: diff };
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            currentQuestions = Array.from({length: 7}, () => Math.floor(1000 + Math.random() * 9000).toString());
+            showHostUI();
+        };
+
+        function showHostUI() {
+            document.getElementById('type-select').classList.add('hidden');
+            document.getElementById('memory-difficulty').classList.add('hidden');
+            document.getElementById('game-play').classList.remove('hidden');
+            document.getElementById('host-view').classList.remove('hidden');
+            document.getElementById('display-title').innerText = "الجولة القادمة";
+            document.getElementById('display-content').innerText = "استعدوا للبدء!";
+            document.getElementById('action-btn').classList.remove('hidden');
+            document.getElementById('post-game-controls').classList.add('hidden');
+            document.getElementById('twister-scoring').classList.add('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
+            document.getElementById('host-top-bar').classList.remove('hidden');
+            document.getElementById('standard-visuals').classList.remove('hidden');
+            document.getElementById('memory-visuals').classList.add('hidden');
+            document.getElementById('player-spotlight').classList.add('hidden');
+            
+            document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
+            document.getElementById('host-timer-text').innerText = "";
+            
+            // FIX: Force immediate sync with welcome cleared and fresh state
+            set(mirrorRef, {  
+                mainHTML: document.getElementById('host-game-container').innerHTML,
+                mainClasses: document.getElementById('host-game-container').className,
+                scoreHTML: "",
+                scoreVisible: false,
+                topBarHTML: document.getElementById('host-top-bar').innerHTML,
+                timerText: "",
+                counterText: "اضغط التالي للبدء",
+                showWelcome: false,  // Explicitly false to exit welcome mode
+                qrVisible: false,
+                ts: Date.now()
+            });
         }
-        update(mirrorRef, { qrVisible: true, qrUrl: window.location.href.split('?')[0], ts: Date.now() });
-    };
 
-    window.dismissQR = () => {
-        document.getElementById('qr-modal').classList.add('hidden');
-        update(mirrorRef, { qrVisible: false, ts: Date.now() });
-    };
+        window.triggerNext = async () => {
+            if (currentIndex >= 6) return announceWinner();
+            currentIndex++;
+            
+            document.getElementById('host-timer-text').innerText = "";
+            syncTV();
+            
+            await remove(answersRef);
+            hasSubmittedMemory = false;
+            memoryInput = "";
+            resetMemoryUI();
+            
+            clearInterval(timerInterval);
+            
+            if (currentIndex >= currentQuestions.length) return announceWinner();
+            const item = currentQuestions[currentIndex];
+            const duration = document.getElementById('timer-enabled').checked ? 15 : 0;
+            const baseData = {
+                type: currentType,
+                content: item,
+                round: currentIndex + 1,
+                totalRounds: 7,
+                status: 'playing',
+                startTime: Date.now()
+            };
+            
+            if (currentType === 'memory') {
+                await handleMemoryRound(item);
+            } else {
+                let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
+                if (duration > 0) {
+                    baseData.endTime = Date.now() + (duration * 1000);
+                    baseData.activePlayer = pSpot;
+                    await set(liveRef, baseData);
+                    renderHostStandard(item, pSpot);
+                    startTimer(duration);
+                } else {
+                    baseData.timerEnabled = false;
+                    baseData.activePlayer = pSpot;
+                    await set(liveRef, baseData);
+                    renderHostStandard(item, pSpot);
+                }
+            }
+            
+            syncTV();
+        };
 
-    window.toggleScoreboardOnly = () => {
-        document.getElementById('section-select').classList.add('hidden');
-        document.getElementById('game-play').classList.remove('hidden');
-        document.getElementById('host-view').classList.remove('hidden');
-        document.getElementById('host-game-container').classList.add('hidden');
-        document.getElementById('host-top-bar').classList.add('hidden');
-        document.getElementById('leaderboard-ui').classList.add('hidden');
-        document.getElementById('action-btn').classList.add('hidden');
-        document.getElementById('post-game-controls').classList.add('hidden');
-        document.getElementById('twister-scoring').classList.add('hidden');
-        document.getElementById('host-back-btn').classList.remove('hidden');
-        const scoreArea = document.getElementById('dedicated-scoreboard');
-        scoreArea.classList.remove('hidden');
-        document.getElementById('display-title').innerText = "";
-        document.getElementById('display-content').innerHTML = "";
-        get(scoresRef).then(snap => {
+        async function handleMemoryRound(target) {
+            const diff = lastGameConfig.diff;
+            const config = { 
+                easy: [3000, 10],
+                medium: [2000, 8],
+                hard: [1500, 6]
+            }[diff];
+            
+            currentTargetNumber = target;
+            
+            document.getElementById('standard-visuals').classList.add('hidden');
+            document.getElementById('memory-visuals').classList.remove('hidden');
+            document.getElementById('target-number-display').innerText = target;
+            document.getElementById('answer-counter').innerText = `السؤال ${currentIndex + 1} من 7`;
+            
+            document.getElementById('host-timer-text').innerText = "";
+            syncTV();
+            
+            let cd = 3;
+            document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
+            syncTV();
+            
+            await set(liveRef, { 
+                type: 'memory', 
+                status: 'countdown', 
+                target: target,
+                round: currentIndex + 1, 
+                totalRounds: 7 
+            });
+            
+            const countInt = setInterval(async () => {
+                cd--;
+                if(cd > 0) {
+                    document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
+                    syncTV();
+                } else {
+                    clearInterval(countInt);
+                    document.getElementById('hand-wrapper').classList.add('open');
+                    await set(liveRef, { 
+                        type: 'memory', 
+                        status: 'reveal', 
+                        target: target, 
+                        duration: config[0], 
+                        round: currentIndex + 1, 
+                        totalRounds: 7 
+                    });
+                    syncTV();
+                    
+                    setTimeout(async () => {
+                        document.getElementById('hand-wrapper').classList.remove('open');
+                        document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
+                        
+                        const endTime = Date.now() + (config[1] * 1000);
+                        await set(liveRef, { 
+                            type: 'memory', 
+                            status: 'input', 
+                            target: target, 
+                            duration: config[1], 
+                            startTime: Date.now(), 
+                            endTime: endTime, 
+                            round: currentIndex + 1, 
+                            totalRounds: 7 
+                        });
+                        startTimer(config[1], true);
+                        syncTV();
+                    }, config[0]);
+                }
+            }, 1000);
+        }
+
+        function startTimer(sec, isMemory = false) {
+            let remain = sec;
+            const timerEl = document.getElementById('host-timer-text');
+            const counterEl = document.getElementById('answer-counter');
+            
+            if(currentIndex >= 0) {
+                counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
+            }
+            
+            timerEl.classList.remove('hidden');
+            timerEl.style.color = remain <= 5 ? '#ef4444' : '#f87171';
+            
+            timerInterval = setInterval(async () => {
+                timerEl.innerText = remain;
+                if(remain <= 5) timerEl.style.color = '#ef4444';
+                
+                if (remain-- <= 0) {
+                    clearInterval(timerInterval);
+                    timerEl.innerText = "انتهى";
+                    
+                    if (isMemory) {
+                        await set(liveRef, { status: 'scoring' });
+                        document.getElementById('host-status-msg').innerText = "جاري جمع الإجابات...";
+                        syncTV();
+                        
+                        setTimeout(() => {
+                            showMemoryResults();
+                        }, 1500);
+                    }
+                    if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
+                }
+                syncTV();
+            }, 1000);
+        }
+
+        async function showMemoryResults() {
+            const target = currentQuestions[currentIndex];
+            const ansSnap = await get(answersRef);
+            const answers = ansSnap.val() || {};
+            
+            const scoresSnap = await get(scoresRef);
+            const allScores = scoresSnap.val() || {};
+            const updates = {};
+            
+            let displayHtml = `<div class='space-y-2 text-lg'>`;
+            
+            for(let pName of playersList) {
+                const pData = answers[pName] || { val: "----" };
+                let score = 0, coloredDigits = "";
+                
+                for(let i=0; i<4; i++) {
+                    const char = pData.val[i] || "-";
+                    if(char === target[i]) { 
+                        score += 2; 
+                        coloredDigits += `<span class="text-green-400 mx-1 font-bold">${char}</span>`; 
+                    } else { 
+                        coloredDigits += `<span class="text-red-400 line-through mx-1">${char}</span>`; 
+                    }
+                }
+                if(score === 8) score = 10;
+                
+                const currentScore = allScores[pName] || 0;
+                updates[`scores/${pName}`] = currentScore + score;
+                
+                displayHtml += `
+                    <div class="flex justify-between items-center border-b border-slate-700 py-2">
+                        <span class="font-bold text-slate-300">${pName}</span>
+                        <div class="flex items-center gap-4">
+                            <span dir="ltr" class="font-mono text-xl">${coloredDigits}</span>
+                            <span class="text-yellow-400 font-black text-xl">+${score}</span>
+                        </div>
+                    </div>`;
+            }
+            
+            if (Object.keys(updates).length > 0) {
+                await update(ref(db), updates);
+            }
+            
+            document.getElementById('display-content').innerHTML = displayHtml + `</div>`;
+            document.getElementById('display-title').innerText = "النتائج";
+            document.getElementById('answer-counter').innerText = `انتهت الجولة ${currentIndex + 1}`;
+            document.getElementById('host-status-msg').innerText = "انتهى الوقت!";
+            
+            syncTV();
+            if (currentIndex >= 6) setTimeout(announceWinner, 3000);
+        }
+
+        function updateLeaderboardUI(scores) {
+            const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
+            document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between'><span>${n}</span><span class='font-bold'>${Math.round(v)}</span></div>`).join('');
+        }
+
+        function renderHostStandard(item, pSpot) {
+            const title = document.getElementById('display-title');
+            const content = document.getElementById('display-content');
+            const counterEl = document.getElementById('answer-counter');
+            
+            counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
+            
+            document.getElementById('memory-visuals').classList.add('hidden');
+            document.getElementById('standard-visuals').classList.remove('hidden');
+            
+            if (currentType === 'brain') {
+                title.innerText = item.q;
+                content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-xl mb-1 border border-slate-600 font-bold'>${o}</div>`).join('');
+            } else {
+                title.innerText = "كررها 5 مرات بسرعة!";
+                content.innerHTML = `<p class='text-3xl text-teal-400 font-black'>${item}</p>`;
+                document.getElementById('current-player-name').innerText = pSpot;
+                document.getElementById('player-spotlight').classList.remove('hidden');
+            }
+            syncTV();
+        }
+
+        onValue(answersRef, (snap) => {
+            const count = snap.val() ? Object.keys(snap.val()).length : 0;
+            document.getElementById('answer-counter').innerText = `المشاركات: ${count} / ${playersList.length}`;
+            syncTV();
+        });
+
+        async function announceWinner() {
+            gameActive = false;
+            const snap = await get(scoresRef);
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-            document.getElementById('dedicated-list').innerHTML = sorted.map(([n,v]) => `
-                <div class="score-row"><span class="font-bold text-slate-300">${n}</span><span class="font-black text-amber-400">${Math.round(v)}</span></div>
-            `).join('');
+            const winner = sorted[0] ? sorted[0][0] : "---";
+            set(liveRef, { status: 'finished', winner: winner });
+            update(mirrorRef, { trigger_confetti: Date.now() });
+            document.getElementById('display-title').innerText = "بطل الجلسة الحالية";
+            document.getElementById('display-content').innerHTML = `<h1 class='text-5xl text-yellow-400 font-black mb-4'>${winner}</h1>`;
+            document.getElementById('post-game-controls').classList.remove('hidden');
+            document.getElementById('twister-scoring').classList.add('hidden');
+            document.getElementById('action-btn').classList.add('hidden');
+            document.getElementById('answer-counter').innerText = "انتهت اللعبة";
+            document.getElementById('host-timer-text').innerText = "";
             syncTV();
-        });
-    };
-
-    window.backToGameMenu = () => {
-        if (myRole !== 'host') return;
-        gameActive = false;
-        dismissQR();
-        remove(liveRef); remove(answersRef);
-        document.getElementById('host-view').classList.add('hidden');
-        document.getElementById('game-play').classList.add('hidden');
-        document.getElementById('type-select').classList.add('hidden');
-        document.getElementById('memory-difficulty').classList.add('hidden');
-        document.getElementById('hangman-team-setup').classList.add('hidden');
-        document.getElementById('section-select').classList.remove('hidden');
-        document.getElementById('host-back-btn').classList.add('hidden');
-        document.getElementById('host-game-container').classList.remove('hidden');
-        document.getElementById('dedicated-scoreboard').classList.add('hidden');
-        document.getElementById('host-top-bar').classList.remove('hidden');
-        set(mirrorRef, { showWelcome: true, ts: Date.now(), qrVisible: false });
-    };
-
-    window.goHome = () => {
-        gameActive = false;
-        if (myRole === 'host') {
-            set(mirrorRef, { showWelcome: true, ts: Date.now() });
-            remove(liveRef); remove(scoresRef); remove(mirrorRef);
-        }
-        location.reload();
-    };
-
-    window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
-    window.verifyHost  = () => {
-        if (document.getElementById('host-pin').value === '1234') {
-            document.getElementById('host-auth').classList.add('hidden');
-            setRole('host');
-        } else { alert("خطأ!"); }
-    };
-
-    window.chooseSection = (s) => {
-        currentSection = s;
-        document.getElementById('section-select').classList.add('hidden');
-        document.getElementById('type-select').classList.remove('hidden');
-        document.getElementById('host-back-btn').classList.remove('hidden');
-        const menu = document.getElementById('brain-sub-menu');
-        menu.innerHTML = (s === 'adults') ?
-            `<button onclick="setupQuestions('culture')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">ثقافة عامة <i class="fa-solid fa-earth-africa"></i></button>
-             <button onclick="setupQuestions('islamic')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">إسلاميات <i class="fa-solid fa-kaaba"></i></button>
-             <button onclick="showMemoryDiff()" class="w-full p-5 bg-indigo-700 rounded-2xl font-black mb-3 text-lg">الذاكرة <i class="fa-solid fa-brain"></i></button>
-             <button onclick="setupHangman()" class="w-full p-5 bg-emerald-700 rounded-2xl font-black mb-3 text-lg border-b-4 border-emerald-900">المشنقة <i class="fa-solid fa-person-falling-burst"></i></button>` :
-            `<button onclick="setupQuestions('brain')" class="w-full p-5 bg-indigo-700 rounded-2xl font-black text-lg text-white">ذكاء الأطفال <i class="fa-solid fa-lightbulb"></i></button>`;
-    };
-
-    window.showMemoryDiff = () => {
-        document.getElementById('type-select').classList.add('hidden');
-        document.getElementById('memory-difficulty').classList.remove('hidden');
-    };
-
-    function getRandomSet(arr, size) {
-        return [...arr].sort(() => 0.5 - Math.random()).slice(0, size);
-    }
-
-    window.setupQuestions = (type) => {
-        currentType = 'brain'; currentIndex = -1;
-        lastGameConfig = { section: currentSection, type: 'brain', pool: type };
-        currentQuestions = getRandomSet(gameData[currentSection][type], 7);
-        showHostUI();
-    };
-
-    window.setupTwisters = () => {
-        currentType = 'twister'; currentIndex = -1;
-        lastGameConfig = { section: 'adults', type: 'twister' };
-        currentQuestions = getRandomSet(gameData.adults.twisters, 7);
-        showHostUI();
-    };
-
-    window.startMemory = (diff) => {
-        currentType = 'memory'; currentIndex = -1;
-        lastGameConfig = { type: 'memory', diff };
-        document.getElementById('memory-difficulty').classList.add('hidden');
-        currentQuestions = Array.from({length: 7}, () => Math.floor(1000 + Math.random() * 9000).toString());
-        showHostUI();
-    };
-
-    // ─────────────────────────────────────────────
-    //  HANGMAN: SETUP & TEAM BUILDER
-    // ─────────────────────────────────────────────
-
-    window.setupHangman = () => {
-        currentType = 'hangman';
-        document.getElementById('type-select').classList.add('hidden');
-
-        // Pick 6 random words
-        hmWords = getRandomSet(gameData.adults.hangman, HM_TOTAL_ROUNDS);
-        hmCurrentRound = 0;
-        hmTeamA = []; hmTeamB = [];
-
-        // Split players into two teams
-        const shuffled = [...playersList].sort(() => 0.5 - Math.random());
-        shuffled.forEach((p, i) => {
-            if (i % 2 === 0) hmTeamA.push(p);
-            else              hmTeamB.push(p);
-        });
-
-        renderTeamSetup();
-        document.getElementById('hangman-team-setup').classList.remove('hidden');
-    };
-
-    function renderTeamSetup() {
-        const listA = document.getElementById('team-a-list');
-        const listB = document.getElementById('team-b-list');
-
-        listA.innerHTML = hmTeamA.map(p => `
-            <div onclick="swapPlayer('${p}','A')" class="flex items-center justify-between bg-blue-900 border border-blue-400 rounded-xl px-3 py-2 cursor-pointer hover:bg-blue-800 transition">
-                <span class="font-bold">${p}</span>
-                <span class="text-blue-300 text-xs">نقل ◀</span>
-            </div>`).join('') || `<div class="text-slate-500 text-sm text-center py-2">فارغ</div>`;
-
-        listB.innerHTML = hmTeamB.map(p => `
-            <div onclick="swapPlayer('${p}','B')" class="flex items-center justify-between bg-orange-900 border border-orange-400 rounded-xl px-3 py-2 cursor-pointer hover:bg-orange-800 transition">
-                <span class="font-bold">${p}</span>
-                <span class="text-orange-300 text-xs">▶ نقل</span>
-            </div>`).join('') || `<div class="text-slate-500 text-sm text-center py-2">فارغ</div>`;
-    }
-
-    window.swapPlayer = (name, currentTeam) => {
-        if (currentTeam === 'A') {
-            hmTeamA = hmTeamA.filter(p => p !== name);
-            hmTeamB.push(name);
-        } else {
-            hmTeamB = hmTeamB.filter(p => p !== name);
-            hmTeamA.push(name);
-        }
-        renderTeamSetup();
-    };
-
-    window.confirmTeamsAndStartHangman = () => {
-        document.getElementById('hangman-team-setup').classList.add('hidden');
-        lastGameConfig = { type: 'hangman' };
-        showHostUI();
-        // Override action button text for hangman
-        document.getElementById('action-btn').innerText = "بدء الجولة";
-        // Push team info to Firebase so players can see their team
-        set(ref(db, 'hangman_teams'), { teamA: hmTeamA, teamB: hmTeamB });
-    };
-
-    // ─────────────────────────────────────────────
-    //  HANGMAN: ROUND LOGIC
-    // ─────────────────────────────────────────────
-
-    function startHangmanRound() {
-        if (hmCurrentRound >= HM_TOTAL_ROUNDS) {
-            announceWinner();
-            return;
+            confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         }
 
-        const wordObj = hmWords[hmCurrentRound];
-        hmCurrentWord     = wordObj.word;
-        hmCurrentCategory = wordObj.category;
-        hmRevealedLetters = new Set();
-        hmWrongLetters    = [];
-
-        // Which team is active this round (0-indexed: even = A, odd = B)
-        const activeTeam   = hmCurrentRound % 2 === 0 ? 'A' : 'B';
-        const activeList   = activeTeam === 'A' ? hmTeamA : hmTeamB;
-        // Which player within team takes first guess (rotate by round pair)
-        const pairRound    = Math.floor(hmCurrentRound / 2); // 0,1,2
-        const activePlayer = activeList[pairRound % activeList.length] || activeList[0] || "---";
-
-        document.getElementById('answer-counter').innerText = `جولة ${hmCurrentRound + 1} من ${HM_TOTAL_ROUNDS}`;
-        document.getElementById('host-timer-text').innerText = "";
-
-        // Show hangman visuals
-        document.getElementById('standard-visuals').classList.add('hidden');
-        document.getElementById('memory-visuals').classList.add('hidden');
-        document.getElementById('hangman-visuals').classList.remove('hidden');
-
-        // Update round label & team badge
-        document.getElementById('hm-round-label').innerText = `جولة ${hmCurrentRound + 1} / ${HM_TOTAL_ROUNDS}`;
-        const badge = document.getElementById('hm-active-team-badge');
-        if (activeTeam === 'A') {
-            badge.textContent = "الفريق الأزرق 🔵";
-            badge.className = "team-badge team-a-badge";
-        } else {
-            badge.textContent = "الفريق البرتقالي 🟠";
-            badge.className = "team-badge team-b-badge";
-        }
-
-        document.getElementById('hm-category').innerText = hmCurrentCategory;
-        renderHangmanParts(0);
-        renderWordSlots();
-        renderHangmanKeyboard();
-        document.getElementById('hm-wrong-letters').innerText = "";
-
-        // Push to Firebase for players
-        set(liveRef, {
-            type: 'hangman',
-            status: 'playing',
-            round: hmCurrentRound + 1,
-            totalRounds: HM_TOTAL_ROUNDS,
-            category: hmCurrentCategory,
-            wordLength: hmCurrentWord.length,
-            revealed: [],
-            wrongLetters: [],
-            activeTeam,
-            activePlayer,
-            teamA: hmTeamA,
-            teamB: hmTeamB
-        });
-
-        // Push TV mirror
-        syncHangmanToTV();
-    }
-
-    function renderWordSlots() {
-        const container = document.getElementById('hm-word-slots');
-        container.innerHTML = hmCurrentWord.split('').map((ch, i) => {
-            const shown = hmRevealedLetters.has(ch);
-            return `<div class="hangman-letter-slot ${shown ? 'revealed' : ''}">${shown ? ch : ''}</div>`;
-        }).join('');
-    }
-
-    function renderHangmanParts(wrongCount) {
-        HM_PARTS.forEach((id, i) => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = i < wrongCount ? 'block' : 'none';
-        });
-    }
-
-    function renderHangmanKeyboard() {
-        const kb = document.getElementById('hm-keyboard');
-        kb.innerHTML = ARABIC_LETTERS.map(letter => {
-            let cls = 'ar-key';
-            if (hmRevealedLetters.has(letter)) cls += ' used-correct';
-            else if (hmWrongLetters.includes(letter)) cls += ' used-wrong';
-            return `<button class="${cls}" onclick="hostGuessLetter('${letter}')">${letter}</button>`;
-        }).join('');
-    }
-
-    window.hostGuessLetter = (letter) => {
-        if (hmRevealedLetters.has(letter) || hmWrongLetters.includes(letter)) return;
-
-        const isCorrect = hmCurrentWord.includes(letter);
-
-        if (isCorrect) {
-            hmRevealedLetters.add(letter);
-        } else {
-            hmWrongLetters.push(letter);
-        }
-
-        renderWordSlots();
-        renderHangmanParts(hmWrongLetters.length);
-        renderHangmanKeyboard();
-        document.getElementById('hm-wrong-letters').innerText = hmWrongLetters.join('  ');
-
-        const wordSolved = hmCurrentWord.split('').every(ch => hmRevealedLetters.has(ch));
-        const gameLost   = hmWrongLetters.length >= HM_MAX_WRONG;
-
-        // Update Firebase state
-        const activeTeam = hmCurrentRound % 2 === 0 ? 'A' : 'B';
-        update(liveRef, {
-            revealed: [...hmRevealedLetters],
-            wrongLetters: hmWrongLetters,
-            lastLetter: letter,
-            lastCorrect: isCorrect,
-            status: wordSolved ? 'won' : gameLost ? 'lost' : 'playing'
-        });
-
-        syncHangmanToTV();
-
-        if (wordSolved) {
-            setTimeout(() => endHangmanRound(true, activeTeam), 800);
-        } else if (gameLost) {
-            // Reveal full word
-            hmCurrentWord.split('').forEach(ch => hmRevealedLetters.add(ch));
-            renderWordSlots();
-            syncHangmanToTV();
-            setTimeout(() => endHangmanRound(false, activeTeam), 1200);
-        }
-    };
-
-    async function endHangmanRound(won, activeTeam) {
-        const winningTeam = won ? activeTeam : null;
-        const teamPlayers = activeTeam === 'A' ? hmTeamA : hmTeamB;
-
-        document.getElementById('answer-counter').innerText =
-            won ? `✓ فاز الفريق ${activeTeam === 'A' ? 'الأزرق' : 'البرتقالي'}!` : `✗ انتهت المحاولات! الكلمة: ${hmCurrentWord}`;
-
-        if (won && teamPlayers.length > 0) {
-            const scoresSnap = await get(scoresRef);
-            const allScores  = scoresSnap.val() || {};
-            const updates    = {};
-            teamPlayers.forEach(p => {
-                updates[`scores/${p}`] = (allScores[p] || 0) + HM_POINTS;
-            });
-            await update(ref(db), updates);
-        }
-
-        update(liveRef, {
-            status: won ? 'won' : 'lost',
-            wordReveal: hmCurrentWord,
-            winningTeam
-        });
-
-        syncHangmanToTV();
-
-        hmCurrentRound++;
-
-        // Change action button
-        const btn = document.getElementById('action-btn');
-        if (hmCurrentRound >= HM_TOTAL_ROUNDS) {
-            btn.innerText = "عرض النتائج";
-        } else {
-            btn.innerText = `الجولة التالية (${hmCurrentRound + 1}/${HM_TOTAL_ROUNDS})`;
-        }
-        btn.onclick = () => {
-            if (hmCurrentRound >= HM_TOTAL_ROUNDS) announceWinner();
-            else startHangmanRound();
-        };
-    }
-
-    // Build the TV mirror payload for hangman
-    function buildHangmanTVHTML() {
-        const activeTeam   = hmCurrentRound % 2 === 0 ? 'A' : 'B'; // current round (before increment)
-        const teamLabel    = activeTeam === 'A' ? 'الفريق الأزرق 🔵' : 'الفريق البرتقالي 🟠';
-        const teamColor    = activeTeam === 'A' ? '#3b82f6' : '#f97316';
-        const wrongCount   = hmWrongLetters.length;
-
-        // SVG parts
-        const parts = [
-            `<circle cx="75" cy="27" r="9" stroke="#f87171" stroke-width="3" ${wrongCount > 0 ? '' : 'style="display:none"'}/>`,
-            `<line x1="75" y1="36" x2="75" y2="65" stroke="#f87171" stroke-width="3" stroke-linecap="round" ${wrongCount > 1 ? '' : 'style="display:none"'}/>`,
-            `<line x1="75" y1="45" x2="58" y2="58" stroke="#f87171" stroke-width="3" stroke-linecap="round" ${wrongCount > 2 ? '' : 'style="display:none"'}/>`,
-            `<line x1="75" y1="45" x2="92" y2="58" stroke="#f87171" stroke-width="3" stroke-linecap="round" ${wrongCount > 3 ? '' : 'style="display:none"'}/>`,
-            `<line x1="75" y1="65" x2="60" y2="85" stroke="#f87171" stroke-width="3" stroke-linecap="round" ${wrongCount > 4 ? '' : 'style="display:none"'}/>`,
-            `<line x1="75" y1="65" x2="90" y2="85" stroke="#f87171" stroke-width="3" stroke-linecap="round" ${wrongCount > 5 ? '' : 'style="display:none"'}/>`,
-        ].join('');
-
-        const slots = hmCurrentWord.split('').map(ch => {
-            const shown = hmRevealedLetters.has(ch);
-            return `<div style="display:inline-flex;align-items:center;justify-content:center;
-                width:60px;height:60px;border-bottom:4px solid ${shown ? '#14b8a6' : '#94a3b8'};
-                margin:4px;font-size:2rem;font-weight:900;color:#14b8a6;">${shown ? ch : ''}</div>`;
-        }).join('');
-
-        const wrongHtml = hmWrongLetters.length > 0
-            ? `<div style="color:#f87171;font-size:1.5rem;font-weight:bold;letter-spacing:6px;margin-top:8px;">${hmWrongLetters.join('  ')}</div>`
-            : '';
-
-        return `
-            <div style="text-align:center;width:100%;padding:8px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <span style="color:#94a3b8;font-size:1rem;">جولة ${hmCurrentRound + 1} / ${HM_TOTAL_ROUNDS}</span>
-                    <span style="background:${teamColor}22;color:${teamColor};border:2px solid ${teamColor};padding:4px 16px;border-radius:999px;font-weight:900;">${teamLabel}</span>
-                </div>
-                <div style="color:#94a3b8;font-size:1rem;margin-bottom:4px;">التصنيف: <span style="color:#fbbf24;font-weight:900;">${hmCurrentCategory}</span></div>
-                <svg viewBox="0 0 120 110" style="width:180px;height:165px;margin:8px auto;display:block;">
-                    <line x1="10" y1="105" x2="110" y2="105" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                    <line x1="30" y1="105" x2="30"  y2="5"   stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                    <line x1="30" y1="5"   x2="75"  y2="5"   stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                    <line x1="75" y1="5"   x2="75"  y2="18"  stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
-                    ${parts}
-                </svg>
-                <div style="display:flex;flex-wrap:wrap;justify-content:center;direction:rtl;margin:12px 0;">${slots}</div>
-                ${wrongHtml}
-            </div>`;
-    }
-
-    function syncHangmanToTV() {
-        if (myRole !== 'host') return;
-        const html = buildHangmanTVHTML();
-        update(mirrorRef, {
-            mainHTML: html,
-            mainClasses: document.getElementById('host-game-container').className,
-            scoreHTML: "",
-            scoreVisible: false,
-            topBarHTML: document.getElementById('host-top-bar').innerHTML,
-            timerText: "",
-            counterText: document.getElementById('answer-counter').innerText,
-            showWelcome: false,
-            ts: Date.now()
-        });
-    }
-
-    // ─────────────────────────────────────────────
-    //  showHostUI (unchanged, with hangman reset)
-    // ─────────────────────────────────────────────
-
-    function showHostUI() {
-        document.getElementById('type-select').classList.add('hidden');
-        document.getElementById('memory-difficulty').classList.add('hidden');
-        document.getElementById('game-play').classList.remove('hidden');
-        document.getElementById('host-view').classList.remove('hidden');
-        document.getElementById('display-title').innerText = "الجولة القادمة";
-        document.getElementById('display-content').innerText = "استعدوا للبدء!";
-        document.getElementById('action-btn').classList.remove('hidden');
-        document.getElementById('post-game-controls').classList.add('hidden');
-        document.getElementById('twister-scoring').classList.add('hidden');
-        document.getElementById('host-back-btn').classList.remove('hidden');
-        document.getElementById('dedicated-scoreboard').classList.add('hidden');
-        document.getElementById('host-game-container').classList.remove('hidden');
-        document.getElementById('host-top-bar').classList.remove('hidden');
-        document.getElementById('standard-visuals').classList.remove('hidden');
-        document.getElementById('memory-visuals').classList.add('hidden');
-        document.getElementById('hangman-visuals').classList.add('hidden');
-        document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
-        document.getElementById('host-timer-text').innerText = "";
-
-        if (currentType === 'hangman') {
-            document.getElementById('action-btn').innerText = "بدء الجولة الأولى";
-            document.getElementById('action-btn').onclick = () => startHangmanRound();
-            document.getElementById('standard-visuals').classList.add('hidden');
-        } else {
-            document.getElementById('action-btn').innerText = "التالي";
-            document.getElementById('action-btn').onclick = () => triggerNext();
-        }
-
-        set(mirrorRef, {
-            mainHTML: document.getElementById('host-game-container').innerHTML,
-            mainClasses: document.getElementById('host-game-container').className,
-            scoreHTML: "",
-            scoreVisible: false,
-            topBarHTML: document.getElementById('host-top-bar').innerHTML,
-            timerText: "",
-            counterText: "اضغط للبدء",
-            showWelcome: false,
-            qrVisible: false,
-            ts: Date.now()
-        });
-    }
-
-    // ─────────────────────────────────────────────
-    //  EXISTING: triggerNext, memory, quiz, etc.
-    // ─────────────────────────────────────────────
-
-    window.triggerNext = async () => {
-        if (currentIndex >= 6) return announceWinner();
-        currentIndex++;
-        document.getElementById('host-timer-text').innerText = "";
-        syncTV();
-        await remove(answersRef);
-        hasSubmittedMemory = false;
-        memoryInput = "";
-        resetMemoryUI();
-        clearInterval(timerInterval);
-        if (currentIndex >= currentQuestions.length) return announceWinner();
-        const item = currentQuestions[currentIndex];
-        const duration = document.getElementById('timer-enabled').checked ? 15 : 0;
-        const baseData = { type: currentType, content: item, round: currentIndex + 1, totalRounds: 7, status: 'playing', startTime: Date.now() };
-        if (currentType === 'memory') {
-            await handleMemoryRound(item);
-        } else {
-            let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
-            if (duration > 0) {
-                baseData.endTime = Date.now() + (duration * 1000);
-                baseData.activePlayer = pSpot;
-                await set(liveRef, baseData);
-                renderHostStandard(item, pSpot);
-                startTimer(duration);
-            } else {
-                baseData.timerEnabled = false;
-                baseData.activePlayer = pSpot;
-                await set(liveRef, baseData);
-                renderHostStandard(item, pSpot);
-            }
-        }
-        syncTV();
-    };
-
-    async function handleMemoryRound(target) {
-        const diff = lastGameConfig.diff;
-        const config = { easy:[3000,10], medium:[2000,8], hard:[1500,6] }[diff];
-        currentTargetNumber = target;
-        document.getElementById('standard-visuals').classList.add('hidden');
-        document.getElementById('memory-visuals').classList.remove('hidden');
-        document.getElementById('target-number-display').innerText = target;
-        document.getElementById('answer-counter').innerText = `السؤال ${currentIndex + 1} من 7`;
-        document.getElementById('host-timer-text').innerText = "";
-        syncTV();
-        let cd = 3;
-        document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`;
-        syncTV();
-        await set(liveRef, { type:'memory', status:'countdown', target, round: currentIndex+1, totalRounds:7 });
-        const countInt = setInterval(async () => {
-            cd--;
-            if (cd > 0) { document.getElementById('host-status-msg').innerText = `تبدأ في... ${cd}`; syncTV(); }
-            else {
-                clearInterval(countInt);
-                document.getElementById('hand-wrapper').classList.add('open');
-                await set(liveRef, { type:'memory', status:'reveal', target, duration:config[0], round:currentIndex+1, totalRounds:7 });
-                syncTV();
-                setTimeout(async () => {
-                    document.getElementById('hand-wrapper').classList.remove('open');
-                    document.getElementById('host-status-msg').innerText = "أدخل الرقم!";
-                    const endTime = Date.now() + (config[1] * 1000);
-                    await set(liveRef, { type:'memory', status:'input', target, duration:config[1], startTime:Date.now(), endTime, round:currentIndex+1, totalRounds:7 });
-                    startTimer(config[1], true);
-                    syncTV();
-                }, config[0]);
-            }
-        }, 1000);
-    }
-
-    function startTimer(sec, isMemory = false) {
-        let remain = sec;
-        const timerEl   = document.getElementById('host-timer-text');
-        const counterEl = document.getElementById('answer-counter');
-        if (currentIndex >= 0) counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
-        timerEl.classList.remove('hidden');
-        timerEl.style.color = remain <= 5 ? '#ef4444' : '#f87171';
-        timerInterval = setInterval(async () => {
-            timerEl.innerText = remain;
-            if (remain <= 5) timerEl.style.color = '#ef4444';
-            if (remain-- <= 0) {
-                clearInterval(timerInterval);
-                timerEl.innerText = "انتهى";
-                if (isMemory) {
-                    await set(liveRef, { status:'scoring' });
-                    document.getElementById('host-status-msg').innerText = "جاري جمع الإجابات...";
-                    syncTV();
-                    setTimeout(() => showMemoryResults(), 1500);
+        function listenForGame() {
+            onValue(liveRef, (snap) => {
+                const data = snap.val(); if(!data) return;
+                gameActive = true;
+                
+                if(data.status === 'scoring' && currentType === 'memory' && !hasSubmittedMemory && myRole === 'player') {
+                    autoSubmitMemory();
                 }
-                if (currentType === 'twister') document.getElementById('twister-scoring').classList.remove('hidden');
-            }
-            syncTV();
-        }, 1000);
-    }
-
-    async function showMemoryResults() {
-        const target = currentQuestions[currentIndex];
-        const ansSnap = await get(answersRef);
-        const answers = ansSnap.val() || {};
-        const scoresSnap = await get(scoresRef);
-        const allScores = scoresSnap.val() || {};
-        const updates = {};
-        let displayHtml = `<div class='space-y-2 text-lg'>`;
-        for (let pName of playersList) {
-            const pData = answers[pName] || { val: "----" };
-            let score = 0, coloredDigits = "";
-            for (let i = 0; i < 4; i++) {
-                const char = pData.val[i] || "-";
-                if (char === target[i]) { score += 2; coloredDigits += `<span class="text-green-400 mx-1 font-bold">${char}</span>`; }
-                else { coloredDigits += `<span class="text-red-400 line-through mx-1">${char}</span>`; }
-            }
-            if (score === 8) score = 10;
-            updates[`scores/${pName}`] = (allScores[pName] || 0) + score;
-            displayHtml += `<div class="flex justify-between items-center border-b border-slate-700 py-2"><span class="font-bold text-slate-300">${pName}</span><div class="flex items-center gap-4"><span dir="ltr" class="font-mono text-xl">${coloredDigits}</span><span class="text-yellow-400 font-black text-xl">+${score}</span></div></div>`;
+                
+                get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = Math.round(s.val() || 0));
+                
+                const progressEl = document.getElementById('progress-indicator');
+                if(data.round && data.totalRounds) {
+                    progressEl.textContent = `السؤال ${data.round} من ${data.totalRounds}`;
+                    progressEl.classList.remove('hidden');
+                }
+                
+                const timerEl = document.getElementById('player-timer');
+                if(playerTimerInterval) clearInterval(playerTimerInterval);
+                
+                if(data.endTime && data.status !== 'finished' && data.status !== 'scoring') {
+                    timerEl.classList.remove('hidden');
+                    playerTimerInterval = setInterval(() => {
+                        const remain = Math.ceil((data.endTime - Date.now()) / 1000);
+                        if(remain <= 0) {
+                            timerEl.textContent = "انتهى";
+                            timerEl.classList.add('urgent');
+                            clearInterval(playerTimerInterval);
+                        } else {
+                            timerEl.textContent = remain;
+                            if(remain <= 5) {
+                                timerEl.classList.add('urgent');
+                            } else {
+                                timerEl.classList.remove('urgent');
+                            }
+                        }
+                    }, 1000);
+                } else {
+                    timerEl.classList.add('hidden');
+                    timerEl.classList.remove('urgent');
+                }
+                
+                if(data.status === 'finished') {
+                    gameActive = false;
+                    const isWin = (data.winner === myName);
+                    document.getElementById('p-status').innerText = isWin ? "فزت!" : "انتهت اللعبة";
+                    document.getElementById('player-q-text').innerText = isWin ? "أنت البطل!" : "حظا أوفر";
+                    document.getElementById('player-input-area').innerHTML = `<div class='text-center'><div class='text-yellow-400 text-3xl font-black mb-2'>الفائز: ${data.winner}</div></div>`;
+                    document.getElementById('progress-indicator').classList.add('hidden');
+                    document.getElementById('player-timer').classList.add('hidden');
+                    if(isWin) confetti();
+                    return;
+                }
+                
+                if(data.status === 'scoring') {
+                    if(playerTimerInterval) {
+                        clearInterval(playerTimerInterval);
+                        playerTimerInterval = null;
+                    }
+                    document.getElementById('player-timer').classList.add('hidden');
+                }
+                
+                if(data.type === 'memory') {
+                    document.getElementById('keypad-container').classList.remove('hidden');
+                    document.getElementById('player-memory-ui').classList.remove('hidden');
+                    document.getElementById('player-quiz-ui').classList.add('hidden');
+                    handlePlayerMemory(data);
+                } else {
+                    document.getElementById('keypad-container').classList.add('hidden');
+                    document.getElementById('player-memory-ui').classList.add('hidden');
+                    document.getElementById('player-quiz-ui').classList.remove('hidden');
+                    handlePlayerStandard(data);
+                }
+            });
         }
-        if (Object.keys(updates).length > 0) await update(ref(db), updates);
-        document.getElementById('display-content').innerHTML = displayHtml + `</div>`;
-        document.getElementById('display-title').innerText = "النتائج";
-        document.getElementById('answer-counter').innerText = `انتهت الجولة ${currentIndex + 1}`;
-        document.getElementById('host-status-msg').innerText = "انتهى الوقت!";
-        syncTV();
-        if (currentIndex >= 6) setTimeout(announceWinner, 3000);
-    }
 
-    function updateLeaderboardUI(scores) {
-        const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-        document.getElementById('leaderboard-list').innerHTML = sorted.map(([n,v]) => `<div class='flex justify-between'><span>${n}</span><span class='font-bold'>${Math.round(v)}</span></div>`).join('');
-    }
-
-    function renderHostStandard(item, pSpot) {
-        const title   = document.getElementById('display-title');
-        const content = document.getElementById('display-content');
-        const counterEl = document.getElementById('answer-counter');
-        counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
-        document.getElementById('memory-visuals').classList.add('hidden');
-        document.getElementById('hangman-visuals').classList.add('hidden');
-        document.getElementById('standard-visuals').classList.remove('hidden');
-        if (currentType === 'brain') {
-            title.innerText = item.q;
-            content.innerHTML = item.options.map(o => `<div class='p-3 bg-slate-800 rounded-xl mb-1 border border-slate-600 font-bold'>${o}</div>`).join('');
-        } else {
-            title.innerText = "كررها 5 مرات بسرعة!";
-            content.innerHTML = `<p class='text-3xl text-teal-400 font-black'>${item}</p>`;
-            document.getElementById('current-player-name').innerText = pSpot;
-            document.getElementById('player-spotlight').classList.remove('hidden');
-        }
-        syncTV();
-    }
-
-    onValue(answersRef, (snap) => {
-        if (myRole !== 'host') return;
-        const count = snap.val() ? Object.keys(snap.val()).length : 0;
-        document.getElementById('answer-counter').innerText = `المشاركات: ${count} / ${playersList.length}`;
-        syncTV();
-    });
-
-    async function announceWinner() {
-        gameActive = false;
-        const snap = await get(scoresRef);
-        const scores = snap.val() || {};
-        const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-        const winner = sorted[0] ? sorted[0][0] : "---";
-        set(liveRef, { status:'finished', winner });
-        update(mirrorRef, { trigger_confetti: Date.now() });
-        document.getElementById('display-title').innerText = "بطل الجلسة الحالية";
-        document.getElementById('display-content').innerHTML = `<h1 class='text-5xl text-yellow-400 font-black mb-4'>${winner}</h1>`;
-        document.getElementById('hangman-visuals').classList.add('hidden');
-        document.getElementById('standard-visuals').classList.remove('hidden');
-        document.getElementById('post-game-controls').classList.remove('hidden');
-        document.getElementById('twister-scoring').classList.add('hidden');
-        document.getElementById('action-btn').classList.add('hidden');
-        document.getElementById('answer-counter').innerText = "انتهت اللعبة";
-        document.getElementById('host-timer-text').innerText = "";
-        syncTV();
-        confetti({ particleCount:300, spread:100, origin:{ y:0.6 } });
-    }
-
-    // ─────────────────────────────────────────────
-    //  PLAYER: listen for game + hangman view
-    // ─────────────────────────────────────────────
-
-    function listenForGame() {
-        onValue(liveRef, (snap) => {
-            const data = snap.val(); if (!data) return;
-            gameActive = true;
-
-            if (data.status === 'scoring' && currentType === 'memory' && !hasSubmittedMemory && myRole === 'player') {
-                autoSubmitMemory();
-            }
-
-            get(ref(db, `scores/${myName}`)).then(s => document.getElementById('p-score').innerText = Math.round(s.val() || 0));
-
-            const progressEl = document.getElementById('progress-indicator');
-            if (data.round && data.totalRounds) {
-                progressEl.textContent = `السؤال ${data.round} من ${data.totalRounds}`;
-                progressEl.classList.remove('hidden');
-            }
-
-            const timerEl = document.getElementById('player-timer');
-            if (playerTimerInterval) clearInterval(playerTimerInterval);
-            if (data.endTime && data.status !== 'finished' && data.status !== 'scoring') {
-                timerEl.classList.remove('hidden');
-                playerTimerInterval = setInterval(() => {
-                    const remain = Math.ceil((data.endTime - Date.now()) / 1000);
-                    if (remain <= 0) { timerEl.textContent = "انتهى"; timerEl.classList.add('urgent'); clearInterval(playerTimerInterval); }
-                    else { timerEl.textContent = remain; remain <= 5 ? timerEl.classList.add('urgent') : timerEl.classList.remove('urgent'); }
-                }, 1000);
+        function handlePlayerMemory(data) {
+            const kbtns = document.querySelectorAll('.key-btn');
+            if(data.status === 'input') {
+                hasSubmittedMemory = false;
+                document.getElementById('p-status').innerText = "أدخل الرقم!";
+                kbtns.forEach(b => b.classList.remove('disabled'));
+                if(!roundStartTime) roundStartTime = Date.now();
             } else {
+                document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتهى" : "راقب...";
+                kbtns.forEach(b => b.classList.add('disabled'));
+                if(data.status === 'countdown') { 
+                    resetMemoryUI(); 
+                    roundStartTime = 0; 
+                    memoryInput = "";
+                    hasSubmittedMemory = false;
+                    document.getElementById('p-status').innerText = "استعد...";
+                }
+            }
+        }
+
+        window.pressKey = (key) => {
+            if(hasSubmittedMemory) return;
+            if(key === 'back') memoryInput = memoryInput.slice(0, -1);
+            else if(memoryInput.length < 4) memoryInput += key;
+            const boxes = document.querySelectorAll('.digit-box');
+            boxes.forEach((box, i) => box.innerText = memoryInput[i] || "-");
+            document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
+        };
+
+        function autoSubmitMemory() {
+            if(hasSubmittedMemory) return;
+            
+            set(ref(db, `current_answers/${myName}`), { 
+                val: memoryInput.padEnd(4, '-'),
+                time: Date.now() - roundStartTime,
+                auto: true
+            });
+            hasSubmittedMemory = true;
+            document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
+            document.getElementById('p-status').innerText = "انتهى الوقت - تم الإرسال تلقائياً";
+            
+            setTimeout(() => {
+                showPlayerMemoryResult();
+            }, 2000);
+        }
+
+        window.submitMemory = () => {
+            if(hasSubmittedMemory) return;
+            if(playerTimerInterval) {
+                clearInterval(playerTimerInterval);
+                playerTimerInterval = null;
+            }
+            document.getElementById('player-timer').classList.add('hidden');
+            
+            hasSubmittedMemory = true;
+            set(ref(db, `current_answers/${myName}`), { 
+                val: memoryInput, 
+                time: Date.now() - roundStartTime 
+            });
+            document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
+            document.getElementById('p-status').innerText = "تم ✓";
+            
+            showPlayerMemoryResult();
+        };
+
+        function showPlayerMemoryResult() {
+            const modal = document.getElementById('player-result-modal');
+            const correctContainer = document.getElementById('result-correct-number');
+            const playerContainer = document.getElementById('result-player-number');
+            const pointsDiv = document.getElementById('result-points');
+            
+            correctContainer.innerHTML = '';
+            playerContainer.innerHTML = '';
+            
+            const target = currentTargetNumber || '0000';
+            let score = 0;
+            
+            for(let i=0; i<4; i++) {
+                const div = document.createElement('div');
+                div.className = 'result-digit-box result-correct';
+                div.textContent = target[i];
+                correctContainer.appendChild(div);
+            }
+            
+            const playerAnswer = memoryInput.padEnd(4, '-');
+            for(let i=0; i<4; i++) {
+                const div = document.createElement('div');
+                const isCorrect = playerAnswer[i] === target[i];
+                div.className = `result-digit-box ${isCorrect ? 'result-correct' : 'result-wrong'}`;
+                div.textContent = playerAnswer[i];
+                playerContainer.appendChild(div);
+                if(isCorrect) score += 2;
+            }
+            if(score === 8) score = 10;
+            
+            pointsDiv.textContent = `+${score} نقطة`;
+            pointsDiv.className = 'text-3xl font-black text-yellow-400 mb-4';
+            
+            modal.classList.remove('hidden');
+        }
+
+        window.closePlayerResult = () => {
+            document.getElementById('player-result-modal').classList.add('hidden');
+        };
+
+        function resetMemoryUI() {
+            memoryInput = ""; 
+            document.querySelectorAll('.digit-box').forEach(b => { b.innerText = "-"; });
+            document.getElementById('mem-submit').classList.add('disabled');
+        }
+
+        function handlePlayerStandard(data) {
+            if(data.status === 'scoring') {
+                document.getElementById('p-status').innerText = "النتيجة...";
+                document.getElementById('player-input-area').innerHTML = ""; return;
+            }
+            if(data.type === 'brain') {
+                document.getElementById('p-status').innerText = "أجب الآن!";
+                document.getElementById('player-q-text').innerText = data.content.q;
+                const options = data.content.options;
+                const correctIdx = data.content.correct;
+                const correctText = options[correctIdx];
+                document.getElementById('player-input-area').innerHTML = options.map((o, i) => 
+                    `<button onclick="submitQuiz(${i}, ${correctIdx}, ${data.startTime}, '${correctText.replace(/'/g, "\\'")}')" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900 hover:bg-slate-600 transition-colors">${o}</button>`
+                ).join('');
+            } else {
+                document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
+                document.getElementById('player-q-text').innerText = (data.activePlayer === myName) ? data.content : "---";
+                document.getElementById('player-input-area').innerHTML = "";
+            }
+        }
+
+        window.submitQuiz = (idx, correct, start, correctText) => {
+            if(playerTimerInterval) {
+                clearInterval(playerTimerInterval);
+                playerTimerInterval = null;
+            }
+            
+            set(ref(db, `current_answers/${myName}`), true);
+            const inputArea = document.getElementById('player-input-area');
+            const isCorrect = idx === correct;
+            
+            const timerEl = document.getElementById('player-timer');
+            if(timerEl) {
                 timerEl.classList.add('hidden');
                 timerEl.classList.remove('urgent');
             }
-
-            if (data.status === 'finished') {
-                gameActive = false;
-                const isWin = (data.winner === myName);
-                document.getElementById('p-status').innerText = isWin ? "فزت!" : "انتهت اللعبة";
-                document.getElementById('player-q-text').innerText = isWin ? "أنت البطل!" : "حظا أوفر";
-                document.getElementById('player-input-area').innerHTML = `<div class='text-center'><div class='text-yellow-400 text-3xl font-black mb-2'>الفائز: ${data.winner}</div></div>`;
-                document.getElementById('progress-indicator').classList.add('hidden');
-                document.getElementById('player-timer').classList.add('hidden');
-                document.getElementById('player-hangman-ui').classList.add('hidden');
-                document.getElementById('player-quiz-ui').classList.remove('hidden');
-                if (isWin) confetti();
-                return;
-            }
-
-            if (data.status === 'scoring') {
-                if (playerTimerInterval) { clearInterval(playerTimerInterval); playerTimerInterval = null; }
-                document.getElementById('player-timer').classList.add('hidden');
-            }
-
-            if (data.type === 'hangman') {
-                // Hide other UIs
-                document.getElementById('keypad-container').classList.add('hidden');
-                document.getElementById('player-memory-ui').classList.add('hidden');
-                document.getElementById('player-quiz-ui').classList.add('hidden');
-                document.getElementById('player-hangman-ui').classList.remove('hidden');
-                renderPlayerHangman(data);
-            } else if (data.type === 'memory') {
-                document.getElementById('keypad-container').classList.remove('hidden');
-                document.getElementById('player-memory-ui').classList.remove('hidden');
-                document.getElementById('player-quiz-ui').classList.add('hidden');
-                document.getElementById('player-hangman-ui').classList.add('hidden');
-                handlePlayerMemory(data);
+            
+            if(isCorrect) {
+                const pts = 10 + Math.max(0, 10 - (Date.now() - start)/1000);
+                get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + pts));
+                inputArea.innerHTML = `
+                    <div class="feedback-correct text-center p-6 rounded-2xl mb-4 animate-[bounce_0.5s_ease-out]">
+                        <div class="text-5xl mb-2">✓</div>
+                        <div class="text-2xl font-black text-white mb-2">إجابة صحيحة!</div>
+                        <div class="text-xl text-green-100">+${Math.round(pts)} نقطة</div>
+                    </div>
+                `;
+                if(navigator.vibrate) navigator.vibrate([50, 100, 50]);
             } else {
-                document.getElementById('keypad-container').classList.add('hidden');
-                document.getElementById('player-memory-ui').classList.add('hidden');
-                document.getElementById('player-quiz-ui').classList.remove('hidden');
-                document.getElementById('player-hangman-ui').classList.add('hidden');
-                handlePlayerStandard(data);
+                inputArea.innerHTML = `
+                    <div class="feedback-wrong text-center p-6 rounded-2xl mb-4">
+                        <div class="text-5xl mb-2">✗</div>
+                        <div class="text-2xl font-black text-white mb-2">إجابة خاطئة</div>
+                        <div class="text-lg text-red-100">الإجابة الصحيحة: <span class="font-bold text-white">${correctText}</span></div>
+                    </div>
+                `;
+                if(navigator.vibrate) navigator.vibrate(200);
             }
-        });
-    }
+            setTimeout(() => {
+                inputArea.innerHTML = "<div class='text-center text-slate-400 text-xl font-bold mt-5 p-4'>انتظر السؤال التالي...</div>";
+            }, 2000);
+        };
 
-    function renderPlayerHangman(data) {
-        const myTeam = hmTeamA.includes(myName) ? 'A' : hmTeamB.includes(myName) ? 'B' : null;
-        // Sync teams from Firebase if local state is empty (e.g. player refreshed)
-        if (!myTeam && data.teamA && data.teamB) {
-            hmTeamA = data.teamA; hmTeamB = data.teamB;
-        }
-
-        const activeTeam    = data.activeTeam || 'A';
-        const isMyTeam      = (myTeam || (data.teamA && data.teamA.includes(myName) ? 'A' : 'B')) === activeTeam;
-        const isActivePlayer= data.activePlayer === myName;
-
-        // Team badge
-        const badge = document.getElementById('p-hm-team-badge');
-        if (activeTeam === 'A') {
-            badge.textContent = "الفريق الأزرق 🔵";
-            badge.className = "team-badge team-a-badge mb-3 text-lg";
-        } else {
-            badge.textContent = "الفريق البرتقالي 🟠";
-            badge.className = "team-badge team-b-badge mb-3 text-lg";
-        }
-
-        // Status message
-        const statusEl = document.getElementById('p-hm-status');
-        if (data.status === 'won') {
-            statusEl.innerHTML = `<span class='text-green-400'>✓ صح! الكلمة: ${data.wordReveal || ''}</span>`;
-        } else if (data.status === 'lost') {
-            statusEl.innerHTML = `<span class='text-red-400'>✗ خسرتم! الكلمة: ${data.wordReveal || ''}</span>`;
-        } else {
-            statusEl.textContent = isMyTeam
-                ? (isActivePlayer ? "دورك في التخمين!" : "فريقك يلعب، شجعهم!")
-                : "الفريق الآخر يلعب، انتظر دورك";
-        }
-
-        // Word display (dashes + revealed)
-        const wordDiv = document.getElementById('p-hm-word-display');
-        if (data.wordLength) {
-            const revealed = new Set(data.revealed || []);
-            const slots = Array.from({ length: data.wordLength }, (_, i) => {
-                // we don't know the word on player side, show blanks with revealed letters
-                return `<div style="width:36px;height:36px;border-bottom:3px solid #94a3b8;display:inline-flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#14b8a6;margin:3px;"></div>`;
-            }).join('');
-            // For players, we show the count only — full display is on TV
-            wordDiv.innerHTML = `<div class='text-slate-400 text-sm'>عدد الحروف: <span class='text-white font-black text-xl'>${data.wordLength}</span></div>
-                <div class='text-slate-400 text-sm mt-1'>التصنيف: <span class='text-yellow-400 font-black'>${data.category || ''}</span></div>`;
-        }
-
-        // Wrong letters
-        const wrongEl = document.getElementById('p-hm-wrong');
-        if (data.wrongLetters && data.wrongLetters.length > 0) {
-            wrongEl.textContent = `الأخطاء (${data.wrongLetters.length}/${HM_MAX_WRONG}): ${data.wrongLetters.join(' ')}`;
-        } else {
-            wrongEl.textContent = '';
-        }
-
-        document.getElementById('p-status').innerText = `جولة ${data.round || 1} من ${data.totalRounds || HM_TOTAL_ROUNDS}`;
-    }
-
-    // ─────────────────────────────────────────────
-    //  EXISTING PLAYER HANDLERS (unchanged)
-    // ─────────────────────────────────────────────
-
-    function handlePlayerMemory(data) {
-        const kbtns = document.querySelectorAll('.key-btn');
-        if (data.status === 'input') {
+        window.restartSameCategory = async () => {
+            await remove(answersRef);
+            currentIndex = -1;
             hasSubmittedMemory = false;
-            document.getElementById('p-status').innerText = "أدخل الرقم!";
-            kbtns.forEach(b => b.classList.remove('disabled'));
-            if (!roundStartTime) roundStartTime = Date.now();
-        } else {
-            document.getElementById('p-status').innerText = (data.status === 'scoring') ? "انتهى" : "راقب...";
-            kbtns.forEach(b => b.classList.add('disabled'));
-            if (data.status === 'countdown') {
-                resetMemoryUI(); roundStartTime = 0; memoryInput = "";
-                hasSubmittedMemory = false;
-                document.getElementById('p-status').innerText = "استعد...";
-            }
+            memoryInput = "";
+            resetMemoryUI();
+            
+            if(lastGameConfig.type === 'memory') startMemory(lastGameConfig.diff);
+            else if(lastGameConfig.type === 'brain') setupQuestions(lastGameConfig.pool);
+            else setupTwisters();
+        };
+
+        window.awardManual = (pts) => {
+            const name = document.getElementById('current-player-name').innerText;
+            get(ref(db, `scores/${name}`)).then(s => set(ref(db, `scores/${name}`), (s.val() || 0) + pts));
+            document.getElementById('twister-scoring').classList.add('hidden');
+        };
+        
+        function syncTV() {
+            if (myRole !== 'host') return;
+            const container = document.getElementById('host-game-container');
+            const scoreboard = document.getElementById('dedicated-scoreboard');
+            const topBar = document.getElementById('host-top-bar');
+            const timerText = document.getElementById('host-timer-text').innerText;
+            
+            update(mirrorRef, {
+                mainHTML: container.innerHTML,
+                mainClasses: container.className,
+                scoreHTML: scoreboard.innerHTML,
+                scoreVisible: !scoreboard.classList.contains('hidden'),
+                topBarHTML: topBar.innerHTML,
+                timerText: timerText,
+                counterText: document.getElementById('answer-counter').innerText,
+                showWelcome: false,  // FIX: Always set to false when syncing game content
+                ts: Date.now()
+            });
         }
-    }
 
-    window.pressKey = (key) => {
-        if (hasSubmittedMemory) return;
-        if (key === 'back') memoryInput = memoryInput.slice(0, -1);
-        else if (memoryInput.length < 4) memoryInput += key;
-        const boxes = document.querySelectorAll('.digit-box');
-        boxes.forEach((box, i) => box.innerText = memoryInput[i] || "-");
-        document.getElementById('mem-submit').classList.toggle('disabled', memoryInput.length < 4);
-    };
-
-    function autoSubmitMemory() {
-        if (hasSubmittedMemory) return;
-        set(ref(db, `current_answers/${myName}`), { val: memoryInput.padEnd(4,'-'), time: Date.now()-roundStartTime, auto: true });
-        hasSubmittedMemory = true;
-        document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
-        document.getElementById('p-status').innerText = "انتهى الوقت - تم الإرسال تلقائياً";
-        setTimeout(() => showPlayerMemoryResult(), 2000);
-    }
-
-    window.submitMemory = () => {
-        if (hasSubmittedMemory) return;
-        if (playerTimerInterval) { clearInterval(playerTimerInterval); playerTimerInterval = null; }
-        document.getElementById('player-timer').classList.add('hidden');
-        hasSubmittedMemory = true;
-        set(ref(db, `current_answers/${myName}`), { val: memoryInput, time: Date.now()-roundStartTime });
-        document.querySelectorAll('.key-btn').forEach(b => b.classList.add('disabled'));
-        document.getElementById('p-status').innerText = "تم ✓";
-        showPlayerMemoryResult();
-    };
-
-    function showPlayerMemoryResult() {
-        const modal = document.getElementById('player-result-modal');
-        const correctContainer = document.getElementById('result-correct-number');
-        const playerContainer  = document.getElementById('result-player-number');
-        const pointsDiv = document.getElementById('result-points');
-        correctContainer.innerHTML = ''; playerContainer.innerHTML = '';
-        const target = currentTargetNumber || '0000';
-        let score = 0;
-        for (let i = 0; i < 4; i++) {
-            const div = document.createElement('div');
-            div.className = 'result-digit-box result-correct';
-            div.textContent = target[i];
-            correctContainer.appendChild(div);
-        }
-        const playerAnswer = memoryInput.padEnd(4,'-');
-        for (let i = 0; i < 4; i++) {
-            const div = document.createElement('div');
-            const isCorrect = playerAnswer[i] === target[i];
-            div.className = `result-digit-box ${isCorrect ? 'result-correct' : 'result-wrong'}`;
-            div.textContent = playerAnswer[i];
-            playerContainer.appendChild(div);
-            if (isCorrect) score += 2;
-        }
-        if (score === 8) score = 10;
-        pointsDiv.textContent = `+${score} نقطة`;
-        pointsDiv.className = 'text-3xl font-black text-yellow-400 mb-4';
-        modal.classList.remove('hidden');
-    }
-
-    window.closePlayerResult = () => document.getElementById('player-result-modal').classList.add('hidden');
-
-    function resetMemoryUI() {
-        memoryInput = "";
-        document.querySelectorAll('.digit-box').forEach(b => { b.innerText = "-"; });
-        document.getElementById('mem-submit').classList.add('disabled');
-    }
-
-    function handlePlayerStandard(data) {
-        if (data.status === 'scoring') {
-            document.getElementById('p-status').innerText = "النتيجة...";
-            document.getElementById('player-input-area').innerHTML = ""; return;
-        }
-        if (data.type === 'brain') {
-            document.getElementById('p-status').innerText = "أجب الآن!";
-            document.getElementById('player-q-text').innerText = data.content.q;
-            const options = data.content.options;
-            const correctIdx = data.content.correct;
-            const correctText = options[correctIdx];
-            document.getElementById('player-input-area').innerHTML = options.map((o, i) =>
-                `<button onclick="submitQuiz(${i}, ${correctIdx}, ${data.startTime}, '${correctText.replace(/'/g, "\\'")}')" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900 hover:bg-slate-600 transition-colors">${o}</button>`
-            ).join('');
-        } else {
-            document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
-            document.getElementById('player-q-text').innerText = (data.activePlayer === myName) ? data.content : "---";
-            document.getElementById('player-input-area').innerHTML = "";
-        }
-    }
-
-    window.submitQuiz = (idx, correct, start, correctText) => {
-        if (playerTimerInterval) { clearInterval(playerTimerInterval); playerTimerInterval = null; }
-        set(ref(db, `current_answers/${myName}`), true);
-        const inputArea = document.getElementById('player-input-area');
-        const isCorrect = idx === correct;
-        const timerEl = document.getElementById('player-timer');
-        if (timerEl) { timerEl.classList.add('hidden'); timerEl.classList.remove('urgent'); }
-        if (isCorrect) {
-            const pts = 10 + Math.max(0, 10 - (Date.now() - start)/1000);
-            get(ref(db, `scores/${myName}`)).then(s => set(ref(db, `scores/${myName}`), (s.val() || 0) + pts));
-            inputArea.innerHTML = `<div class="feedback-correct text-center p-6 rounded-2xl mb-4"><div class="text-5xl mb-2">✓</div><div class="text-2xl font-black text-white mb-2">إجابة صحيحة!</div><div class="text-xl text-green-100">+${Math.round(pts)} نقطة</div></div>`;
-            if (navigator.vibrate) navigator.vibrate([50,100,50]);
-        } else {
-            inputArea.innerHTML = `<div class="feedback-wrong text-center p-6 rounded-2xl mb-4"><div class="text-5xl mb-2">✗</div><div class="text-2xl font-black text-white mb-2">إجابة خاطئة</div><div class="text-lg text-red-100">الإجابة الصحيحة: <span class="font-bold text-white">${correctText}</span></div></div>`;
-            if (navigator.vibrate) navigator.vibrate(200);
-        }
-        setTimeout(() => { inputArea.innerHTML = "<div class='text-center text-slate-400 text-xl font-bold mt-5 p-4'>انتظر السؤال التالي...</div>"; }, 2000);
-    };
-
-    window.restartSameCategory = async () => {
-        await remove(answersRef);
-        currentIndex = -1; hasSubmittedMemory = false; memoryInput = ""; resetMemoryUI();
-        hmCurrentRound = 0; hmRevealedLetters = new Set(); hmWrongLetters = [];
-        if (lastGameConfig.type === 'memory')   startMemory(lastGameConfig.diff);
-        else if (lastGameConfig.type === 'brain') setupQuestions(lastGameConfig.pool);
-        else if (lastGameConfig.type === 'hangman') setupHangman();
-        else setupTwisters();
-    };
-
-    window.awardManual = (pts) => {
-        const name = document.getElementById('current-player-name').innerText;
-        get(ref(db, `scores/${name}`)).then(s => set(ref(db, `scores/${name}`), (s.val() || 0) + pts));
-        document.getElementById('twister-scoring').classList.add('hidden');
-    };
-
-    function syncTV() {
-        if (myRole !== 'host') return;
-        const container = document.getElementById('host-game-container');
-        const scoreboard = document.getElementById('dedicated-scoreboard');
-        const topBar = document.getElementById('host-top-bar');
-        update(mirrorRef, {
-            mainHTML: container.innerHTML,
-            mainClasses: container.className,
-            scoreHTML: scoreboard.innerHTML,
-            scoreVisible: !scoreboard.classList.contains('hidden'),
-            topBarHTML: topBar.innerHTML,
-            timerText: document.getElementById('host-timer-text').innerText,
-            counterText: document.getElementById('answer-counter').innerText,
-            showWelcome: false,
-            ts: Date.now()
-        });
-    }
-
-    const observer = new MutationObserver(syncTV);
-    observer.observe(document.getElementById('host-view'), { childList: true, subtree: true, attributes: true });
-</script>
-```
-
+        const observer = new MutationObserver(syncTV);
+        observer.observe(document.getElementById('host-view'), { childList: true, subtree: true, attributes: true });
+    </script>
 </body>
 </html>
