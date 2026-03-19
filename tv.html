@@ -1,0 +1,344 @@
+<!-- tv.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شاشة العرض - ألعاب العائلة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { 
+            height: 100%; 
+            height: -webkit-fill-available;
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            font-family: 'Tajawal', sans-serif;
+            overflow: hidden;
+        }
+        body { padding: 3vh 3vw; display: flex; flex-direction: column; }
+        .hidden { display: none !important; }
+        .bg-slate-card { background-color: #1e293b; }
+        
+        #tv-root { display: flex; flex-direction: column; gap: 2vh; height: 94vh; width: 100%; }
+        
+        #tv-top-bar {
+            background: #1e293b; 
+            padding: 3vh 4vw; 
+            border-radius: 2vh;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 4vh; 
+            border: 0.8vh solid #334155; 
+            flex-shrink: 0; 
+            min-height: 12vh;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        #tv-timer-display { 
+            font-weight: 900; 
+            color: #ef4444; 
+            font-size: 7vh; 
+            text-shadow: 0 2px 10px rgba(239, 68, 68, 0.5);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            min-width: 10vw;
+            text-align: center;
+        }
+        
+        #tv-timer-display.urgent { 
+            animation: pulse-timer 1s infinite; 
+            color: #dc2626;
+        }
+        
+        @keyframes pulse-timer {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        #tv-counter-display { 
+            color: #14b8a6; 
+            font-weight: bold; 
+            font-size: 3.5vh; 
+        }
+        
+        #tv-main-container {
+            flex: 1; 
+            background: #1e293b; 
+            border-radius: 3vh; 
+            border: 0.8vh solid #475569;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            padding: 4vh; 
+            position: relative; 
+            overflow: hidden; 
+            min-height: 0;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
+        
+        #display-title { font-size: 6vh; line-height: 1.3; margin-bottom: 3vh; color: #14b8a6; font-weight: 900; text-align: center; max-width: 100%; word-wrap: break-word; }
+        #display-content { font-size: 4.5vh; color: #cbd5e1; font-weight: 700; line-height: 1.4; width: 100%; overflow: hidden; }
+        #display-content div { padding: 2vh; margin: 1.5vh 0; background: #334155; border-radius: 2vh; border: 0.3vh solid #475569; font-size: 3.5vh; line-height: 1.3; }
+        #display-content h1 { font-size: 10vh; color: #fbbf24; line-height: 1.1; }
+        
+        .hand-container { position: relative; width: 60vh; height: 35vh; max-width: 90%; margin: 2vh auto; perspective: 2000px; flex-shrink: 0; }
+        .hand { position: absolute; width: 50%; height: 100%; background: #fbbf24; border: 1vh solid #b45309; transition: transform 0.6s ease-in-out; z-index: 10; }
+        .hand-left { left: 0; transform-origin: left; border-radius: 4vh 0 0 4vh; }
+        .hand-right { right: 0; transform-origin: right; border-radius: 0 4vh 4vh 0; }
+        @keyframes handOpenLeft {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(-110deg); }
+        }
+        @keyframes handOpenRight {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(110deg); }
+        }
+        /* On TV, the DOM may be replaced each update; using keyframes ensures we still see motion. */
+        .open .hand-left { animation: handOpenLeft 0.6s ease-in-out both; }
+        .open .hand-right { animation: handOpenRight 0.6s ease-in-out both; }
+        .number-reveal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15vh; font-weight: 900; color: #fff; z-index: 5; opacity: 0; transition: opacity 0.2s; direction: ltr; }
+        @keyframes revealOn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .open .number-reveal { animation: revealOn 0.2s ease-in both; }
+        
+        #tv-score-container { flex: 1; background: #0f172a; border-radius: 3vh; padding: 3vh; border: 0.8vh solid #f59e0b; overflow-y: auto; display: flex; flex-direction: column; }
+        .score-row { display: flex; justify-content: space-between; padding: 2vh; border-bottom: 0.4vh solid #334155; font-size: 4vh; align-items: center; flex-shrink: 0; }
+        .score-row:last-child { border: none; }
+        
+        #welcome-screen { text-align: center; }
+        #welcome-screen h1 { font-size: 8vh; color: #14b8a6; margin-bottom: 3vh; }
+        #welcome-screen p { font-size: 3.5vh; color: #94a3b8; }
+        #error-message { color: #ef4444; font-size: 3vh; text-align: center; margin-top: 2vh; }
+        
+        #tv-qr-overlay { 
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.98); 
+            z-index: 50; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+        }
+        #tv-qr-container { 
+            background: white; padding: 4vh; border-radius: 3vh; 
+            box-shadow: 0 0 50px rgba(20, 184, 166, 0.3);
+            margin-bottom: 4vh;
+        }
+        #tv-qr-overlay h2 { 
+            font-size: 6vh; color: #14b8a6; margin-bottom: 2vh; 
+            font-weight: 900; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        #tv-qr-overlay p { 
+            font-size: 3.5vh; color: #94a3b8; 
+        }
+        #tv-qr-url { 
+            font-size: 2.5vh; color: #64748b; margin-top: 2vh; 
+            direction: ltr; font-family: monospace;
+        }
+        
+        @media (max-height: 500px) {
+            #display-title { font-size: 5vh; }
+            #display-content { font-size: 3.5vh; }
+            .hand-container { height: 25vh; width: 45vh; }
+            .number-reveal { font-size: 10vh; }
+            #tv-qr-overlay h2 { font-size: 5vh; }
+            #tv-timer-display { font-size: 5vh; }
+        }
+        @media (min-aspect-ratio: 21/9) {
+            #tv-main-container { max-width: 80%; margin: 0 auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="tv-root">
+        <div id="tv-top-bar" class="hidden">
+            <span id="conn-status" style="color: #64748b;">● متصل</span>
+            <div class="flex items-center gap-6">
+                <span id="tv-counter-display"></span>
+                <span id="tv-timer-display"></span>
+            </div>
+        </div>
+
+        <div id="tv-main-container" class="bg-slate-card">
+            <div id="welcome-screen">
+                <h1>بانتظار المضيف...</h1>
+                <p>Connected to Firebase</p>
+                <div id="error-message" class="hidden"></div>
+            </div>
+        </div>
+
+        <div id="tv-score-container" class="hidden"></div>
+    </div>
+
+    <div id="tv-qr-overlay" class="hidden">
+        <h2>انضم للعبة</h2>
+        <div id="tv-qr-container"></div>
+        <p>امسح الكود باستخدام هاتفك</p>
+        <div id="tv-qr-url"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBGwNKIykgrmewdwUZyA93DQ-LHI3rLOyw",
+                authDomain: "family-games-app.firebaseapp.com",
+                databaseURL: "https://family-games-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "family-games-app",
+                storageBucket: "family-games-app.firebasestorage.app",
+                messagingSenderId: "290150126558",
+                appId: "1:290150126558:web:bf5a38cc8d104462d9c34f"
+            };
+            
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+            const mirrorRef = ref(db, 'tv_mirror');
+            let lastUpdate = Date.now();
+            let qrGenerated = false;
+            
+            setInterval(() => {
+                if (Date.now() - lastUpdate > 10000) {
+                    document.getElementById('conn-status').style.color = '#ef4444';
+                    document.getElementById('conn-status').innerText = '● انقطع الاتصال';
+                }
+            }, 5000);
+
+            onValue(mirrorRef, (snap) => {
+                try {
+                    const data = snap.val();
+                    lastUpdate = Date.now();
+                    document.getElementById('conn-status').style.color = '#10b981';
+                    document.getElementById('conn-status').innerText = '● متصل';
+                    
+                    if(!data) return;
+
+                    // Handle QR Overlay
+                    const qrOverlay = document.getElementById('tv-qr-overlay');
+                    if (data.qrVisible) {
+                        qrOverlay.classList.remove('hidden');
+                        if (!qrGenerated && data.qrUrl) {
+                            const container = document.getElementById('tv-qr-container');
+                            container.innerHTML = '';
+                            new QRCode(container, {
+                                text: data.qrUrl,
+                                width: 300,
+                                height: 300,
+                                colorDark : "#000000",
+                                colorLight : "#ffffff",
+                                correctLevel : QRCode.CorrectLevel.M
+                            });
+                            document.getElementById('tv-qr-url').textContent = data.qrUrl;
+                            qrGenerated = true;
+                        }
+                    } else {
+                        qrOverlay.classList.add('hidden');
+                        qrGenerated = false;
+                        document.getElementById('tv-qr-container').innerHTML = '';
+                    }
+
+                    // FIX: Check showWelcome FIRST - if true, show welcome screen immediately
+                    if(data.showWelcome === true) {
+                        document.getElementById('tv-top-bar').classList.add('hidden');
+                        document.getElementById('tv-score-container').classList.add('hidden');
+                        document.getElementById('tv-main-container').classList.remove('hidden');
+                        document.getElementById('tv-main-container').innerHTML = `
+                            <div id="welcome-screen">
+                                <h1>بانتظار المضيف...</h1>
+                                <p>Connected to Firebase</p>
+                                <div id="error-message" class="hidden"></div>
+                            </div>
+                        `;
+                        return; // Exit early - don't process game data
+                    }
+
+                    // Only show game if we have mainHTML AND showWelcome is false/undefined
+                    if(data.mainHTML) {
+                        const main = document.getElementById('tv-main-container');
+                        const scores = document.getElementById('tv-score-container');
+                        const top = document.getElementById('tv-top-bar');
+                        
+                        top.classList.remove('hidden');
+                        
+                        // Timer display logic
+                        const timerEl = document.getElementById('tv-timer-display');
+                        if(data.timerText && data.timerText !== "") {
+                            timerEl.textContent = data.timerText;
+                            if((data.timerText.length === 1 && !isNaN(data.timerText)) || data.timerText === "انتهى") {
+                                timerEl.classList.add('urgent');
+                            } else {
+                                timerEl.classList.remove('urgent');
+                            }
+                        } else {
+                            timerEl.textContent = "";
+                            timerEl.classList.remove('urgent');
+                        }
+                        
+                        if(data.counterText !== undefined) {
+                            document.getElementById('tv-counter-display').textContent = data.counterText;
+                        }
+
+                        if(data.scoreVisible) {
+                            main.classList.add('hidden');
+                            scores.classList.remove('hidden');
+                            scores.innerHTML = data.scoreHTML || '';
+                        } else {
+                            scores.classList.add('hidden');
+                            main.classList.remove('hidden');
+                            main.innerHTML = data.mainHTML;
+                            main.className = "flex-1 bg-slate-card rounded-[3vh] border-[0.8vh] border-solid border-[#475569] flex flex-col justify-center items-center p-[4vh] relative overflow-hidden";
+                            
+                            const title = main.querySelector('#display-title');
+                            const content = main.querySelector('#display-content');
+                            if(title) title.style.fontSize = '6vh';
+                            if(content) content.style.fontSize = '4.5vh';
+                        }
+                    }
+
+                    if (data.trigger_confetti) {
+                        const lastFired = window.lastConfettiTime || 0;
+                        if (data.trigger_confetti > lastFired) {
+                            const isTV = window.innerWidth > 1024 || window.innerHeight > 800;
+                            confetti({ 
+                                particleCount: isTV ? 80 : 300,
+                                spread: 100,
+                                gravity: 1.2,
+                                ticks: 80,
+                                decay: 0.8,
+                                origin: { y: 0.6 },
+                                disableForReducedMotion: true
+                            });
+                            window.lastConfettiTime = data.trigger_confetti;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error in onValue:", err);
+                    document.getElementById('error-message').textContent = "خطأ في تحميل البيانات: " + err.message;
+                    document.getElementById('error-message').classList.remove('hidden');
+                }
+            }, (error) => {
+                console.error("Firebase error:", error);
+                document.getElementById('error-message').textContent = "خطأ في الاتصال: " + error.message;
+                document.getElementById('error-message').classList.remove('hidden');
+            });
+            
+        } catch (initErr) {
+            console.error("Init error:", initErr);
+            document.getElementById('welcome-screen').innerHTML += `<div style="color:red; font-size:2vh; margin-top:2vh;">خطأ في التحميل: ${initErr.message}</div>`;
+        }
+
+        window.addEventListener('resize', () => {
+            document.body.style.display = 'none';
+            document.body.offsetHeight;
+            document.body.style.display = 'flex';
+        });
+    </script>
+</body>
+</html>
