@@ -811,6 +811,8 @@
         }
 
         function handlePlayerMemory(data) {
+            // Keep player-side target in sync so result modal compares against real number.
+            if (data.target) currentTargetNumber = data.target;
             const kbtns = document.querySelectorAll('.key-btn');
             if(data.status === 'input') {
                 hasSubmittedMemory = false;
