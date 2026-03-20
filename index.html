@@ -235,6 +235,8 @@
         let currentTargetNumber = '';
         let lastTvSyncAt = 0; // Prevent double mirror updates (MutationObserver + manual sync).
         let twisterPhase = 'question'; // question -> scoring -> question
+        let quizFeedbackTimeout = null;
+        let activeBrainRound = 0;
 
         window.addEventListener('beforeunload', (e) => {
             if (gameActive && myRole === 'player') {
@@ -942,10 +944,19 @@
 
         function handlePlayerStandard(data) {
             if(data.status === 'scoring') {
+                if (quizFeedbackTimeout) {
+                    clearTimeout(quizFeedbackTimeout);
+                    quizFeedbackTimeout = null;
+                }
                 document.getElementById('p-status').innerText = "النتيجة...";
                 document.getElementById('player-input-area').innerHTML = ""; return;
             }
             if(data.type === 'brain') {
+                if (quizFeedbackTimeout) {
+                    clearTimeout(quizFeedbackTimeout);
+                    quizFeedbackTimeout = null;
+                }
+                activeBrainRound = data.round || 0;
                 document.getElementById('p-status').innerText = "أجب الآن!";
                 document.getElementById('player-q-text').innerText = data.content.q;
                 const options = data.content.options;
@@ -962,6 +973,7 @@
         }
 
         window.submitQuiz = (idx, correct, start, correctText) => {
+            const submittedRound = activeBrainRound;
             if(playerTimerInterval) {
                 clearInterval(playerTimerInterval);
                 playerTimerInterval = null;
@@ -998,8 +1010,12 @@
                 `;
                 if(navigator.vibrate) navigator.vibrate(200);
             }
-            setTimeout(() => {
+            if (quizFeedbackTimeout) clearTimeout(quizFeedbackTimeout);
+            quizFeedbackTimeout = setTimeout(() => {
+                // If a newer round is already active, don't overwrite its options UI.
+                if (activeBrainRound !== submittedRound) return;
                 inputArea.innerHTML = "<div class='text-center text-slate-400 text-xl font-bold mt-5 p-4'>انتظر السؤال التالي...</div>";
+                quizFeedbackTimeout = null;
             }, 2000);
         };
 
