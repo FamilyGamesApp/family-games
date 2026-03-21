@@ -235,6 +235,10 @@
         let currentTargetNumber = '';
         let lastTvSyncAt = 0; // Prevent double mirror updates (MutationObserver + manual sync).
         let twisterPhase = 'question'; // question -> scoring -> question
+        let twisterTotalRounds = 7;
+        let twisterPlayerOrder = [];
+        /** Last phrase each player received in a completed tongue-twister game (avoid repeats next game). */
+        let twisterLastPhraseByPlayer = {};
         let quizFeedbackTimeout = null;
         let activeBrainRound = 0;
 
@@ -431,6 +435,83 @@
             return shuffled.slice(0, size);
         }
 
+        function shuffleArray(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        /**
+         * Tongue twister: one turn per player; random starting player then order cycles.
+         * Phrases are unique within the game when the bank has enough lines; otherwise random with repeats.
+         * Tries to avoid giving a player the same phrase as in the previous completed twister game.
+         */
+        function buildTwisterGame(players, phraseBank, lastPhraseByPlayer) {
+            const pool = phraseBank.slice();
+            const prev = lastPhraseByPlayer || {};
+            let order = [];
+            if (!players.length) {
+                order = ['المتطوع'];
+            } else {
+                const start = Math.floor(Math.random() * players.length);
+                for (let i = 0; i < players.length; i++) {
+                    order.push(players[(start + i) % players.length]);
+                }
+            }
+            const n = order.length;
+            const phrases = [];
+
+            if (n <= pool.length) {
+                const bank = pool.slice();
+                let chosenPhrases = null;
+                for (let attempt = 0; attempt < 120; attempt++) {
+                    const perm = shuffleArray(bank);
+                    const slice = perm.slice(0, n);
+                    if (new Set(slice).size !== n) continue;
+                    let ok = true;
+                    for (let i = 0; i < n; i++) {
+                        if (slice[i] === prev[order[i]]) { ok = false; break; }
+                    }
+                    if (ok) { chosenPhrases = slice; break; }
+                }
+                if (!chosenPhrases) {
+                    const remaining = shuffleArray(bank.slice());
+                    chosenPhrases = [];
+                    for (const player of order) {
+                        const avoid = prev[player];
+                        let idx = remaining.findIndex((p) => p !== avoid);
+                        if (idx === -1) idx = remaining.findIndex(() => true);
+                        const [chosen] = remaining.splice(idx, 1);
+                        chosenPhrases.push(chosen);
+                    }
+                }
+                phrases.push(...chosenPhrases);
+            } else {
+                const bag = shuffleArray(pool);
+                const usedThisRound = new Set();
+                for (const player of order) {
+                    const avoid = prev[player];
+                    let candidates = bag.filter((p) => p !== avoid && !usedThisRound.has(p));
+                    if (candidates.length === 0) candidates = bag.filter((p) => p !== avoid);
+                    if (candidates.length === 0) candidates = bag.slice();
+                    const choice = candidates[Math.floor(Math.random() * candidates.length)];
+                    usedThisRound.add(choice);
+                    phrases.push(choice);
+                }
+            }
+
+            const phraseByPlayer = {};
+            order.forEach((name, i) => { phraseByPlayer[name] = phrases[i]; });
+            return { order, phrases, phraseByPlayer };
+        }
+
+        function getActiveRoundTotal() {
+            return currentType === 'twister' ? twisterTotalRounds : 7;
+        }
+
         window.setupQuestions = (type) => {
             currentType = 'brain'; currentIndex = -1;
             lastGameConfig = { section: currentSection, type: 'brain', pool: type };
@@ -441,7 +522,10 @@
         window.setupTwisters = () => {
             currentType = 'twister'; currentIndex = -1;
             lastGameConfig = { section: 'adults', type: 'twister' };
-            currentQuestions = getRandomSet(gameData.adults.twisters, 7);
+            const built = buildTwisterGame(playersList, gameData.adults.twisters, twisterLastPhraseByPlayer);
+            currentQuestions = built.phrases;
+            twisterPlayerOrder = built.order;
+            twisterTotalRounds = built.phrases.length;
             twisterPhase = 'question';
             showHostUI();
         };
@@ -489,7 +573,7 @@
                 return;
             }
 
-            if (currentIndex >= 6) return announceWinner();
+            if (currentType !== 'twister' && currentIndex >= 6) return announceWinner();
             currentIndex++;
             if (currentType === 'twister') twisterPhase = 'question';
             
@@ -511,7 +595,7 @@
                 type: currentType,
                 content: item,
                 round: currentIndex + 1,
-                totalRounds: 7,
+                totalRounds: getActiveRoundTotal(),
                 status: 'playing',
                 startTime: Date.now()
             };
@@ -519,7 +603,9 @@
             if (currentType === 'memory') {
                 await handleMemoryRound(item);
             } else {
-                let pSpot = (currentType === 'twister') ? (playersList[currentIndex % playersList.length] || "المتطوع") : "الجميع";
+                let pSpot = (currentType === 'twister')
+                    ? (twisterPlayerOrder[currentIndex] || "المتطوع")
+                    : "الجميع";
                 if (duration > 0) {
                     baseData.endTime = Date.now() + (duration * 1000);
                     baseData.activePlayer = pSpot;
@@ -615,7 +701,7 @@
             const counterEl = document.getElementById('answer-counter');
             
             if(currentIndex >= 0) {
-                counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
+                counterEl.innerText = `السؤال ${currentIndex + 1} من ${getActiveRoundTotal()}`;
             }
             
             timerEl.classList.remove('hidden');
@@ -711,7 +797,7 @@
             const content = document.getElementById('display-content');
             const counterEl = document.getElementById('answer-counter');
             
-            counterEl.innerText = `السؤال ${currentIndex + 1} من 7`;
+            counterEl.innerText = `السؤال ${currentIndex + 1} من ${getActiveRoundTotal()}`;
             
             document.getElementById('memory-visuals').classList.add('hidden');
             document.getElementById('standard-visuals').classList.remove('hidden');
@@ -736,6 +822,12 @@
 
         async function announceWinner() {
             gameActive = false;
+            if (currentType === 'twister' && twisterPlayerOrder.length && currentQuestions.length) {
+                twisterPlayerOrder.forEach((name, i) => {
+                    const phrase = currentQuestions[i];
+                    if (phrase !== undefined) twisterLastPhraseByPlayer[name] = phrase;
+                });
+            }
             const snap = await get(scoresRef);
             const scores = snap.val() || {};
             const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
