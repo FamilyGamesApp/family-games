@@ -30,7 +30,7 @@
         #digit-boxes { display: flex; flex-direction: row-reverse; justify-content: center; gap: 8px; }
         .digit-box { width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); border: 2px solid #475569; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; background: #1e293b; direction: ltr; }
         .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 450px; margin: 0 auto; direction: ltr; }
-        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border-bottom: 4px solid #0f172a; }
+        .key-btn { height: clamp(50px, 10vh, 70px); display: flex; align-items: center; justify-content: center; background: #334155; border-radius: 12px; font-size: 1.4rem; font-weight: bold; border: none; }
         .key-btn.disabled { opacity: 0.1; pointer-events: none; }
         .score-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #334155; font-size: 1.2rem; }
         .hand-container { position: relative; width: clamp(180px, 40vw, 400px); height: clamp(100px, 20vw, 250px); margin: 10px auto; perspective: 1000px; }
@@ -74,16 +74,16 @@
                     </div>
                     <div id="host-session-choice" class="hidden space-y-3 mt-2">
                         <p class="text-slate-400 text-sm mb-1">اختر كيف تريد الدخول إلى لوحة التحكم</p>
-                        <button type="button" onclick="hostStartNewSession()" class="w-full p-4 bg-rose-800 rounded-xl font-black border-b-4 border-rose-950">جلسة جديدة</button>
-                        <button type="button" onclick="hostContinueSession()" class="w-full p-4 bg-slate-700 rounded-xl font-black border-b-4 border-slate-900">متابعة الجلسة السابقة</button>
+                        <button type="button" onclick="hostStartNewSession()" class="w-full p-4 bg-rose-800 rounded-xl font-black">جلسة جديدة</button>
+                        <button type="button" onclick="hostContinueSession()" class="w-full p-4 bg-slate-700 rounded-xl font-black">متابعة الجلسة السابقة</button>
                     </div>
                 </div>
             </div>
             <div id="section-select" class="hidden space-y-4 px-4 w-full">
-                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black border-b-8 border-black text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
-                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black border-b-8 border-pink-950 text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
-                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black border-b-8 border-amber-800 text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
-                <button onclick="showJoinQR()" class="w-full p-6 bg-blue-600 rounded-[1.5rem] font-black border-b-8 border-blue-800 text-xl">انضمام اللاعبين <i class="fa-solid fa-qrcode mr-2"></i></button>
+                <button onclick="chooseSection('adults')" class="w-full p-6 bg-slate-700 rounded-[1.5rem] font-black text-xl">قسم الكبار <i class="fa-solid fa-user-tie mr-2"></i></button>
+                <button onclick="chooseSection('children')" class="w-full p-6 bg-pink-900 rounded-[1.5rem] font-black text-xl">قسم الأطفال <i class="fa-solid fa-child-reaching mr-2"></i></button>
+                <button onclick="toggleScoreboardOnly()" class="w-full p-6 bg-amber-600 rounded-[1.5rem] font-black text-xl">جدول النقاط <i class="fa-solid fa-trophy mr-2"></i></button>
+                <button onclick="showJoinQR()" class="w-full p-6 bg-blue-600 rounded-[1.5rem] font-black text-xl">انضمام اللاعبين <i class="fa-solid fa-qrcode mr-2"></i></button>
             </div>
             <div id="qr-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
                 <div class="bg-slate-900 p-8 rounded-3xl border-2 border-teal-500 max-w-sm w-full text-center relative shadow-2xl">
@@ -115,7 +115,7 @@
                     <input type="checkbox" id="timer-enabled" class="w-7 h-7 accent-teal-500" checked>
                 </div>
                 <div id="brain-sub-menu" class="space-y-3"></div>
-                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl border-b-8 border-orange-800">تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i></button>
+                <button onclick="setupTwisters()" class="w-full p-6 mt-3 bg-orange-600 rounded-[1.5rem] font-black text-xl">تلاعب لفظي <i class="fa-solid fa-tongue mr-2"></i></button>
             </div>
             <div id="memory-difficulty" class="hidden space-y-4 px-4 w-full">
                 <button onclick="startMemory('easy')" class="w-full p-5 bg-green-700 rounded-xl font-bold">سهل</button>
@@ -155,7 +155,7 @@
                             <button onclick="awardManual(8)" class="p-3 bg-green-800 rounded-lg">8</button>
                             <button onclick="awardManual(10)" class="p-3 bg-green-500 rounded-lg font-bold">10</button>
                         </div>
-                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
+                        <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl">التالي</button>
                         <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
                             <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
                             <button onclick="goToHostMainMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
@@ -1197,7 +1197,7 @@
                 const correctIdx = data.content.correct;
                 const correctText = options[correctIdx];
                 document.getElementById('player-input-area').innerHTML = options.map((o, i) => 
-                    `<button onclick="submitQuiz(${i}, ${correctIdx}, ${data.startTime}, '${correctText.replace(/'/g, "\\'")}')" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg border-b-4 border-slate-900 hover:bg-slate-600 transition-colors">${o}</button>`
+                    `<button onclick="submitQuiz(${i}, ${correctIdx}, ${data.startTime}, '${correctText.replace(/'/g, "\\'")}')" class="p-5 bg-slate-700 rounded-xl font-black block w-full text-lg hover:bg-slate-600 transition-colors">${o}</button>`
                 ).join('');
             } else {
                 document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
