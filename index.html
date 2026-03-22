@@ -48,6 +48,24 @@
         .result-digit-box { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; margin: 0 4px; }
         .result-correct { background: #065f46; color: #34d399; border: 2px solid #34d399; }
         .result-wrong { background: #7f1d1d; color: #f87171; border: 2px solid #f87171; text-decoration: line-through; }
+        /* Hangman host (phone): keep controls above the fold */
+        .host-game--hangman {
+            justify-content: flex-start !important;
+            overflow: hidden;
+            padding-top: 0.35rem;
+            padding-bottom: 0.35rem;
+        }
+        .hangman-host-scroll {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .hangman-host-controls { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
+        .hangman-host-leaderboard { max-height: 10vh !important; padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
     </style>
 </head>
 <body>
@@ -129,13 +147,13 @@
                 <button onclick="startMemory('medium')" class="w-full p-5 bg-yellow-700 rounded-xl font-bold">متوسط</button>
                 <button onclick="startMemory('hard')" class="w-full p-5 bg-red-800 rounded-xl font-bold">صعب</button>
             </div>
-            <div id="game-play" class="hidden flex-1 flex flex-col px-2">
-                <div id="host-view" class="hidden flex flex-col h-full">
+            <div id="game-play" class="hidden flex-1 flex flex-col min-h-0 px-2">
+                <div id="host-view" class="hidden flex flex-col h-full min-h-0">
                     <div id="host-top-bar" class="bg-slate-800 p-3 rounded-xl flex justify-between mb-2 text-base border border-slate-700 shrink-0">
                         <span id="answer-counter" class="text-teal-400 font-bold">somthing</span>
                         <span id="host-timer-text" class="text-red-500 font-black text-xl"></span>
                     </div>
-                    <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col justify-center relative border-2 border-slate-700 shadow-inner">
+                    <div id="host-game-container" class="bg-slate-card rounded-[2rem] p-4 flex-1 flex flex-col min-h-0 justify-center relative border-2 border-slate-700 shadow-inner">
                         <div id="memory-visuals" class="hidden text-center">
                             <div id="hand-wrapper" class="hand-container">
                                 <div class="hand hand-left"></div>
@@ -149,17 +167,19 @@
                             <h2 id="display-title" class="font-black text-xl leading-tight">...</h2>
                             <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
                         </div>
-                        <div id="hangman-visuals" class="hidden text-center w-full flex flex-col items-center">
-                            <p id="hangman-host-category" class="text-teal-400 font-black text-lg mb-1"></p>
-                            <p id="hangman-host-player" class="text-orange-400 font-bold mb-2"></p>
-                            <img id="hangman-host-img" src="hangman/1220.png" alt="" class="mx-auto max-h-[26vh] object-contain transition-opacity duration-500 rounded-xl bg-white/5 p-2"/>
-                            <div id="hangman-host-slots" class="mt-3 text-lg sm:text-2xl font-black text-teal-300 flex flex-wrap justify-center gap-x-2 gap-y-2 px-1"></div>
-                            <p id="hangman-host-pending" class="mt-2 text-slate-400 text-sm min-h-[1.5rem]"></p>
-                            <div id="hangman-host-keyboard" class="mt-3 w-full max-w-md grid grid-cols-7 gap-1.5 px-1"></div>
-                            <div class="flex flex-wrap gap-2 justify-center mt-4 w-full">
-                                <button type="button" onclick="hangmanHostSubmit()" class="px-6 py-3 bg-teal-600 rounded-xl font-black text-lg">إرسال</button>
-                                <button type="button" onclick="hangmanHostBackspace()" class="px-6 py-3 bg-slate-600 rounded-xl font-black text-lg">مسح</button>
-                                <button type="button" onclick="hangmanHostSkipTurn()" class="px-6 py-3 bg-amber-700 rounded-xl font-black text-lg">تخطي الدور</button>
+                        <div id="hangman-visuals" class="hidden text-center w-full flex flex-col flex-1 min-h-0 items-stretch">
+                            <div class="hangman-host-scroll w-full">
+                                <p id="hangman-host-category" class="text-teal-400 font-black text-base mb-0.5"></p>
+                                <p id="hangman-host-player" class="text-orange-400 font-bold text-sm mb-1"></p>
+                                <img id="hangman-host-img" src="hangman/1220.png" alt="" class="mx-auto max-h-[min(20vh,9rem)] object-contain transition-opacity duration-500 rounded-lg bg-white/5 p-1"/>
+                                <div id="hangman-host-slots" class="mt-1.5 text-base sm:text-xl font-black text-teal-300 flex flex-wrap justify-center gap-x-1.5 gap-y-1 px-1"></div>
+                                <p id="hangman-host-pending" class="mt-1 text-slate-400 text-xs min-h-[1.25rem]"></p>
+                                <div id="hangman-host-keyboard" class="mt-2 w-full max-w-md mx-auto grid grid-cols-7 gap-1 px-0.5"></div>
+                                <div class="flex flex-wrap gap-1.5 justify-center mt-2 mb-1 w-full">
+                                    <button type="button" onclick="hangmanHostSubmit()" class="px-4 py-2.5 bg-teal-600 rounded-xl font-black text-base">إرسال</button>
+                                    <button type="button" onclick="hangmanHostBackspace()" class="px-4 py-2.5 bg-slate-600 rounded-xl font-black text-base">مسح</button>
+                                    <button type="button" onclick="hangmanHostSkipTurn()" class="px-4 py-2.5 bg-amber-700 rounded-xl font-black text-base">تخطي الدور</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -184,6 +204,7 @@
                     <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
                         <div id="leaderboard-list" class="space-y-1 text-sm"></div>
                     </div>
+                    <div id="tv-hangman-snapshot" class="hidden" aria-hidden="true"></div>
                 </div>
                 <div id="player-view" class="hidden flex flex-col h-full">
                     <div class="bg-slate-800 p-3 rounded-xl flex justify-between items-center mb-2 text-sm border border-slate-700">
@@ -291,6 +312,8 @@
         let hangmanPhase = 'idle';
         let hangmanTurnOutcome = null;
         let hangmanKeyboardBuilt = false;
+        /** TV snapshot only: shown while host feedback modal is open */
+        let hangmanTvFeedback = null;
         /** Where host navigates back to after leaving an active round: type menu or memory difficulty. */
         let hostBackFromGameTarget = 'type';
         /** Session epoch at player join; if Firebase epoch changes, player is sent back to login. */
@@ -493,6 +516,9 @@
             document.getElementById('host-back-btn').classList.remove('hidden');
             document.getElementById('hangman-visuals').classList.add('hidden');
             document.getElementById('standard-visuals').classList.remove('hidden');
+            document.getElementById('host-game-container').classList.remove('host-game--hangman');
+            document.getElementById('host-controls').classList.remove('hangman-host-controls');
+            document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
             set(mirrorRef, { showWelcome: true, ts: Date.now(), qrVisible: false });
             syncTV();
         };
@@ -543,6 +569,9 @@
                 remove(answersRef);
                 document.getElementById('hangman-visuals').classList.add('hidden');
                 document.getElementById('standard-visuals').classList.remove('hidden');
+                document.getElementById('host-game-container').classList.remove('host-game--hangman');
+                document.getElementById('host-controls').classList.remove('hangman-host-controls');
+                document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
                 gp.classList.add('hidden');
                 document.getElementById('host-view').classList.add('hidden');
                 if (hostBackFromGameTarget === 'memory') {
@@ -682,6 +711,47 @@
             return `hangman/${1220 + w}.png`;
         }
 
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function updateHangmanTvSnapshot() {
+            const el = document.getElementById('tv-hangman-snapshot');
+            if (!el) return;
+            const cat = hangmanCategory || '';
+            const player = hangmanPlayerOrder[hangmanTurnIndex] || '';
+            const imgSrc = hangmanComputeImageSrc();
+            const slots = hangmanMaskedHtml();
+            let feedbackHtml = '';
+            if (hangmanPhase === 'feedback' && hangmanTvFeedback) {
+                const { ok, letter } = hangmanTvFeedback;
+                feedbackHtml = ok
+                    ? `<div class="feedback-correct text-center p-4 rounded-2xl mb-3 w-full max-w-lg mx-auto"><div class="text-5xl mb-1">✓</div><div class="text-2xl font-black text-white">صحيح: ${escapeHtml(letter)}</div></div>`
+                    : `<div class="feedback-wrong text-center p-4 rounded-2xl mb-3 w-full max-w-lg mx-auto"><div class="text-5xl mb-1">✗</div><div class="text-2xl font-black text-white">خطأ: ${escapeHtml(letter)}</div></div>`;
+            }
+            let subline = player ? `اللاعب: ${escapeHtml(player)}` : '';
+            if (hangmanPhase === 'intro' || hangmanTurnIndex < 0) {
+                subline = 'استعدوا...';
+            }
+            const imgBlock = imgSrc
+                ? `<img src="${escapeHtml(imgSrc)}" alt="" class="mx-auto max-h-[38vh] object-contain rounded-xl bg-white/5 p-2 mb-2"/>`
+                : '';
+            el.innerHTML = `
+                <div class="w-full flex flex-col items-center text-center px-2">
+                    <p class="text-teal-400 font-black text-[clamp(1rem,3.5vh,2rem)] mb-1">${escapeHtml(cat)}</p>
+                    <p class="text-orange-400 font-bold mb-2 text-[clamp(0.9rem,3vh,1.5rem)]">${subline}</p>
+                    ${feedbackHtml}
+                    ${imgBlock}
+                    <div class="text-[clamp(1rem,3.2vh,2.2rem)] font-black text-teal-300 flex flex-wrap justify-center gap-x-2 gap-y-2">${slots}</div>
+                </div>
+            `;
+        }
+
         async function hangmanSetLive(extra = {}) {
             const player = hangmanPlayerOrder[hangmanTurnIndex] || '';
             const payload = {
@@ -693,6 +763,7 @@
                 imageSrc: hangmanComputeImageSrc(),
                 slotsHtml: hangmanMaskedHtml(),
                 phase: hangmanPhase,
+                turnOutcome: hangmanTurnOutcome,
                 turnIndex: hangmanTurnIndex < 0 ? 0 : hangmanTurnIndex + 1,
                 totalTurns: hangmanPlayerOrder.length,
                 sessionRound: hangmanSessionRound,
@@ -708,7 +779,7 @@
                 return;
             }
             wrap.innerHTML = HANGMAN_KEYS.map((k) =>
-                `<button type="button" data-hk="${k}" onclick="hangmanHostPick('${k}')" class="hangman-key p-2 rounded-lg bg-slate-700 font-black text-lg border border-slate-600 hover:bg-slate-600">${k}</button>`
+                `<button type="button" data-hk="${k}" onclick="hangmanHostPick('${k}')" class="hangman-key py-1.5 px-1 rounded-md bg-slate-700 font-black text-sm border border-slate-600 hover:bg-slate-600">${k}</button>`
             ).join('');
             hangmanKeyboardBuilt = true;
         }
@@ -760,10 +831,14 @@
             }
 
             hangmanPhase = 'feedback';
+            hangmanTvFeedback = { ok: correct, letter: raw };
             document.getElementById('action-btn').classList.add('opacity-40', 'pointer-events-none');
             await hangmanSetLive({ feedbackLetter: raw, feedbackOk: correct });
+            updateHangmanTvSnapshot();
+            syncTV();
 
             await hangmanShowFeedbackModal(correct, raw);
+            hangmanTvFeedback = null;
 
             if (!correct) {
                 hangmanWrongCount = Math.min(7, hangmanWrongCount + 1);
@@ -905,6 +980,9 @@
             const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
             document.getElementById('standard-visuals').classList.remove('hidden');
             document.getElementById('hangman-visuals').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('host-game--hangman');
+            document.getElementById('host-controls').classList.remove('hangman-host-controls');
+            document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
             document.getElementById('display-title').innerText = hangmanSessionRound === 1 ? 'انتهت الجولة الأولى' : 'انتهت لعبة المشنقة';
             document.getElementById('display-content').innerHTML = sorted.map(([n, v]) =>
                 `<div class="flex justify-between p-2 border-b border-slate-700"><span>${n}</span><span class="font-black text-amber-400">${Math.round(v)}</span></div>`
@@ -939,6 +1017,9 @@
             document.getElementById('action-btn').classList.remove('hidden');
             document.getElementById('standard-visuals').classList.add('hidden');
             document.getElementById('hangman-visuals').classList.remove('hidden');
+            document.getElementById('host-game-container').classList.add('host-game--hangman');
+            document.getElementById('host-controls').classList.add('hangman-host-controls');
+            document.getElementById('leaderboard-ui').classList.add('hangman-host-leaderboard');
             document.getElementById('answer-counter').innerText = 'اضغط التالي للبدء — الجولة 2';
             document.getElementById('hangman-host-category').innerText = '';
             document.getElementById('hangman-host-player').innerText = '';
@@ -1092,6 +1173,7 @@
         };
 
         function showHostUI() {
+            const hgc = document.getElementById('host-game-container');
             document.getElementById('type-select').classList.add('hidden');
             document.getElementById('memory-difficulty').classList.add('hidden');
             document.getElementById('game-play').classList.remove('hidden');
@@ -1103,12 +1185,15 @@
             document.getElementById('twister-scoring').classList.add('hidden');
             document.getElementById('host-back-btn').classList.remove('hidden');
             document.getElementById('dedicated-scoreboard').classList.add('hidden');
-            document.getElementById('host-game-container').classList.remove('hidden');
+            hgc.classList.remove('hidden');
             document.getElementById('host-top-bar').classList.remove('hidden');
             document.getElementById('standard-visuals').classList.remove('hidden');
             document.getElementById('memory-visuals').classList.add('hidden');
             document.getElementById('player-spotlight').classList.add('hidden');
             if (currentType === 'hangman') {
+                hgc.classList.add('host-game--hangman');
+                document.getElementById('host-controls').classList.add('hangman-host-controls');
+                document.getElementById('leaderboard-ui').classList.add('hangman-host-leaderboard');
                 document.getElementById('standard-visuals').classList.add('hidden');
                 document.getElementById('hangman-visuals').classList.remove('hidden');
                 hangmanInitHostKeyboard();
@@ -1119,6 +1204,9 @@
                 document.getElementById('hangman-host-img').classList.remove('hidden');
                 document.getElementById('answer-counter').innerText = 'اضغط التالي للبدء';
             } else {
+                hgc.classList.remove('host-game--hangman');
+                document.getElementById('host-controls').classList.remove('hangman-host-controls');
+                document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
                 document.getElementById('hangman-visuals').classList.add('hidden');
                 document.getElementById('standard-visuals').classList.remove('hidden');
                 document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
@@ -1507,7 +1595,31 @@
             document.getElementById('player-hangman-category').innerText = data.category || '';
             const player = data.activePlayer || '';
             const isMe = myName === player;
-            document.getElementById('player-hangman-msg').innerText = isMe ? 'دورك! نادِ حرفاً للمضيف لإدخاله.' : 'استمع للمتحدث';
+            let msg = '';
+            if (data.phase === 'turn_done') {
+                if (data.turnOutcome === 'win' && isMe) {
+                    msg = 'مبروك! لقد فزت بالجولة!';
+                } else if (data.turnOutcome === 'lose' && isMe) {
+                    msg = 'للأسف، انتهت المحاولات في هذه الجولة.';
+                } else if (data.turnOutcome === 'skip' && isMe) {
+                    msg = 'تم تخطي دورك.';
+                } else if (data.turnOutcome === 'win' && !isMe) {
+                    msg = `فاز ${player}!`;
+                } else if (data.turnOutcome === 'lose' && !isMe) {
+                    msg = `${player} لم يكمل الكلمة.`;
+                } else if (data.turnOutcome === 'skip' && !isMe) {
+                    msg = `تم تخطي دور ${player}.`;
+                } else {
+                    msg = 'انتظر دورك.';
+                }
+            } else if (data.status === 'feedback' && data.feedbackLetter != null) {
+                msg = isMe
+                    ? (data.feedbackOk ? `صحيح! (${data.feedbackLetter})` : `ليس في الكلمة (${data.feedbackLetter})`)
+                    : 'المضيف يتحقق من الحرف...';
+            } else {
+                msg = isMe ? 'دورك! نادِ حرفاً للمضيف لإدخاله.' : 'استمع للمتحدث';
+            }
+            document.getElementById('player-hangman-msg').innerText = msg;
             const img = document.getElementById('player-hangman-img');
             if (data.imageSrc) {
                 img.src = data.imageSrc;
@@ -1745,10 +1857,18 @@
             // If the host view is visible, ensure the TV shows the actual game (not the welcome screen).
             // This fixes cases where `showWelcome` might have been set to true and never cleared.
             const hostViewHidden = document.getElementById('host-view')?.classList.contains('hidden');
+            const hmVis = document.getElementById('hangman-visuals');
+            const useHangmanTv =
+                currentType === 'hangman' && hmVis && !hmVis.classList.contains('hidden');
+            let mainHTMLForTv = container.innerHTML;
+            if (useHangmanTv) {
+                updateHangmanTvSnapshot();
+                mainHTMLForTv = document.getElementById('tv-hangman-snapshot').innerHTML;
+            }
             
             update(mirrorRef, {
                 showWelcome: hostViewHidden ? true : false,
-                mainHTML: container.innerHTML,
+                mainHTML: mainHTMLForTv,
                 mainClasses: container.className,
                 scoreHTML: scoreboard.innerHTML,
                 scoreVisible: !scoreboard.classList.contains('hidden'),
