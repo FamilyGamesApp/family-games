@@ -1060,7 +1060,9 @@
             } else {
                 document.getElementById('p-status').innerText = (data.activePlayer === myName) ? "دورك!" : "استمع للمتحدث";
                 document.getElementById('player-q-text').innerText = (data.activePlayer === myName) ? data.content : "---";
-                document.getElementById('player-input-area').innerHTML = "";
+                document.getElementById('player-input-area').innerHTML = (data.activePlayer === myName)
+                    ? `<p class="text-center text-sm text-slate-400 leading-snug px-3 mt-1">كرر العبارة خمس مرات متتالية بسرعة وبنطق واضح.</p>`
+                    : "";
             }
         }
 
