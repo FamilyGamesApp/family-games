@@ -53,7 +53,7 @@
 <body>
     <div id="app">
         <header class="flex justify-between items-center py-2 shrink-0">
-            <button onclick="goHome()" id="global-home-btn" class="hidden text-white bg-slate-800 p-3 rounded-full"><i class="fa-solid fa-house"></i></button>
+            <button type="button" onclick="goHome()" id="global-home-btn" class="hidden text-white bg-slate-800 p-3 rounded-full"><i class="fa-solid fa-house"></i></button>
             <h1 class="font-black text-teal-400 mx-auto" style="font-size: var(--font-title);">ألعاب العائلة</h1>
             <button onclick="backToGameMenu()" id="host-back-btn" class="hidden text-white bg-red-900 p-3 rounded-full"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
         </header>
@@ -158,7 +158,7 @@
                         <button id="action-btn" onclick="triggerNext()" class="w-full btn-purple p-5 rounded-[1.5rem] font-black text-2xl border-b-4 border-purple-900">التالي</button>
                         <div id="post-game-controls" class="hidden flex flex-col gap-2 mt-2">
                             <button onclick="restartSameCategory()" class="w-full p-4 btn-teal rounded-xl font-bold text-lg">جولة جديدة</button>
-                            <button onclick="backToGameMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
+                            <button onclick="goToHostMainMenu()" class="w-full p-4 bg-slate-700 rounded-xl font-bold">القائمة</button>
                         </div>
                     </div>
                     <div id="leaderboard-ui" class="bg-slate-900/90 p-3 rounded-2xl border-2 border-teal-500 overflow-y-auto max-h-[15vh] mb-2 mt-2">
@@ -249,6 +249,8 @@
         let twisterLastPhraseByPlayer = {};
         let quizFeedbackTimeout = null;
         let activeBrainRound = 0;
+        /** Where host navigates back to after leaving an active round: type menu or memory difficulty. */
+        let hostBackFromGameTarget = 'type';
         /** Session epoch at player join; if Firebase epoch changes, player is sent back to login. */
         let playerJoinedSessionEpoch = null;
 
@@ -301,13 +303,22 @@
                 });
             }
             document.getElementById('setup-screen').classList.add('hidden');
-            document.getElementById('global-home-btn').classList.remove('hidden');
+            const globalHomeBtn = document.getElementById('global-home-btn');
+            globalHomeBtn.classList.remove('hidden');
             if (role === 'player') {
+                globalHomeBtn.className = 'text-white bg-slate-800 px-4 py-2 rounded-xl font-black text-sm border border-slate-600';
+                globalHomeBtn.textContent = 'خروج';
                 document.getElementById('game-play').classList.remove('hidden');
                 document.getElementById('player-view').classList.remove('hidden');
                 listenForGame();
             }
         };
+
+        function setGlobalHomeButtonHostStyle() {
+            const b = document.getElementById('global-home-btn');
+            b.className = 'text-white bg-slate-800 p-3 rounded-full';
+            b.innerHTML = '<i class="fa-solid fa-house"></i>';
+        }
 
         async function finishHostLogin() {
             myRole = 'host';
@@ -315,8 +326,10 @@
             document.getElementById('host-pin-step').classList.remove('hidden');
             document.getElementById('host-session-choice').classList.add('hidden');
             document.getElementById('setup-screen').classList.add('hidden');
+            setGlobalHomeButtonHostStyle();
             document.getElementById('global-home-btn').classList.remove('hidden');
             document.getElementById('section-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
             onValue(scoresRef, (snap) => {
                 const v = snap.val();
                 if (v) {
@@ -410,43 +423,117 @@
             });
         };
 
-        window.backToGameMenu = () => {
-            if(myRole !== 'host') return;
+        function hostExitSessionFully() {
+            gameActive = false;
+            set(mirrorRef, { showWelcome: true, ts: Date.now() });
+            remove(liveRef);
+            remove(scoresRef);
+            remove(mirrorRef);
+            set(sessionRef, { epoch: Date.now() });
+            location.reload();
+        }
+
+        window.goToHostMainMenu = () => {
+            if (myRole !== 'host') return;
             gameActive = false;
             dismissQR();
-            remove(liveRef); remove(answersRef);
-            document.getElementById('host-view').classList.add('hidden');
+            remove(liveRef);
+            remove(answersRef);
             document.getElementById('game-play').classList.add('hidden');
+            document.getElementById('host-view').classList.add('hidden');
             document.getElementById('type-select').classList.add('hidden');
             document.getElementById('memory-difficulty').classList.add('hidden');
-            document.getElementById('section-select').classList.remove('hidden');
-            document.getElementById('host-back-btn').classList.add('hidden');
-            document.getElementById('host-game-container').classList.remove('hidden');
             document.getElementById('dedicated-scoreboard').classList.add('hidden');
+            document.getElementById('host-game-container').classList.remove('hidden');
             document.getElementById('host-top-bar').classList.remove('hidden');
-            
-            // FIX: Reset TV to welcome screen
-            set(mirrorRef, { 
-                showWelcome: true,
-                ts: Date.now(), 
-                qrVisible: false 
-            });
+            document.getElementById('leaderboard-ui').classList.remove('hidden');
+            document.getElementById('section-select').classList.remove('hidden');
+            document.getElementById('host-back-btn').classList.remove('hidden');
+            set(mirrorRef, { showWelcome: true, ts: Date.now(), qrVisible: false });
+            syncTV();
         };
 
-        window.goHome = () => { 
+        window.backToGameMenu = () => {
+            if (myRole !== 'host') return;
             gameActive = false;
-            if(myRole === 'host') { 
-                // FIX: Reset TV before leaving
-                set(mirrorRef, { 
-                    showWelcome: true,
-                    ts: Date.now()
-                });
-                remove(liveRef); 
-                remove(scoresRef); 
-                remove(mirrorRef); 
-                set(sessionRef, { epoch: Date.now() });
-            } 
-            location.reload(); 
+            dismissQR();
+
+            const sec = document.getElementById('section-select');
+            const typ = document.getElementById('type-select');
+            const mem = document.getElementById('memory-difficulty');
+            const gp = document.getElementById('game-play');
+            const dedicated = document.getElementById('dedicated-scoreboard');
+            const hostContainer = document.getElementById('host-game-container');
+
+            const gamePlayVisible = !gp.classList.contains('hidden');
+            const scoreboardOnly = gamePlayVisible && !dedicated.classList.contains('hidden') && hostContainer.classList.contains('hidden');
+            const inActiveGame = gamePlayVisible && !hostContainer.classList.contains('hidden');
+            const atMainSectionMenu =
+                gp.classList.contains('hidden') &&
+                typ.classList.contains('hidden') &&
+                mem.classList.contains('hidden') &&
+                !sec.classList.contains('hidden');
+
+            if (atMainSectionMenu) {
+                hostExitSessionFully();
+                return;
+            }
+
+            if (scoreboardOnly) {
+                remove(liveRef);
+                remove(answersRef);
+                gp.classList.add('hidden');
+                hostContainer.classList.remove('hidden');
+                dedicated.classList.add('hidden');
+                document.getElementById('host-top-bar').classList.remove('hidden');
+                document.getElementById('leaderboard-ui').classList.remove('hidden');
+                sec.classList.remove('hidden');
+                document.getElementById('host-back-btn').classList.remove('hidden');
+                set(mirrorRef, { showWelcome: true, ts: Date.now(), qrVisible: false });
+                syncTV();
+                return;
+            }
+
+            if (inActiveGame) {
+                remove(liveRef);
+                remove(answersRef);
+                gp.classList.add('hidden');
+                document.getElementById('host-view').classList.add('hidden');
+                if (hostBackFromGameTarget === 'memory') {
+                    mem.classList.remove('hidden');
+                    typ.classList.add('hidden');
+                } else {
+                    typ.classList.remove('hidden');
+                    mem.classList.add('hidden');
+                }
+                document.getElementById('host-back-btn').classList.remove('hidden');
+                set(mirrorRef, { showWelcome: true, ts: Date.now(), qrVisible: false });
+                syncTV();
+                return;
+            }
+
+            if (!mem.classList.contains('hidden')) {
+                mem.classList.add('hidden');
+                typ.classList.remove('hidden');
+                document.getElementById('host-back-btn').classList.remove('hidden');
+                return;
+            }
+
+            if (!typ.classList.contains('hidden')) {
+                typ.classList.add('hidden');
+                sec.classList.remove('hidden');
+                document.getElementById('host-back-btn').classList.remove('hidden');
+                return;
+            }
+        };
+
+        window.goHome = () => {
+            gameActive = false;
+            if (myRole === 'host') {
+                goToHostMainMenu();
+            } else {
+                location.reload();
+            }
         };
 
         window.showHostAuth = () => {
@@ -568,6 +655,7 @@
             currentType = 'brain'; currentIndex = -1;
             lastGameConfig = { section: currentSection, type: 'brain', pool: type };
             currentQuestions = getRandomSet(gameData[currentSection][type], 7);
+            hostBackFromGameTarget = 'type';
             showHostUI();
         };
 
@@ -579,6 +667,7 @@
             twisterPlayerOrder = built.order;
             twisterTotalRounds = built.phrases.length;
             twisterPhase = 'question';
+            hostBackFromGameTarget = 'type';
             showHostUI();
         };
 
@@ -587,6 +676,7 @@
             lastGameConfig = { type: 'memory', diff: diff };
             document.getElementById('memory-difficulty').classList.add('hidden');
             currentQuestions = Array.from({length: 7}, () => Math.floor(1000 + Math.random() * 9000).toString());
+            hostBackFromGameTarget = 'memory';
             showHostUI();
         };
 
