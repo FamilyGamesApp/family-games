@@ -65,7 +65,6 @@
             align-items: center;
         }
         .hangman-host-controls { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
-        .hangman-host-leaderboard { max-height: 10vh !important; padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
     </style>
 </head>
 <body>
@@ -168,7 +167,11 @@
                             <div id="display-content" class="mt-4 text-slate-300 font-bold"></div>
                         </div>
                         <div id="hangman-visuals" class="hidden text-center w-full flex flex-col flex-1 min-h-0 items-stretch">
-                            <div class="hangman-host-scroll w-full">
+                            <div id="hangman-lobby" class="hidden flex flex-col items-center justify-center gap-3 py-4 px-2">
+                                <h2 class="text-2xl sm:text-3xl font-black text-teal-400">لعبة المشنقة</h2>
+                                <p id="hangman-lobby-sub" class="text-slate-400 text-sm max-w-sm">عندما تكون جاهزاً اضغط لبدء اللعب مع اللاعبين.</p>
+                            </div>
+                            <div id="hangman-play-area" class="hangman-host-scroll w-full hidden">
                                 <p id="hangman-host-category" class="text-teal-400 font-black text-base mb-0.5"></p>
                                 <p id="hangman-host-player" class="text-orange-400 font-bold text-sm mb-1"></p>
                                 <img id="hangman-host-img" src="hangman/1220.png" alt="" class="mx-auto max-h-[min(20vh,9rem)] object-contain transition-opacity duration-500 rounded-lg bg-white/5 p-1"/>
@@ -178,7 +181,9 @@
                                 <div class="flex flex-wrap gap-1.5 justify-center mt-2 mb-1 w-full">
                                     <button type="button" onclick="hangmanHostSubmit()" class="px-4 py-2.5 bg-teal-600 rounded-xl font-black text-base">إرسال</button>
                                     <button type="button" onclick="hangmanHostBackspace()" class="px-4 py-2.5 bg-slate-600 rounded-xl font-black text-base">مسح</button>
-                                    <button type="button" onclick="hangmanHostSkipTurn()" class="px-4 py-2.5 bg-amber-700 rounded-xl font-black text-base">تخطي الدور</button>
+                                    <button type="button" id="hangman-btn-hint" onclick="hangmanHostHint()" class="px-4 py-2.5 bg-indigo-700 rounded-xl font-black text-base">تلميح</button>
+                                    <button type="button" onclick="hangmanHostSkipRound()" class="px-4 py-2.5 bg-amber-700 rounded-xl font-black text-base">تخطي الجولة</button>
+                                    <button type="button" onclick="hangmanHostRevealWord()" class="px-4 py-2.5 bg-rose-800 rounded-xl font-black text-base">كشف الكلمة</button>
                                 </div>
                             </div>
                         </div>
@@ -314,6 +319,10 @@
         let hangmanKeyboardBuilt = false;
         /** TV snapshot only: shown while host feedback modal is open */
         let hangmanTvFeedback = null;
+        /** One hint per player name for the whole hangman session (rounds 1+2). */
+        let hangmanHintUsedPlayers = new Set();
+        /** 'wrong' | 'reveal' | null when turnOutcome is lose */
+        let hangmanLoseReason = null;
         /** Where host navigates back to after leaving an active round: type menu or memory difficulty. */
         let hostBackFromGameTarget = 'type';
         /** Session epoch at player join; if Firebase epoch changes, player is sent back to login. */
@@ -518,7 +527,6 @@
             document.getElementById('standard-visuals').classList.remove('hidden');
             document.getElementById('host-game-container').classList.remove('host-game--hangman');
             document.getElementById('host-controls').classList.remove('hangman-host-controls');
-            document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
             set(mirrorRef, { showWelcome: true, ts: Date.now(), qrVisible: false });
             syncTV();
         };
@@ -571,7 +579,6 @@
                 document.getElementById('standard-visuals').classList.remove('hidden');
                 document.getElementById('host-game-container').classList.remove('host-game--hangman');
                 document.getElementById('host-controls').classList.remove('hangman-host-controls');
-                document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
                 gp.classList.add('hidden');
                 document.getElementById('host-view').classList.add('hidden');
                 if (hostBackFromGameTarget === 'memory') {
@@ -723,6 +730,16 @@
         function updateHangmanTvSnapshot() {
             const el = document.getElementById('tv-hangman-snapshot');
             if (!el) return;
+            if (hangmanPhase === 'lobby') {
+                const r = hangmanSessionRound === 2 ? 'الجولة الثانية' : 'الجولة الأولى';
+                el.innerHTML = `
+                    <div class="w-full flex flex-col items-center justify-center text-center px-4 py-6">
+                        <p class="text-teal-400 font-black text-[clamp(1.2rem,4vh,2.2rem)] mb-3">لعبة المشنقة</p>
+                        <p class="text-slate-400 text-[clamp(0.95rem,2.8vh,1.4rem)] mb-2">${r}</p>
+                        <p class="text-orange-300 font-bold text-[clamp(1rem,3vh,1.6rem)]">بانتظار بدء المضيف...</p>
+                    </div>`;
+                return;
+            }
             const cat = hangmanCategory || '';
             const player = hangmanPlayerOrder[hangmanTurnIndex] || '';
             const imgSrc = hangmanComputeImageSrc();
@@ -764,6 +781,7 @@
                 slotsHtml: hangmanMaskedHtml(),
                 phase: hangmanPhase,
                 turnOutcome: hangmanTurnOutcome,
+                loseReason: hangmanTurnOutcome === 'lose' ? hangmanLoseReason : null,
                 turnIndex: hangmanTurnIndex < 0 ? 0 : hangmanTurnIndex + 1,
                 totalTurns: hangmanPlayerOrder.length,
                 sessionRound: hangmanSessionRound,
@@ -771,6 +789,122 @@
             };
             await set(liveRef, { ...payload, ts: Date.now() });
         }
+
+        function hangmanComputeHintIndices() {
+            const unrevealed = [];
+            for (let i = 0; i < hangmanWordChars.length; i++) {
+                const ch = hangmanWordChars[i];
+                if (ch === ' ' || ch === '\u00a0') continue;
+                if (!hangmanRevealed[i]) unrevealed.push(i);
+            }
+            if (unrevealed.length === 0) return null;
+            const byNorm = new Map();
+            for (const i of unrevealed) {
+                const norm = normalizeHangmanLetter(hangmanWordChars[i]);
+                if (!byNorm.has(norm)) byNorm.set(norm, []);
+                byNorm.get(norm).push(i);
+            }
+            const singles = [...byNorm.entries()].filter(([, idxs]) => idxs.length === 1);
+            if (singles.length > 0) {
+                const [, idxs] = singles[Math.floor(Math.random() * singles.length)];
+                return idxs;
+            }
+            const entries = [...byNorm.entries()];
+            const [, idxs] = entries[Math.floor(Math.random() * entries.length)];
+            return idxs;
+        }
+
+        function hangmanRefreshAuxButtons() {
+            const hintBtn = document.getElementById('hangman-btn-hint');
+            if (!hintBtn) return;
+            const player = hangmanPlayerOrder[hangmanTurnIndex] || '';
+            const hintUsed = player && hangmanHintUsedPlayers.has(player);
+            const canHint =
+                hangmanPhase === 'playing' &&
+                !hintUsed &&
+                hangmanComputeHintIndices() !== null;
+            hintBtn.classList.toggle('opacity-40', !canHint);
+            hintBtn.classList.toggle('pointer-events-none', !canHint);
+        }
+
+        function hangmanUpdateLobbyPlayVisibility() {
+            const lobby = document.getElementById('hangman-lobby');
+            const play = document.getElementById('hangman-play-area');
+            const actionBtn = document.getElementById('action-btn');
+            if (!lobby || !play) return;
+            if (hangmanPhase === 'lobby') {
+                lobby.classList.remove('hidden');
+                play.classList.add('hidden');
+                if (actionBtn) {
+                    actionBtn.classList.remove('hidden');
+                    actionBtn.innerText = 'ابدأ اللعبة';
+                }
+            } else {
+                lobby.classList.add('hidden');
+                play.classList.remove('hidden');
+                if (actionBtn && hangmanPhase !== 'session_end') {
+                    actionBtn.innerText = 'التالي';
+                }
+            }
+        }
+
+        window.hangmanHostHint = async () => {
+            if (hangmanPhase !== 'playing') return;
+            const player = hangmanPlayerOrder[hangmanTurnIndex] || '';
+            if (!player || hangmanHintUsedPlayers.has(player)) return;
+            const indices = hangmanComputeHintIndices();
+            if (!indices || indices.length === 0) return;
+            hangmanHintUsedPlayers.add(player);
+            for (const i of indices) {
+                hangmanRevealed[i] = true;
+                hangmanGuessedNorm.add(normalizeHangmanLetter(hangmanWordChars[i]));
+            }
+            document.getElementById('hangman-host-slots').innerHTML = hangmanMaskedHtml();
+            hangmanRefreshKeyboardStyles();
+            hangmanRefreshAuxButtons();
+            document.getElementById('hangman-host-pending').innerText = 'تم استخدام التلميح لهذا اللاعب في هذه الجلسة.';
+            if (hangmanWordFullyRevealed()) {
+                hangmanTurnOutcome = 'win';
+                hangmanPhase = 'turn_done';
+                hangmanLoseReason = null;
+                const wimg = document.getElementById('hangman-host-img');
+                wimg.classList.remove('hidden');
+                wimg.src = 'hangman/1229.png';
+                document.getElementById('answer-counter').innerText = 'فوز! اضغط التالي';
+            }
+            hangmanUpdateLobbyPlayVisibility();
+            await hangmanSetLive();
+            syncTV();
+        };
+
+        window.hangmanHostRevealWord = async () => {
+            if (hangmanPhase !== 'playing') return;
+            if (!confirm('سيتم كشف الكلمة بالكامل واحتساب خسارة لهذا اللاعب. متابعة؟')) return;
+            for (let i = 0; i < hangmanWordChars.length; i++) {
+                const ch = hangmanWordChars[i];
+                if (ch === ' ' || ch === '\u00a0') continue;
+                hangmanRevealed[i] = true;
+                hangmanGuessedNorm.add(normalizeHangmanLetter(ch));
+            }
+            hangmanTurnOutcome = 'lose';
+            hangmanPhase = 'turn_done';
+            hangmanLoseReason = 'reveal';
+            document.getElementById('hangman-host-slots').innerHTML = hangmanMaskedHtml();
+            hangmanRefreshKeyboardStyles();
+            const wimg = document.getElementById('hangman-host-img');
+            wimg.classList.remove('hidden');
+            wimg.src = 'hangman/1227.png';
+            document.getElementById('answer-counter').innerText = 'كشف الكلمة — خسارة. اضغط التالي';
+            hangmanUpdateLobbyPlayVisibility();
+            await hangmanSetLive();
+            syncTV();
+        };
+
+        window.hangmanHostSkipRound = () => {
+            if (hangmanPhase !== 'playing') return;
+            if (!confirm('هل أنت متأكد من تخطي جولة هذا اللاعب؟ سيتم احتساب صفر نقطة.')) return;
+            hangmanSkipCurrentPlayer();
+        };
 
         function hangmanInitHostKeyboard() {
             const wrap = document.getElementById('hangman-host-keyboard');
@@ -849,6 +983,7 @@
 
             if (hangmanWordFullyRevealed()) {
                 hangmanTurnOutcome = 'win';
+                hangmanLoseReason = null;
                 hangmanPhase = 'turn_done';
                 const wimg = document.getElementById('hangman-host-img');
                 wimg.classList.remove('hidden');
@@ -856,6 +991,7 @@
                 document.getElementById('answer-counter').innerText = 'فوز! اضغط التالي';
             } else if (hangmanWrongCount >= 7) {
                 hangmanTurnOutcome = 'lose';
+                hangmanLoseReason = 'wrong';
                 hangmanPhase = 'turn_done';
                 const wimg = document.getElementById('hangman-host-img');
                 wimg.classList.remove('hidden');
@@ -874,6 +1010,7 @@
 
             document.getElementById('action-btn').classList.remove('opacity-40', 'pointer-events-none');
             await hangmanSetLive();
+            hangmanRefreshAuxButtons();
             syncTV();
         };
 
@@ -914,17 +1051,12 @@
         async function hangmanSkipCurrentPlayer() {
             hangmanTurnOutcome = 'skip';
             hangmanPhase = 'turn_done';
+            hangmanLoseReason = null;
             document.getElementById('hangman-host-img').classList.add('hidden');
             document.getElementById('answer-counter').innerText = 'تم التخطي — اضغط التالي';
             await hangmanSetLive();
             syncTV();
         }
-
-        window.hangmanHostSkipTurn = () => {
-            if (hangmanPhase !== 'playing') return;
-            if (!confirm('هل أنت متأكد من تخطي دور هذا اللاعب؟ سيتم احتساب صفر نقطة.')) return;
-            hangmanSkipCurrentPlayer();
-        };
 
         async function hangmanStartTurn(index) {
             const picked = hangmanPickRandomWord();
@@ -942,6 +1074,7 @@
             hangmanGuessedNorm = new Set();
             hangmanTurnIndex = index;
             hangmanTurnOutcome = null;
+            hangmanLoseReason = null;
             hangmanPhase = 'playing';
             hangmanPendingChar = '';
 
@@ -953,6 +1086,8 @@
             hangmanRefreshKeyboardStyles();
 
             document.getElementById('answer-counter').innerText = `دور ${hangmanTurnIndex + 1} من ${hangmanPlayerOrder.length}`;
+            hangmanUpdateLobbyPlayVisibility();
+            hangmanRefreshAuxButtons();
             await hangmanSetLive();
             syncTV();
         }
@@ -962,7 +1097,7 @@
                 await hangmanAddScore(hangmanPlayerOrder[hangmanTurnIndex], 10);
             }
             hangmanTurnOutcome = null;
-            hangmanPhase = 'intro';
+            hangmanLoseReason = null;
             const next = hangmanTurnIndex + 1;
             if (next >= hangmanPlayerOrder.length) {
                 await hangmanEndSessionRound();
@@ -982,7 +1117,6 @@
             document.getElementById('hangman-visuals').classList.add('hidden');
             document.getElementById('host-game-container').classList.remove('host-game--hangman');
             document.getElementById('host-controls').classList.remove('hangman-host-controls');
-            document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
             document.getElementById('display-title').innerText = hangmanSessionRound === 1 ? 'انتهت الجولة الأولى' : 'انتهت لعبة المشنقة';
             document.getElementById('display-content').innerHTML = sorted.map(([n, v]) =>
                 `<div class="flex justify-between p-2 border-b border-slate-700"><span>${n}</span><span class="font-black text-amber-400">${Math.round(v)}</span></div>`
@@ -1011,7 +1145,7 @@
             hangmanWordsUsed = new Set(hangmanWordsRound1);
             hangmanPlayerOrder = shuffleArray(playersList.length ? [...playersList] : ['المتطوع']);
             hangmanTurnIndex = -1;
-            hangmanPhase = 'intro';
+            hangmanPhase = 'lobby';
             hangmanTurnOutcome = null;
             document.getElementById('post-game-controls').classList.add('hidden');
             document.getElementById('action-btn').classList.remove('hidden');
@@ -1019,13 +1153,16 @@
             document.getElementById('hangman-visuals').classList.remove('hidden');
             document.getElementById('host-game-container').classList.add('host-game--hangman');
             document.getElementById('host-controls').classList.add('hangman-host-controls');
-            document.getElementById('leaderboard-ui').classList.add('hangman-host-leaderboard');
-            document.getElementById('answer-counter').innerText = 'اضغط التالي للبدء — الجولة 2';
+            document.getElementById('leaderboard-ui').classList.add('hidden');
+            document.getElementById('hangman-lobby-sub').innerText = 'الجولة الثانية — اضغط «ابدأ اللعبة» عندما تكون جاهزاً.';
+            document.getElementById('answer-counter').innerText = 'ابدأ اللعبة';
             document.getElementById('hangman-host-category').innerText = '';
             document.getElementById('hangman-host-player').innerText = '';
             document.getElementById('hangman-host-slots').innerHTML = '';
             document.getElementById('hangman-host-img').src = 'hangman/1220.png';
+            hangmanUpdateLobbyPlayVisibility();
             await remove(liveRef);
+            await hangmanPushLobbyLive();
             syncTV();
         };
 
@@ -1034,9 +1171,10 @@
             hangmanSessionRound = 1;
             hangmanWordsUsed = new Set();
             hangmanWordsRound1 = new Set();
+            hangmanHintUsedPlayers = new Set();
             hangmanPlayerOrder = hangmanBuildOrder();
             hangmanTurnIndex = -1;
-            hangmanPhase = 'intro';
+            hangmanPhase = 'lobby';
             hangmanTurnOutcome = null;
             hangmanPendingChar = '';
             lastGameConfig = { type: 'hangman', section: 'adults' };
@@ -1044,12 +1182,37 @@
             showHostUI();
         };
 
+        async function hangmanPushLobbyLive() {
+            await set(liveRef, {
+                type: 'hangman',
+                phase: 'lobby',
+                status: 'playing',
+                category: '',
+                activePlayer: '',
+                wrongCount: 0,
+                imageSrc: '',
+                slotsHtml: '',
+                turnOutcome: null,
+                loseReason: null,
+                turnIndex: 0,
+                totalTurns: Math.max(1, hangmanPlayerOrder.length),
+                sessionRound: hangmanSessionRound,
+                ts: Date.now()
+            });
+        }
+
         async function hangmanHostTriggerNext() {
             if (hangmanPhase === 'feedback') return;
+
+            if (hangmanPhase === 'lobby') {
+                await hangmanStartTurn(0);
+                return;
+            }
 
             if (hangmanPhase === 'playing') {
                 if (hangmanWordFullyRevealed()) {
                     hangmanTurnOutcome = 'win';
+                    hangmanLoseReason = null;
                     hangmanPhase = 'turn_done';
                     document.getElementById('hangman-host-img').classList.remove('hidden');
                     document.getElementById('hangman-host-img').src = 'hangman/1229.png';
@@ -1058,7 +1221,7 @@
                     syncTV();
                     return;
                 }
-                if (!confirm('الكلمة لم تُحل بعد. تخطي اللاعب الحالي؟ سيتم احتساب صفر نقطة.')) return;
+                if (!confirm('الكلمة لم تُحل بعد. تخطي جولة هذا اللاعب؟ سيتم احتساب صفر نقطة.')) return;
                 await hangmanSkipCurrentPlayer();
                 return;
             }
@@ -1066,10 +1229,6 @@
             if (hangmanPhase === 'turn_done') {
                 await hangmanAfterTurnNext();
                 return;
-            }
-
-            if (hangmanTurnIndex < 0) {
-                await hangmanStartTurn(0);
             }
         }
 
@@ -1172,7 +1331,7 @@
             showHostUI();
         };
 
-        function showHostUI() {
+        async function showHostUI() {
             const hgc = document.getElementById('host-game-container');
             document.getElementById('type-select').classList.add('hidden');
             document.getElementById('memory-difficulty').classList.add('hidden');
@@ -1193,7 +1352,7 @@
             if (currentType === 'hangman') {
                 hgc.classList.add('host-game--hangman');
                 document.getElementById('host-controls').classList.add('hangman-host-controls');
-                document.getElementById('leaderboard-ui').classList.add('hangman-host-leaderboard');
+                document.getElementById('leaderboard-ui').classList.add('hidden');
                 document.getElementById('standard-visuals').classList.add('hidden');
                 document.getElementById('hangman-visuals').classList.remove('hidden');
                 hangmanInitHostKeyboard();
@@ -1202,17 +1361,19 @@
                 document.getElementById('hangman-host-slots').innerHTML = '';
                 document.getElementById('hangman-host-img').src = 'hangman/1220.png';
                 document.getElementById('hangman-host-img').classList.remove('hidden');
-                document.getElementById('answer-counter').innerText = 'اضغط التالي للبدء';
+                document.getElementById('hangman-lobby-sub').innerText = 'عندما تكون جاهزاً اضغط «ابدأ اللعبة» لبدء اللعب مع اللاعبين.';
+                document.getElementById('answer-counter').innerText = 'ابدأ اللعبة';
+                hangmanUpdateLobbyPlayVisibility();
+                await hangmanPushLobbyLive();
             } else {
                 hgc.classList.remove('host-game--hangman');
                 document.getElementById('host-controls').classList.remove('hangman-host-controls');
-                document.getElementById('leaderboard-ui').classList.remove('hangman-host-leaderboard');
+                document.getElementById('leaderboard-ui').classList.remove('hidden');
                 document.getElementById('hangman-visuals').classList.add('hidden');
                 document.getElementById('standard-visuals').classList.remove('hidden');
                 document.getElementById('answer-counter').innerText = "اضغط التالي للبدء";
             }
             document.getElementById('host-timer-text').innerText = "";
-            
             syncTV();
         }
 
@@ -1592,6 +1753,14 @@
                 document.getElementById('p-status').innerText = 'انتهت اللعبة';
                 return;
             }
+            if (data.phase === 'lobby') {
+                document.getElementById('player-hangman-category').innerText = '';
+                document.getElementById('player-hangman-msg').innerText = 'بانتظار بدء المضيف...';
+                document.getElementById('player-hangman-slots').innerHTML = '';
+                document.getElementById('player-hangman-img').classList.add('hidden');
+                document.getElementById('progress-indicator').classList.add('hidden');
+                return;
+            }
             document.getElementById('player-hangman-category').innerText = data.category || '';
             const player = data.activePlayer || '';
             const isMe = myName === player;
@@ -1600,13 +1769,17 @@
                 if (data.turnOutcome === 'win' && isMe) {
                     msg = 'مبروك! لقد فزت بالجولة!';
                 } else if (data.turnOutcome === 'lose' && isMe) {
-                    msg = 'للأسف، انتهت المحاولات في هذه الجولة.';
+                    msg = data.loseReason === 'reveal'
+                        ? 'تم كشف الكلمة — خسارة في هذه الجولة.'
+                        : 'للأسف، انتهت المحاولات في هذه الجولة.';
                 } else if (data.turnOutcome === 'skip' && isMe) {
                     msg = 'تم تخطي دورك.';
                 } else if (data.turnOutcome === 'win' && !isMe) {
                     msg = `فاز ${player}!`;
                 } else if (data.turnOutcome === 'lose' && !isMe) {
-                    msg = `${player} لم يكمل الكلمة.`;
+                    msg = data.loseReason === 'reveal'
+                        ? `تم كشف الكلمة لـ ${player}.`
+                        : `${player} لم يكمل الكلمة.`;
                 } else if (data.turnOutcome === 'skip' && !isMe) {
                     msg = `تم تخطي دور ${player}.`;
                 } else {
