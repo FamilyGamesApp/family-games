@@ -67,9 +67,16 @@
                 <button onclick="showHostAuth()" class="w-full text-slate-500 text-sm underline">لوحة التحكم</button>
             </div>
             <div id="host-auth" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-50">
-                <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-xs text-center">
-                    <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl outline-none border border-teal-500">
-                    <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black">تأكيد</button>
+                <div class="bg-slate-900 p-8 rounded-3xl border border-slate-700 w-full max-w-sm text-center">
+                    <div id="host-pin-step">
+                        <input id="host-pin" type="password" placeholder="****" class="w-full p-4 rounded-xl bg-slate-800 text-center text-white mb-4 text-3xl outline-none border border-teal-500">
+                        <button onclick="verifyHost()" class="w-full p-4 btn-purple rounded-xl font-black">تأكيد</button>
+                    </div>
+                    <div id="host-session-choice" class="hidden space-y-3 mt-2">
+                        <p class="text-slate-400 text-sm mb-1">اختر كيف تريد الدخول إلى لوحة التحكم</p>
+                        <button type="button" onclick="hostStartNewSession()" class="w-full p-4 bg-rose-800 rounded-xl font-black border-b-4 border-rose-950">جلسة جديدة</button>
+                        <button type="button" onclick="hostContinueSession()" class="w-full p-4 bg-slate-700 rounded-xl font-black border-b-4 border-slate-900">متابعة الجلسة السابقة</button>
+                    </div>
                 </div>
             </div>
             <div id="section-select" class="hidden space-y-4 px-4 w-full">
@@ -224,6 +231,7 @@
         const scoresRef = ref(db, 'scores');
         const answersRef = ref(db, 'current_answers');
         const mirrorRef = ref(db, 'tv_mirror');
+        const sessionRef = ref(db, 'session');
 
         let myRole = '', myName = '', currentSection = '', currentType = '';
         let currentQuestions = [], currentIndex = -1, lastGameConfig = {};
@@ -241,6 +249,8 @@
         let twisterLastPhraseByPlayer = {};
         let quizFeedbackTimeout = null;
         let activeBrainRound = 0;
+        /** Session epoch at player join; if Firebase epoch changes, player is sent back to login. */
+        let playerJoinedSessionEpoch = null;
 
         window.addEventListener('beforeunload', (e) => {
             if (gameActive && myRole === 'player') {
@@ -281,23 +291,57 @@
                 errorDiv.classList.add('hidden');
                 inputField.classList.remove('border-red-500');
                 set(ref(db, `scores/${myName}`), 0);
+                const sessionSnap = await get(sessionRef);
+                playerJoinedSessionEpoch = sessionSnap.val()?.epoch ?? 0;
+                onValue(sessionRef, (snap) => {
+                    const e = snap.val()?.epoch ?? 0;
+                    if (myRole === 'player' && playerJoinedSessionEpoch !== null && e !== playerJoinedSessionEpoch) {
+                        location.reload();
+                    }
+                });
             }
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('global-home-btn').classList.remove('hidden');
-            if (role === 'host') {
-                remove(liveRef); remove(answersRef);
-                document.getElementById('section-select').classList.remove('hidden');
-                onValue(scoresRef, (snap) => {
-                    if(snap.val()) {
-                        playersList = Object.keys(snap.val());
-                        updateLeaderboardUI(snap.val());
-                    }
-                });
-            } else {
+            if (role === 'player') {
                 document.getElementById('game-play').classList.remove('hidden');
                 document.getElementById('player-view').classList.remove('hidden');
                 listenForGame();
             }
+        };
+
+        async function finishHostLogin() {
+            myRole = 'host';
+            document.getElementById('host-auth').classList.add('hidden');
+            document.getElementById('host-pin-step').classList.remove('hidden');
+            document.getElementById('host-session-choice').classList.add('hidden');
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('global-home-btn').classList.remove('hidden');
+            document.getElementById('section-select').classList.remove('hidden');
+            onValue(scoresRef, (snap) => {
+                const v = snap.val();
+                if (v) {
+                    playersList = Object.keys(v);
+                    updateLeaderboardUI(v);
+                } else {
+                    playersList = [];
+                    updateLeaderboardUI({});
+                }
+            });
+        }
+
+        window.hostStartNewSession = async () => {
+            await remove(liveRef);
+            await remove(answersRef);
+            await remove(scoresRef);
+            await remove(mirrorRef);
+            await set(sessionRef, { epoch: Date.now() });
+            document.getElementById('host-pin').value = '';
+            await finishHostLogin();
+        };
+
+        window.hostContinueSession = async () => {
+            document.getElementById('host-pin').value = '';
+            await finishHostLogin();
         };
 
         window.showJoinQR = () => {
@@ -400,16 +444,24 @@
                 remove(liveRef); 
                 remove(scoresRef); 
                 remove(mirrorRef); 
+                set(sessionRef, { epoch: Date.now() });
             } 
             location.reload(); 
         };
 
-        window.showHostAuth = () => document.getElementById('host-auth').classList.remove('hidden');
-        window.verifyHost = () => { 
-            if(document.getElementById('host-pin').value === '1234') { 
-                document.getElementById('host-auth').classList.add('hidden'); 
-                setRole('host'); 
-            } else { alert("خطأ!"); } 
+        window.showHostAuth = () => {
+            document.getElementById('host-auth').classList.remove('hidden');
+            document.getElementById('host-pin-step').classList.remove('hidden');
+            document.getElementById('host-session-choice').classList.add('hidden');
+            document.getElementById('host-pin').value = '';
+        };
+        window.verifyHost = () => {
+            if (document.getElementById('host-pin').value === '1234') {
+                document.getElementById('host-pin-step').classList.add('hidden');
+                document.getElementById('host-session-choice').classList.remove('hidden');
+            } else {
+                alert("خطأ!");
+            }
         };
 
         window.chooseSection = (s) => {
